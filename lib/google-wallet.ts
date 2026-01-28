@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 // Configurazione da variabili d'ambiente
 const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID!
 const CLIENT_EMAIL = process.env.GOOGLE_WALLET_CLIENT_EMAIL!
-const PRIVATE_KEY = process.env.GOOGLE_WALLET_PRIVATE_KEY!.replace(/\\n/g, '\n')
+const PRIVATE_KEY = Buffer.from(process.env.GOOGLE_WALLET_PRIVATE_KEY_BASE64!, 'base64').toString('utf-8')
 
 // URL base dell'app (cambierà quando vai su Vercel)
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
