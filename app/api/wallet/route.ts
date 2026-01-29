@@ -48,17 +48,60 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Merchant non trovato' }, { status: 404 })
     }
 
+    // Per i programmi tiers, carica anche i livelli per calcolare lo sconto attuale
+    let tierDiscount = 0
+    if (program.program_type === 'tiers' && card.current_tier) {
+      const { data: tier } = await supabase
+        .from('tiers')
+        .select('discount_percent')
+        .eq('program_id', program.id)
+        .eq('name', card.current_tier)
+        .single()
+      
+      if (tier) {
+        tierDiscount = tier.discount_percent || 0
+      }
+    }
+
+    // Prepara i dati in base al tipo di programma
+    const programType = program.program_type || 'stamps'
+
+    const walletData = {
+      programId: program.id,
+      cardId: card.id,
+      scanToken: card.scan_token,
+      programName: program.name,
+      issuerName: merchant.name,
+      backgroundColor: program.primary_color || '#6366f1',
+      logoUrl: program.logo_url || merchant.logo_url,
+      programType: programType as any,
+      
+      // Stamps
+      stampCount: card.current_stamps || card.stamp_count || 0,
+      stampsRequired: program.stamps_required || 10,
+      
+      // Points
+      pointsBalance: card.points_balance || 0,
+      pointsForReward: program.stamps_required || 100,
+      
+      // Cashback
+      cashbackBalance: card.cashback_balance || 0,
+      cashbackPercent: program.cashback_percent || 5,
+      
+      // Tiers
+      currentTier: card.current_tier || 'Base',
+      tierDiscount: tierDiscount,
+      totalSpent: card.total_spent || 0,
+      
+      // Subscription
+      subscriptionStatus: card.subscription_status || 'inactive',
+      subscriptionEnd: card.subscription_end,
+      dailyUses: card.daily_uses || 0,
+      dailyLimit: program.daily_limit || 1,
+    }
+
     // Genera il link Google Wallet
-    const walletLink = await generateWalletLink(
-      program.id,
-      card.id,
-      card.scan_token,
-      card.stamp_count,
-      program.stamps_required,
-      program.name,
-      merchant.name,
-      program.primary_color
-    )
+    const walletLink = await generateWalletLink(walletData)
 
     // Aggiorna la card con il provider wallet
     await supabase
