@@ -368,9 +368,9 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
     },
     
     // ⭐ EFFETTO ARCOBALENO SUL QR CODE!
-    securityAnimation: {
-      animationType: 'FOIL_SHIMMER'
-    },
+    // securityAnimation: {
+    //  animationType: 'FOIL_SHIMMER'
+    // },
     
     reviewStatus: 'UNDER_REVIEW',
   }
