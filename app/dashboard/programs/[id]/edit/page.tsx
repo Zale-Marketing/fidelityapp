@@ -53,6 +53,10 @@ export default function EditProgramPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [externalRewardsUrl, setExternalRewardsUrl] = useState('')
   const [rulesUrl, setRulesUrl] = useState('')
+  // Google Wallet
+const [termsUrl, setTermsUrl] = useState('')
+const [websiteUrl, setWebsiteUrl] = useState('')
+const [walletMessage, setWalletMessage] = useState('')
   
   // Bollini
   const [stampsRequired, setStampsRequired] = useState(10)
@@ -131,6 +135,9 @@ export default function EditProgramPage() {
     setLogoPreview(programData.logo_url || null)
     setExternalRewardsUrl(programData.external_rewards_url || '')
     setRulesUrl(programData.rules_url || '')
+    setTermsUrl(programData.terms_url || '')
+setWebsiteUrl(programData.website_url || '')
+setWalletMessage(programData.wallet_message || '')
     setStampsRequired(programData.stamps_required || 10)
     setRewardDescription(programData.reward_description || '')
     setAllowMultipleRedemption(programData.allow_multiple_redemption ?? true)
@@ -222,6 +229,9 @@ export default function EditProgramPage() {
       logo_url: logoUrl || null,
       external_rewards_url: externalRewardsUrl || null,
       rules_url: rulesUrl || null,
+      terms_url: termsUrl || null,
+website_url: websiteUrl || null,
+wallet_message: walletMessage || null,
       updated_at: new Date().toISOString()
     }
 
@@ -966,7 +976,91 @@ export default function EditProgramPage() {
                 </div>
               </div>
             </div>
+
+            {/* Google Wallet Settings */}
+            <div className="bg-white rounded-2xl shadow-sm p-6">
+              <h2 className="font-bold text-lg mb-4">📱 Google Wallet</h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Personalizza come appare la carta nel Google Wallet dei tuoi clienti
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Link Regolamento (mostrato nel Wallet)
+                  </label>
+                  <input
+                    type="url"
+                    value={termsUrl}
+                    onChange={(e) => setTermsUrl(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    placeholder="https://tuosito.com/regolamento"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">I clienti vedranno questo link nella loro carta</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sito Web Attività
+                  </label>
+                  <input
+                    type="url"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    placeholder="https://tuosito.com"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Messaggio Personalizzato
+                  </label>
+                  <textarea
+                    value={walletMessage}
+                    onChange={(e) => setWalletMessage(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    rows={2}
+                    placeholder="es. Grazie per essere nostro cliente! Presenta la carta ad ogni acquisto."
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Questo messaggio appare nella carta Google Wallet</p>
+                </div>
+                
+                <div className="bg-indigo-50 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">💡</span>
+                    <div>
+                      <p className="font-medium text-indigo-900">Come funziona</p>
+                      <p className="text-sm text-indigo-700 mt-1">
+                        Quando un cliente aggiunge la carta al Google Wallet, vedrà il logo, 
+                        i colori e i link che hai configurato. L&apos;immagine della carta si aggiorna 
+                        automaticamente con i bollini/punti/credito attuali.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">⚠️</span>
+                    <div>
+                      <p className="font-medium text-amber-900">Importante</p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        Se modifichi il <strong>logo</strong> o il <strong>nome del programma</strong>, 
+                        le carte già salvate nel wallet dei clienti manterranno i dati precedenti. 
+                        Solo le nuove carte mostreranno le modifiche. Questo è un limite tecnico di Google Wallet.
+                      </p>
+                      <p className="text-sm text-amber-700 mt-2">
+                        <strong>Consiglio:</strong> Configura logo e nome definitivi prima di distribuire le carte ai clienti.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Preview Column */}
 
           {/* Preview Column */}
           <div className="lg:sticky lg:top-6 h-fit">

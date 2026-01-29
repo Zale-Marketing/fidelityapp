@@ -10,33 +10,40 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type') || 'stamps'
   const color = searchParams.get('color') || '#6366f1'
   
-  // Stamps params
+  // Stamps
   const stamps = parseInt(searchParams.get('stamps') || '0')
   const total = parseInt(searchParams.get('total') || '10')
   
-  // Points params
+  // Points
   const points = parseInt(searchParams.get('points') || '0')
   const goal = parseInt(searchParams.get('goal') || '100')
   
-  // Cashback params
+  // Cashback
   const cashback = searchParams.get('cashback') || '0.00'
   const percent = searchParams.get('percent') || '5'
   
-  // Tiers params
+  // Tiers
   const tier = searchParams.get('tier') || 'Base'
   const discount = searchParams.get('discount') || '0'
   const spent = searchParams.get('spent') || '0'
+  const nextTier = searchParams.get('next') || ''
+  const nextMin = searchParams.get('nextmin') || '0'
   
-  // Subscription params
+  // Subscription
   const status = searchParams.get('status') || 'expired'
   const end = searchParams.get('end') || ''
   const uses = parseInt(searchParams.get('uses') || '0')
   const limit = parseInt(searchParams.get('limit') || '1')
+  
+  // Missions
+  const activeMissions = parseInt(searchParams.get('active') || '0')
+  const completedMissions = parseInt(searchParams.get('completed') || '0')
 
   let content: React.ReactElement
 
   switch (type) {
     case 'stamps':
+      const stampsPerRow = Math.min(total, 5)
       content = (
         <div style={{
           display: 'flex',
@@ -48,27 +55,36 @@ export async function GET(request: NextRequest) {
           backgroundColor: color,
           padding: '20px',
         }}>
-          <div style={{ display: 'flex', fontSize: 24, color: 'white', marginBottom: 10 }}>Bollini</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+            Carta Bollini
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', maxWidth: 220 }}>
             {Array.from({ length: Math.min(total, 10) }).map((_, i) => (
               <div key={i} style={{
                 display: 'flex',
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                backgroundColor: i < stamps ? '#fff' : 'rgba(255,255,255,0.3)',
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: i < stamps ? '#fff' : 'rgba(255,255,255,0.25)',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 18,
+                fontSize: 16,
                 color: color,
+                fontWeight: 'bold',
               }}>
                 {i < stamps ? 'V' : ''}
               </div>
             ))}
           </div>
-          <div style={{ display: 'flex', fontSize: 32, color: 'white', marginTop: 15, fontWeight: 'bold' }}>
-            {stamps}/{total}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginTop: 12 }}>
+            <div style={{ display: 'flex', fontSize: 42, color: 'white', fontWeight: 'bold' }}>{stamps}</div>
+            <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>/ {total}</div>
           </div>
+          {stamps >= total && (
+            <div style={{ display: 'flex', fontSize: 14, color: '#fef08a', marginTop: 4, fontWeight: 'bold' }}>
+              PREMIO DISPONIBILE!
+            </div>
+          )}
         </div>
       )
       break
@@ -86,15 +102,17 @@ export async function GET(request: NextRequest) {
           backgroundColor: color,
           padding: '20px',
         }}>
-          <div style={{ display: 'flex', fontSize: 24, color: 'white', marginBottom: 5 }}>Punti</div>
-          <div style={{ display: 'flex', fontSize: 48, color: 'white', fontWeight: 'bold' }}>{points}</div>
+          <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>
+            I tuoi Punti
+          </div>
+          <div style={{ display: 'flex', fontSize: 52, color: 'white', fontWeight: 'bold' }}>{points}</div>
           <div style={{ 
             display: 'flex',
-            width: '80%', 
-            height: 12, 
-            backgroundColor: 'rgba(255,255,255,0.3)', 
-            borderRadius: 6,
-            marginTop: 10,
+            width: '85%', 
+            height: 10, 
+            backgroundColor: 'rgba(255,255,255,0.25)', 
+            borderRadius: 5,
+            marginTop: 12,
             overflow: 'hidden'
           }}>
             <div style={{ 
@@ -102,11 +120,11 @@ export async function GET(request: NextRequest) {
               width: `${pointsProgress}%`, 
               height: '100%', 
               backgroundColor: 'white',
-              borderRadius: 6,
+              borderRadius: 5,
             }} />
           </div>
-          <div style={{ display: 'flex', fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 5 }}>
-            {points}/{goal} per il premio
+          <div style={{ display: 'flex', fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>
+            {points >= goal ? 'Premio disponibile!' : `${goal - points} punti al premio`}
           </div>
         </div>
       )
@@ -124,21 +142,23 @@ export async function GET(request: NextRequest) {
           backgroundColor: color,
           padding: '20px',
         }}>
-          <div style={{ display: 'flex', fontSize: 24, color: 'white', marginBottom: 5 }}>Cashback</div>
-          <div style={{ display: 'flex', fontSize: 48, color: 'white', fontWeight: 'bold' }}>EUR {cashback}</div>
-          <div style={{ display: 'flex', fontSize: 18, color: 'rgba(255,255,255,0.8)', marginTop: 5 }}>
-            credito disponibile
+          <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>
+            Il tuo Credito
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline' }}>
+            <div style={{ display: 'flex', fontSize: 24, color: 'white', marginRight: 4 }}>EUR</div>
+            <div style={{ display: 'flex', fontSize: 52, color: 'white', fontWeight: 'bold' }}>{cashback}</div>
           </div>
           <div style={{ 
             display: 'flex',
             fontSize: 14, 
             color: 'white', 
             backgroundColor: 'rgba(255,255,255,0.2)',
-            padding: '5px 15px',
+            padding: '6px 16px',
             borderRadius: 20,
-            marginTop: 10
+            marginTop: 12
           }}>
-            Guadagni {percent}% su ogni acquisto
+            +{percent}% su ogni acquisto
           </div>
         </div>
       )
@@ -156,24 +176,29 @@ export async function GET(request: NextRequest) {
           backgroundColor: color,
           padding: '20px',
         }}>
-          <div style={{ display: 'flex', fontSize: 24, color: 'white', marginBottom: 5 }}>Livello VIP</div>
-          <div style={{ display: 'flex', fontSize: 40, color: 'white', fontWeight: 'bold' }}>{tier}</div>
+          <div style={{ display: 'flex', fontSize: 18, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>
+            Il tuo Livello
+          </div>
+          <div style={{ display: 'flex', fontSize: 36, color: 'white', fontWeight: 'bold' }}>{tier}</div>
           {parseInt(discount) > 0 && (
             <div style={{ 
               display: 'flex',
-              fontSize: 24, 
-              color: 'white', 
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              padding: '5px 20px',
-              borderRadius: 20,
-              marginTop: 10
+              fontSize: 22, 
+              color: '#fef08a', 
+              fontWeight: 'bold',
+              marginTop: 4
             }}>
-              -{discount}% su tutto
+              -{discount}% SCONTO
             </div>
           )}
-          <div style={{ display: 'flex', fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 10 }}>
+          <div style={{ display: 'flex', fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>
             Spesa totale: EUR {spent}
           </div>
+          {nextTier && (
+            <div style={{ display: 'flex', fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
+              Prossimo: {nextTier} (EUR {nextMin})
+            </div>
+          )}
         </div>
       )
       break
@@ -191,26 +216,80 @@ export async function GET(request: NextRequest) {
           backgroundColor: isActive ? color : '#6b7280',
           padding: '20px',
         }}>
-          <div style={{ display: 'flex', fontSize: 48 }}>{isActive ? 'OK' : 'X'}</div>
-          <div style={{ display: 'flex', fontSize: 28, color: 'white', fontWeight: 'bold', marginTop: 5 }}>
-            {isActive ? 'ATTIVO' : 'SCADUTO'}
+          <div style={{ 
+            display: 'flex', 
+            fontSize: 40,
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {isActive ? 'OK' : 'X'}
+          </div>
+          <div style={{ display: 'flex', fontSize: 26, color: 'white', fontWeight: 'bold', marginTop: 8 }}>
+            {isActive ? 'ABBONAMENTO ATTIVO' : 'SCADUTO'}
           </div>
           {isActive && end && (
-            <div style={{ display: 'flex', fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 5 }}>
-              Fino al {end}
+            <div style={{ display: 'flex', fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
+              Valido fino al {end}
             </div>
           )}
           {isActive && (
             <div style={{ 
               display: 'flex',
-              fontSize: 18, 
+              fontSize: 16, 
               color: 'white', 
               backgroundColor: 'rgba(255,255,255,0.2)',
-              padding: '5px 15px',
+              padding: '6px 16px',
               borderRadius: 20,
               marginTop: 10
             }}>
               {uses}/{limit} utilizzi oggi
+            </div>
+          )}
+        </div>
+      )
+      break
+
+    case 'missions':
+      content = (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          height: '100%',
+          backgroundColor: color,
+          padding: '20px',
+        }}>
+          <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+            Le tue Missioni
+          </div>
+          <div style={{ display: 'flex', gap: 20 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ display: 'flex', fontSize: 42, color: 'white', fontWeight: 'bold' }}>{activeMissions}</div>
+              <div style={{ display: 'flex', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Attive</div>
+            </div>
+            <div style={{ display: 'flex', width: 2, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ display: 'flex', fontSize: 42, color: '#fef08a', fontWeight: 'bold' }}>{completedMissions}</div>
+              <div style={{ display: 'flex', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Completate</div>
+            </div>
+          </div>
+          {activeMissions > 0 && (
+            <div style={{ 
+              display: 'flex',
+              fontSize: 14, 
+              color: 'white', 
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              padding: '6px 16px',
+              borderRadius: 20,
+              marginTop: 12
+            }}>
+              Completa le missioni per premi extra!
             </div>
           )}
         </div>

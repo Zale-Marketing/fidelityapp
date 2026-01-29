@@ -15,10 +15,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Card ID mancante' }, { status: 400 })
     }
 
-    // Carica la card
+    // Carica la card con programma e cliente
     const { data: card, error: cardError } = await supabase
       .from('cards')
-      .select('*')
+      .select(`
+        *,
+        programs (*),
+        card_holders (*),
+        merchants (*)
+      `)
       .eq('id', cardId)
       .single()
 
@@ -26,75 +31,102 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Card non trovata' }, { status: 404 })
     }
 
-    // Carica il programma
-    const { data: program, error: programError } = await supabase
-      .from('programs')
-      .select('*')
-      .eq('id', card.program_id)
-      .single()
+    const program = card.programs
+    const merchant = card.merchants
+    const customer = card.card_holders
 
-    if (programError || !program) {
-      return NextResponse.json({ error: 'Programma non trovato' }, { status: 404 })
-    }
-
-    // Carica il merchant
-    const { data: merchant } = await supabase
-      .from('merchants')
-      .select('name, logo_url')
-      .eq('id', card.merchant_id)
-      .single()
-
-    // Per i programmi tiers, carica lo sconto attuale
+    // Per i programmi tiers, carica anche i livelli
     let tierDiscount = 0
-    if (program.program_type === 'tiers' && card.current_tier) {
-      const { data: tier } = await supabase
+    let nextTierName = ''
+    let nextTierMinSpend = 0
+    
+    if (program.program_type === 'tiers') {
+      const { data: tiers } = await supabase
         .from('tiers')
-        .select('discount_percent')
+        .select('*')
         .eq('program_id', program.id)
-        .eq('name', card.current_tier)
-        .single()
+        .order('min_spend', { ascending: true })
       
-      if (tier) {
-        tierDiscount = tier.discount_percent || 0
+      if (tiers) {
+        for (let i = 0; i < tiers.length; i++) {
+          const tier = tiers[i]
+          if (tier.name === card.current_tier) {
+            tierDiscount = tier.discount_percent || 0
+            if (i + 1 < tiers.length) {
+              nextTierName = tiers[i + 1].name
+              nextTierMinSpend = tiers[i + 1].min_spend
+            }
+            break
+          }
+        }
+        if (!card.current_tier && tiers.length > 0) {
+          nextTierName = tiers[0].name
+          nextTierMinSpend = tiers[0].min_spend
+        }
       }
     }
 
-    const programType = program.program_type || 'stamps'
+    // Conta missioni
+    let activeMissions = 0
+    let completedMissions = 0
+    if (program.program_type === 'missions') {
+      const { count: activeCount } = await supabase
+        .from('card_missions')
+        .select('*', { count: 'exact', head: true })
+        .eq('card_id', cardId)
+        .eq('is_completed', false)
+      
+      const { count: completedCount } = await supabase
+        .from('card_missions')
+        .select('*', { count: 'exact', head: true })
+        .eq('card_id', cardId)
+        .eq('is_completed', true)
+      
+      activeMissions = activeCount || 0
+      completedMissions = completedCount || 0
+    }
 
-    // Aggiorna il wallet con la nuova struttura
+    // Aggiorna il wallet
     await updateWalletCard({
       programId: program.id,
       cardId: card.id,
       scanToken: card.scan_token,
+      
       programName: program.name,
       issuerName: merchant?.name || 'Merchant',
-      backgroundColor: program.primary_color || '#6366f1',
-      logoUrl: program.logo_url || merchant?.logo_url,
-      programType: programType as any,
+      programType: program.program_type || 'stamps',
       
-      // Stamps
+      backgroundColor: program.primary_color,
+      logoUrl: program.logo_url || merchant?.logo_url,
+      
+      rewardDescription: program.reward_description || program.reward_text,
+      
       stampCount: card.current_stamps || card.stamp_count || 0,
       stampsRequired: program.stamps_required || 10,
       
-      // Points
       pointsBalance: card.points_balance || 0,
       pointsForReward: program.stamps_required || 100,
       
-      // Cashback
       cashbackBalance: card.cashback_balance || 0,
       cashbackPercent: program.cashback_percent || 5,
       
-      // Tiers
       currentTier: card.current_tier || 'Base',
-      tierDiscount: tierDiscount,
+      tierDiscount,
       totalSpent: card.total_spent || 0,
+      nextTierName,
+      nextTierMinSpend,
       
-      // Subscription
       subscriptionStatus: card.subscription_status || 'inactive',
       subscriptionEnd: card.subscription_end,
       dailyUses: card.daily_uses || 0,
       dailyLimit: program.daily_limit || 1,
-    })
+      
+      activeMissions,
+      completedMissions,
+      
+      customerName: customer?.full_name,
+      customerEmail: customer?.email,
+    } as any)
 
     return NextResponse.json({ success: true })
 
