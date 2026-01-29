@@ -35,7 +35,7 @@ export async function GET(request: Request) {
   const programType = program.program_type || 'stamps'
   const primaryColor = program.primary_color || '#6366f1'
 
-  // 2. Fetch rewards SEPARATAMENTE (la relazione nested non funziona)
+  // 2. Fetch rewards SEPARATAMENTE
   const { data: rewards } = await supabase
     .from('rewards')
     .select('*')
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
       imageContent = generateStampsLayout(card, program, primaryColor, intermediateRewards)
       break
     case 'points':
-      imageContent = generatePointsLayout(card, program, primaryColor, intermediateRewards)
+      imageContent = generatePointsLayout(card, program, primaryColor)
       break
     case 'cashback':
       imageContent = generateCashbackLayout(card, program, primaryColor)
@@ -116,7 +116,6 @@ export async function GET(request: Request) {
     }
   )
 
-  // Headers NO-CACHE per aggiornamento
   return new Response(imageResponse.body, {
     headers: {
       'Content-Type': 'image/png',
@@ -128,23 +127,61 @@ export async function GET(request: Request) {
 }
 
 // ============================================
-// 🎫 STAMPS / BOLLINI LAYOUT - FONT GIGANTI
+// 🎫 STAMPS / BOLLINI LAYOUT
 // ============================================
 function generateStampsLayout(card: any, program: any, color: string, rewards: any[]) {
   const stamps = card.current_stamps || card.stamp_count || card.stamps || 0
   const total = program.stamps_required || 10
   const rewardDesc = program.reward_description || program.reward_text || 'Premio'
   
-  // Trova il prossimo premio intermedio (che non sia il finale)
+  // Prossimo premio intermedio (non il finale)
   const nextReward = rewards.find((r: any) => r.stamps_required > stamps && r.stamps_required < total)
-  const completedRewards = rewards.filter((r: any) => r.stamps_required <= stamps)
   
   // Max 10 bollini per riga
   const stampsPerRow = Math.min(total, 10)
   const rows = Math.ceil(total / stampsPerRow)
-  
-  // Dimensione bollini dinamica
   const stampSize = total <= 10 ? 28 : 22
+
+  // Genera le righe di bollini
+  const stampRows = []
+  for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+    const startIdx = rowIndex * stampsPerRow
+    const endIdx = Math.min(startIdx + stampsPerRow, total)
+    const rowStamps = []
+    
+    for (let i = startIdx; i < endIdx; i++) {
+      const isFilled = i < stamps
+      rowStamps.push(
+        <div
+          key={i}
+          style={{
+            width: stampSize,
+            height: stampSize,
+            borderRadius: '50%',
+            backgroundColor: isFilled ? 'white' : 'rgba(255,255,255,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {isFilled && (
+            <div style={{
+              width: stampSize * 0.5,
+              height: stampSize * 0.5,
+              borderRadius: '50%',
+              backgroundColor: color,
+            }} />
+          )}
+        </div>
+      )
+    }
+    
+    stampRows.push(
+      <div key={rowIndex} style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+        {rowStamps}
+      </div>
+    )
+  }
 
   return (
     <div style={{
@@ -156,8 +193,9 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
       width: '100%',
       height: '100%',
     }}>
-      {/* Titolo GRANDE */}
+      {/* Titolo */}
       <div style={{ 
+        display: 'flex',
         fontSize: 42, 
         color: 'rgba(255,255,255,0.9)', 
         fontWeight: 700,
@@ -167,7 +205,7 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
         I TUOI BOLLINI
       </div>
       
-      {/* Contatore GIGANTE */}
+      {/* Contatore */}
       <div style={{ 
         display: 'flex',
         alignItems: 'baseline',
@@ -195,57 +233,16 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
         gap: 4,
         marginBottom: 10,
       }}>
-        {Array.from({ length: rows }).map((_, rowIndex) => {
-          const startIdx = rowIndex * stampsPerRow
-          const endIdx = Math.min(startIdx + stampsPerRow, total)
-          const rowStamps = endIdx - startIdx
-          
-          return (
-            <div key={rowIndex} style={{
-              display: 'flex',
-              gap: 6,
-              justifyContent: 'center',
-            }}>
-              {Array.from({ length: rowStamps }).map((_, i) => {
-                const stampIndex = startIdx + i
-                const isFilled = stampIndex < stamps
-                
-                return (
-                  <div
-                    key={stampIndex}
-                    style={{
-                      width: stampSize,
-                      height: stampSize,
-                      borderRadius: '50%',
-                      backgroundColor: isFilled ? 'white' : 'rgba(255,255,255,0.3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {isFilled && (
-                      <div style={{
-                        width: stampSize * 0.5,
-                        height: stampSize * 0.5,
-                        borderRadius: '50%',
-                        backgroundColor: color,
-                      }} />
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )
-        })}
+        {stampRows}
       </div>
       
       {/* Premio */}
       {stamps >= total ? (
         <div style={{
+          display: 'flex',
           backgroundColor: 'rgba(255,255,255,0.25)',
           padding: '8px 24px',
           borderRadius: 12,
-          display: 'flex',
           alignItems: 'center',
           gap: 8,
         }}>
@@ -269,6 +266,7 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
         </div>
       ) : (
         <div style={{
+          display: 'flex',
           fontSize: 26,
           color: 'white',
           fontWeight: 600,
@@ -283,14 +281,11 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
 // ============================================
 // ⭐ POINTS / PUNTI LAYOUT
 // ============================================
-function generatePointsLayout(card: any, program: any, color: string, rewards: any[]) {
+function generatePointsLayout(card: any, program: any, color: string) {
   const points = card.points_balance || card.points || 0
   const pointsRequired = program.stamps_required || 100
   const eurosPerPoint = program.points_per_euro || 1
-  const rewardDesc = program.reward_description || 'Premio'
   const progress = Math.min((points / pointsRequired) * 100, 100)
-  
-  const nextReward = rewards.find((r: any) => r.stamps_required > points)
 
   return (
     <div style={{
@@ -304,6 +299,7 @@ function generatePointsLayout(card: any, program: any, color: string, rewards: a
     }}>
       {/* Titolo */}
       <div style={{ 
+        display: 'flex',
         fontSize: 42, 
         color: 'rgba(255,255,255,0.9)', 
         fontWeight: 700,
@@ -313,8 +309,9 @@ function generatePointsLayout(card: any, program: any, color: string, rewards: a
         I TUOI PUNTI
       </div>
       
-      {/* Punti GIGANTI */}
+      {/* Punti */}
       <div style={{ 
+        display: 'flex',
         fontSize: 120, 
         fontWeight: 800, 
         color: 'white',
@@ -326,13 +323,13 @@ function generatePointsLayout(card: any, program: any, color: string, rewards: a
       
       {/* Barra progresso */}
       <div style={{
+        display: 'flex',
         width: '85%',
         height: 24,
         backgroundColor: 'rgba(255,255,255,0.25)',
         borderRadius: 12,
         marginBottom: 8,
         overflow: 'hidden',
-        display: 'flex',
       }}>
         <div style={{
           width: `${progress}%`,
@@ -344,6 +341,7 @@ function generatePointsLayout(card: any, program: any, color: string, rewards: a
       
       {/* Info */}
       <div style={{
+        display: 'flex',
         fontSize: 28,
         color: 'rgba(255,255,255,0.9)',
         marginBottom: 4,
@@ -353,6 +351,7 @@ function generatePointsLayout(card: any, program: any, color: string, rewards: a
       
       {/* Conversione */}
       <div style={{
+        display: 'flex',
         fontSize: 20,
         color: 'rgba(255,255,255,0.6)',
       }}>
@@ -383,6 +382,7 @@ function generateCashbackLayout(card: any, program: any, color: string) {
     }}>
       {/* Titolo */}
       <div style={{ 
+        display: 'flex',
         fontSize: 42, 
         color: 'rgba(255,255,255,0.9)', 
         fontWeight: 700,
@@ -392,7 +392,7 @@ function generateCashbackLayout(card: any, program: any, color: string) {
         IL TUO CREDITO
       </div>
       
-      {/* Importo GIGANTE */}
+      {/* Importo */}
       <div style={{ 
         display: 'flex',
         alignItems: 'baseline',
@@ -406,6 +406,7 @@ function generateCashbackLayout(card: any, program: any, color: string) {
       
       {/* Percentuale */}
       <div style={{
+        display: 'flex',
         fontSize: 32,
         color: 'rgba(255,255,255,0.9)',
         marginBottom: 10,
@@ -417,6 +418,7 @@ function generateCashbackLayout(card: any, program: any, color: string) {
       {/* Stato */}
       {canRedeem ? (
         <div style={{
+          display: 'flex',
           backgroundColor: 'rgba(255,255,255,0.25)',
           padding: '10px 30px',
           borderRadius: 16,
@@ -427,6 +429,7 @@ function generateCashbackLayout(card: any, program: any, color: string) {
         </div>
       ) : (
         <div style={{
+          display: 'flex',
           fontSize: 22,
           color: 'rgba(255,255,255,0.6)',
         }}>
@@ -466,6 +469,7 @@ function generateTiersLayout(card: any, program: any, color: string) {
     }}>
       {/* Titolo */}
       <div style={{ 
+        display: 'flex',
         fontSize: 42, 
         color: 'rgba(255,255,255,0.9)', 
         fontWeight: 700,
@@ -475,8 +479,9 @@ function generateTiersLayout(card: any, program: any, color: string) {
         IL TUO LIVELLO
       </div>
       
-      {/* Nome livello GIGANTE */}
+      {/* Nome livello */}
       <div style={{ 
+        display: 'flex',
         fontSize: 90, 
         fontWeight: 800, 
         color: 'white',
@@ -489,6 +494,7 @@ function generateTiersLayout(card: any, program: any, color: string) {
       
       {/* Spesa totale */}
       <div style={{
+        display: 'flex',
         backgroundColor: 'rgba(255,255,255,0.2)',
         padding: '10px 30px',
         borderRadius: 16,
@@ -521,80 +527,104 @@ function generateSubscriptionLayout(card: any, program: any, color: string) {
   const isActive = status === 'active'
   const usesRemaining = Math.max(0, dailyLimit - usesToday)
 
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '12px 30px',
-      width: '100%',
-      height: '100%',
-    }}>
-      {/* Titolo */}
-      <div style={{ 
-        fontSize: 42, 
-        color: 'rgba(255,255,255,0.9)', 
-        fontWeight: 700,
-        marginBottom: 8,
-        letterSpacing: 2,
+  if (isActive) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '12px 30px',
+        width: '100%',
+        height: '100%',
       }}>
-        ABBONAMENTO
-      </div>
-      
-      {isActive ? (
-        <>
-          {/* Badge attivo */}
-          <div style={{
-            backgroundColor: 'rgba(34,197,94,0.4)',
-            padding: '6px 24px',
-            borderRadius: 20,
-            marginBottom: 10,
-          }}>
-            <span style={{ fontSize: 28, color: 'white', fontWeight: 700 }}>ATTIVO</span>
-          </div>
-          
-          {/* Prezzo */}
-          <div style={{ 
-            display: 'flex',
-            alignItems: 'baseline',
-            marginBottom: 12,
-          }}>
-            <span style={{ fontSize: 80, fontWeight: 800, color: 'white' }}>€{price}</span>
-            <span style={{ fontSize: 30, color: 'rgba(255,255,255,0.7)', marginLeft: 8 }}>/{periodLabel}</span>
-          </div>
-          
-          {/* Utilizzi */}
-          <div style={{
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            padding: '10px 30px',
-            borderRadius: 16,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}>
-            <span style={{ fontSize: 22, color: 'rgba(255,255,255,0.8)' }}>Utilizzi oggi</span>
-            <span style={{ fontSize: 50, fontWeight: 800, color: 'white', lineHeight: 1 }}>
-              {usesRemaining} / {dailyLimit}
-            </span>
-          </div>
-        </>
-      ) : (
-        <>
-          <div style={{
-            backgroundColor: 'rgba(239,68,68,0.4)',
-            padding: '10px 30px',
-            borderRadius: 20,
-            marginBottom: 16,
-          }}>
-            <span style={{ fontSize: 32, color: 'white', fontWeight: 700 }}>SCADUTO</span>
-          </div>
-          
-          <span style={{ fontSize: 26, color: 'rgba(255,255,255,0.8)' }}>
-            Rinnova per continuare
+        {/* Titolo */}
+        <div style={{ 
+          display: 'flex',
+          fontSize: 42, 
+          color: 'rgba(255,255,255,0.9)', 
+          fontWeight: 700,
+          marginBottom: 8,
+          letterSpacing: 2,
+        }}>
+          ABBONAMENTO
+        </div>
+        
+        {/* Badge attivo */}
+        <div style={{
+          display: 'flex',
+          backgroundColor: 'rgba(34,197,94,0.4)',
+          padding: '6px 24px',
+          borderRadius: 20,
+          marginBottom: 10,
+        }}>
+          <span style={{ fontSize: 28, color: 'white', fontWeight: 700 }}>ATTIVO</span>
+        </div>
+        
+        {/* Prezzo */}
+        <div style={{ 
+          display: 'flex',
+          alignItems: 'baseline',
+          marginBottom: 12,
+        }}>
+          <span style={{ fontSize: 80, fontWeight: 800, color: 'white' }}>€{price}</span>
+          <span style={{ fontSize: 30, color: 'rgba(255,255,255,0.7)', marginLeft: 8 }}>/{periodLabel}</span>
+        </div>
+        
+        {/* Utilizzi */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: 'rgba(255,255,255,0.2)',
+          padding: '10px 30px',
+          borderRadius: 16,
+          alignItems: 'center',
+        }}>
+          <span style={{ fontSize: 22, color: 'rgba(255,255,255,0.8)' }}>Utilizzi oggi</span>
+          <span style={{ fontSize: 50, fontWeight: 800, color: 'white', lineHeight: 1 }}>
+            {usesRemaining} / {dailyLimit}
           </span>
-        </>
-      )}
-    </div>
-  )
+        </div>
+      </div>
+    )
+  } else {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '12px 30px',
+        width: '100%',
+        height: '100%',
+      }}>
+        {/* Titolo */}
+        <div style={{ 
+          display: 'flex',
+          fontSize: 42, 
+          color: 'rgba(255,255,255,0.9)', 
+          fontWeight: 700,
+          marginBottom: 8,
+          letterSpacing: 2,
+        }}>
+          ABBONAMENTO
+        </div>
+        
+        {/* Badge scaduto */}
+        <div style={{
+          display: 'flex',
+          backgroundColor: 'rgba(239,68,68,0.4)',
+          padding: '10px 30px',
+          borderRadius: 20,
+          marginBottom: 16,
+        }}>
+          <span style={{ fontSize: 32, color: 'white', fontWeight: 700 }}>SCADUTO</span>
+        </div>
+        
+        <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.8)' }}>
+          Rinnova per continuare
+        </div>
+      </div>
+    )
+  }
 }
