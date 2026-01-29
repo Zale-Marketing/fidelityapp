@@ -33,7 +33,6 @@ export async function GET(request: NextRequest) {
   const uses = parseInt(searchParams.get('uses') || '0')
   const limit = parseInt(searchParams.get('limit') || '1')
 
-  // Genera l'immagine in base al tipo
   let content: React.ReactElement
 
   switch (type) {
@@ -49,24 +48,25 @@ export async function GET(request: NextRequest) {
           backgroundColor: color,
           padding: '20px',
         }}>
-          <div style={{ fontSize: 24, color: 'white', marginBottom: 10 }}>🎫 Bollini</div>
+          <div style={{ display: 'flex', fontSize: 24, color: 'white', marginBottom: 10 }}>Bollini</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {Array.from({ length: total }).map((_, i) => (
+            {Array.from({ length: Math.min(total, 10) }).map((_, i) => (
               <div key={i} style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: i < stamps ? '#fff' : 'rgba(255,255,255,0.3)',
                 display: 'flex',
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: i < stamps ? '#fff' : 'rgba(255,255,255,0.3)',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 20,
+                fontSize: 18,
+                color: color,
               }}>
-                {i < stamps ? '✓' : ''}
+                {i < stamps ? 'V' : ''}
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 32, color: 'white', marginTop: 15, fontWeight: 'bold' }}>
+          <div style={{ display: 'flex', fontSize: 32, color: 'white', marginTop: 15, fontWeight: 'bold' }}>
             {stamps}/{total}
           </div>
         </div>
@@ -86,9 +86,10 @@ export async function GET(request: NextRequest) {
           backgroundColor: color,
           padding: '20px',
         }}>
-          <div style={{ fontSize: 24, color: 'white', marginBottom: 5 }}>⭐ Punti</div>
-          <div style={{ fontSize: 48, color: 'white', fontWeight: 'bold' }}>{points}</div>
+          <div style={{ display: 'flex', fontSize: 24, color: 'white', marginBottom: 5 }}>Punti</div>
+          <div style={{ display: 'flex', fontSize: 48, color: 'white', fontWeight: 'bold' }}>{points}</div>
           <div style={{ 
+            display: 'flex',
             width: '80%', 
             height: 12, 
             backgroundColor: 'rgba(255,255,255,0.3)', 
@@ -97,13 +98,14 @@ export async function GET(request: NextRequest) {
             overflow: 'hidden'
           }}>
             <div style={{ 
+              display: 'flex',
               width: `${pointsProgress}%`, 
               height: '100%', 
               backgroundColor: 'white',
               borderRadius: 6,
             }} />
           </div>
-          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 5 }}>
+          <div style={{ display: 'flex', fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 5 }}>
             {points}/{goal} per il premio
           </div>
         </div>
@@ -122,12 +124,13 @@ export async function GET(request: NextRequest) {
           backgroundColor: color,
           padding: '20px',
         }}>
-          <div style={{ fontSize: 24, color: 'white', marginBottom: 5 }}>💰 Cashback</div>
-          <div style={{ fontSize: 48, color: 'white', fontWeight: 'bold' }}>€{cashback}</div>
-          <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.8)', marginTop: 5 }}>
+          <div style={{ display: 'flex', fontSize: 24, color: 'white', marginBottom: 5 }}>Cashback</div>
+          <div style={{ display: 'flex', fontSize: 48, color: 'white', fontWeight: 'bold' }}>EUR {cashback}</div>
+          <div style={{ display: 'flex', fontSize: 18, color: 'rgba(255,255,255,0.8)', marginTop: 5 }}>
             credito disponibile
           </div>
           <div style={{ 
+            display: 'flex',
             fontSize: 14, 
             color: 'white', 
             backgroundColor: 'rgba(255,255,255,0.2)',
@@ -153,10 +156,11 @@ export async function GET(request: NextRequest) {
           backgroundColor: color,
           padding: '20px',
         }}>
-          <div style={{ fontSize: 24, color: 'white', marginBottom: 5 }}>👑 Livello VIP</div>
-          <div style={{ fontSize: 40, color: 'white', fontWeight: 'bold' }}>{tier}</div>
+          <div style={{ display: 'flex', fontSize: 24, color: 'white', marginBottom: 5 }}>Livello VIP</div>
+          <div style={{ display: 'flex', fontSize: 40, color: 'white', fontWeight: 'bold' }}>{tier}</div>
           {parseInt(discount) > 0 && (
             <div style={{ 
+              display: 'flex',
               fontSize: 24, 
               color: 'white', 
               backgroundColor: 'rgba(255,255,255,0.2)',
@@ -167,8 +171,8 @@ export async function GET(request: NextRequest) {
               -{discount}% su tutto
             </div>
           )}
-          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 10 }}>
-            Spesa totale: €{spent}
+          <div style={{ display: 'flex', fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 10 }}>
+            Spesa totale: EUR {spent}
           </div>
         </div>
       )
@@ -187,17 +191,18 @@ export async function GET(request: NextRequest) {
           backgroundColor: isActive ? color : '#6b7280',
           padding: '20px',
         }}>
-          <div style={{ fontSize: 48 }}>{isActive ? '✅' : '❌'}</div>
-          <div style={{ fontSize: 28, color: 'white', fontWeight: 'bold', marginTop: 5 }}>
+          <div style={{ display: 'flex', fontSize: 48 }}>{isActive ? 'OK' : 'X'}</div>
+          <div style={{ display: 'flex', fontSize: 28, color: 'white', fontWeight: 'bold', marginTop: 5 }}>
             {isActive ? 'ATTIVO' : 'SCADUTO'}
           </div>
           {isActive && end && (
-            <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 5 }}>
+            <div style={{ display: 'flex', fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 5 }}>
               Fino al {end}
             </div>
           )}
           {isActive && (
             <div style={{ 
+              display: 'flex',
               fontSize: 18, 
               color: 'white', 
               backgroundColor: 'rgba(255,255,255,0.2)',
@@ -222,7 +227,7 @@ export async function GET(request: NextRequest) {
           height: '100%',
           backgroundColor: color,
         }}>
-          <div style={{ fontSize: 32, color: 'white' }}>FidelityApp</div>
+          <div style={{ display: 'flex', fontSize: 32, color: 'white' }}>FidelityApp</div>
         </div>
       )
   }
