@@ -43,7 +43,12 @@ export async function GET(request: NextRequest) {
 
   switch (type) {
     case 'stamps':
-      const stampsPerRow = Math.min(total, 5)
+      // Calcola righe: max 5 per riga
+      const rows: number[][] = []
+      for (let i = 0; i < total; i += 5) {
+        rows.push(Array.from({ length: Math.min(5, total - i) }, (_, j) => i + j))
+      }
+      
       content = (
         <div style={{
           display: 'flex',
@@ -52,37 +57,58 @@ export async function GET(request: NextRequest) {
           justifyContent: 'center',
           width: '100%',
           height: '100%',
-          backgroundColor: color,
-          padding: '20px',
+          background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+          padding: '16px',
         }}>
-          <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-            Carta Bollini
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', maxWidth: 220 }}>
-            {Array.from({ length: Math.min(total, 10) }).map((_, i) => (
-              <div key={i} style={{
-                display: 'flex',
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: i < stamps ? '#fff' : 'rgba(255,255,255,0.25)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 16,
-                color: color,
-                fontWeight: 'bold',
-              }}>
-                {i < stamps ? 'V' : ''}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            {rows.map((row, rowIndex) => (
+              <div key={rowIndex} style={{ display: 'flex', gap: '8px' }}>
+                {row.map((i) => (
+                  <div key={i} style={{
+                    display: 'flex',
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: i < stamps ? 'white' : 'rgba(255,255,255,0.25)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    color: color,
+                    border: i < stamps ? 'none' : '2px solid rgba(255,255,255,0.4)',
+                  }}>
+                    {i < stamps ? '✓' : ''}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginTop: 12 }}>
-            <div style={{ display: 'flex', fontSize: 42, color: 'white', fontWeight: 'bold' }}>{stamps}</div>
-            <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>/ {total}</div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            marginTop: '12px',
+            gap: '8px'
+          }}>
+            <span style={{ fontSize: 40, fontWeight: 'bold', color: 'white' }}>{stamps}</span>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>/ {total}</span>
           </div>
           {stamps >= total && (
-            <div style={{ display: 'flex', fontSize: 14, color: '#fef08a', marginTop: 4, fontWeight: 'bold' }}>
-              PREMIO DISPONIBILE!
+            <div style={{ 
+              display: 'flex',
+              backgroundColor: '#fef08a',
+              color: '#854d0e',
+              padding: '4px 12px',
+              borderRadius: 12,
+              fontSize: 12,
+              fontWeight: 'bold',
+              marginTop: '8px'
+            }}>
+              🎁 PREMIO PRONTO!
             </div>
           )}
         </div>
@@ -99,20 +125,22 @@ export async function GET(request: NextRequest) {
           justifyContent: 'center',
           width: '100%',
           height: '100%',
-          backgroundColor: color,
+          background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
           padding: '20px',
         }}>
-          <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>
-            I tuoi Punti
+          <div style={{ display: 'flex', fontSize: 14, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '2px' }}>
+            I tuoi punti
           </div>
-          <div style={{ display: 'flex', fontSize: 52, color: 'white', fontWeight: 'bold' }}>{points}</div>
+          <div style={{ display: 'flex', fontSize: 56, color: 'white', fontWeight: 'bold', marginTop: '4px' }}>
+            {points}
+          </div>
           <div style={{ 
             display: 'flex',
-            width: '85%', 
-            height: 10, 
+            width: '80%', 
+            height: 8, 
             backgroundColor: 'rgba(255,255,255,0.25)', 
-            borderRadius: 5,
-            marginTop: 12,
+            borderRadius: 4,
+            marginTop: '16px',
             overflow: 'hidden'
           }}>
             <div style={{ 
@@ -120,11 +148,11 @@ export async function GET(request: NextRequest) {
               width: `${pointsProgress}%`, 
               height: '100%', 
               backgroundColor: 'white',
-              borderRadius: 5,
+              borderRadius: 4,
             }} />
           </div>
-          <div style={{ display: 'flex', fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>
-            {points >= goal ? 'Premio disponibile!' : `${goal - points} punti al premio`}
+          <div style={{ display: 'flex', fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: '8px' }}>
+            {points >= goal ? '🎁 Premio disponibile!' : `Ancora ${goal - points} per il premio`}
           </div>
         </div>
       )
@@ -139,26 +167,24 @@ export async function GET(request: NextRequest) {
           justifyContent: 'center',
           width: '100%',
           height: '100%',
-          backgroundColor: color,
+          background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
           padding: '20px',
         }}>
-          <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>
-            Il tuo Credito
+          <div style={{ display: 'flex', fontSize: 14, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '2px' }}>
+            Credito disponibile
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline' }}>
-            <div style={{ display: 'flex', fontSize: 24, color: 'white', marginRight: 4 }}>EUR</div>
-            <div style={{ display: 'flex', fontSize: 52, color: 'white', fontWeight: 'bold' }}>{cashback}</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', marginTop: '4px' }}>
+            <span style={{ fontSize: 28, color: 'white', marginRight: '4px' }}>€</span>
+            <span style={{ fontSize: 56, color: 'white', fontWeight: 'bold' }}>{cashback}</span>
           </div>
           <div style={{ 
             display: 'flex',
-            fontSize: 14, 
-            color: 'white', 
             backgroundColor: 'rgba(255,255,255,0.2)',
-            padding: '6px 16px',
+            padding: '8px 16px',
             borderRadius: 20,
-            marginTop: 12
+            marginTop: '16px'
           }}>
-            +{percent}% su ogni acquisto
+            <span style={{ fontSize: 14, color: 'white' }}>+{percent}% su ogni acquisto</span>
           </div>
         </div>
       )
@@ -173,30 +199,35 @@ export async function GET(request: NextRequest) {
           justifyContent: 'center',
           width: '100%',
           height: '100%',
-          backgroundColor: color,
+          background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
           padding: '20px',
         }}>
-          <div style={{ display: 'flex', fontSize: 18, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>
-            Il tuo Livello
+          <div style={{ display: 'flex', fontSize: 14, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '2px' }}>
+            Il tuo livello
           </div>
-          <div style={{ display: 'flex', fontSize: 36, color: 'white', fontWeight: 'bold' }}>{tier}</div>
+          <div style={{ display: 'flex', fontSize: 36, color: 'white', fontWeight: 'bold', marginTop: '8px' }}>
+            {tier}
+          </div>
           {parseInt(discount) > 0 && (
             <div style={{ 
               display: 'flex',
-              fontSize: 22, 
-              color: '#fef08a', 
+              backgroundColor: '#fef08a',
+              color: '#854d0e',
+              padding: '6px 16px',
+              borderRadius: 20,
+              fontSize: 18,
               fontWeight: 'bold',
-              marginTop: 4
+              marginTop: '8px'
             }}>
               -{discount}% SCONTO
             </div>
           )}
-          <div style={{ display: 'flex', fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>
-            Spesa totale: EUR {spent}
+          <div style={{ display: 'flex', fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: '12px' }}>
+            Spesa totale: €{spent}
           </div>
           {nextTier && (
-            <div style={{ display: 'flex', fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
-              Prossimo: {nextTier} (EUR {nextMin})
+            <div style={{ display: 'flex', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+              Prossimo: {nextTier} (€{nextMin})
             </div>
           )}
         </div>
@@ -213,40 +244,40 @@ export async function GET(request: NextRequest) {
           justifyContent: 'center',
           width: '100%',
           height: '100%',
-          backgroundColor: isActive ? color : '#6b7280',
+          background: isActive 
+            ? `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`
+            : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
           padding: '20px',
         }}>
           <div style={{ 
             display: 'flex', 
-            fontSize: 40,
-            width: 60,
-            height: 60,
-            borderRadius: 30,
+            width: 64,
+            height: 64,
+            borderRadius: 32,
             backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
             alignItems: 'center',
             justifyContent: 'center',
+            fontSize: 32,
           }}>
-            {isActive ? 'OK' : 'X'}
+            {isActive ? '✓' : '✗'}
           </div>
-          <div style={{ display: 'flex', fontSize: 26, color: 'white', fontWeight: 'bold', marginTop: 8 }}>
-            {isActive ? 'ABBONAMENTO ATTIVO' : 'SCADUTO'}
+          <div style={{ display: 'flex', fontSize: 24, color: 'white', fontWeight: 'bold', marginTop: '8px' }}>
+            {isActive ? 'ATTIVO' : 'SCADUTO'}
           </div>
           {isActive && end && (
-            <div style={{ display: 'flex', fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
-              Valido fino al {end}
+            <div style={{ display: 'flex', fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
+              Fino al {end}
             </div>
           )}
           {isActive && (
             <div style={{ 
               display: 'flex',
-              fontSize: 16, 
-              color: 'white', 
               backgroundColor: 'rgba(255,255,255,0.2)',
-              padding: '6px 16px',
-              borderRadius: 20,
-              marginTop: 10
+              padding: '6px 14px',
+              borderRadius: 16,
+              marginTop: '12px'
             }}>
-              {uses}/{limit} utilizzi oggi
+              <span style={{ fontSize: 14, color: 'white' }}>{uses}/{limit} utilizzi oggi</span>
             </div>
           )}
         </div>
@@ -262,36 +293,23 @@ export async function GET(request: NextRequest) {
           justifyContent: 'center',
           width: '100%',
           height: '100%',
-          backgroundColor: color,
+          background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
           padding: '20px',
         }}>
-          <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-            Le tue Missioni
+          <div style={{ display: 'flex', fontSize: 14, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '2px' }}>
+            Le tue missioni
           </div>
-          <div style={{ display: 'flex', gap: 20 }}>
+          <div style={{ display: 'flex', gap: '24px', marginTop: '12px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ display: 'flex', fontSize: 42, color: 'white', fontWeight: 'bold' }}>{activeMissions}</div>
-              <div style={{ display: 'flex', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Attive</div>
+              <span style={{ fontSize: 40, color: 'white', fontWeight: 'bold' }}>{activeMissions}</span>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>Attive</span>
             </div>
             <div style={{ display: 'flex', width: 2, backgroundColor: 'rgba(255,255,255,0.3)' }} />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ display: 'flex', fontSize: 42, color: '#fef08a', fontWeight: 'bold' }}>{completedMissions}</div>
-              <div style={{ display: 'flex', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Completate</div>
+              <span style={{ fontSize: 40, color: '#fef08a', fontWeight: 'bold' }}>{completedMissions}</span>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>Completate</span>
             </div>
           </div>
-          {activeMissions > 0 && (
-            <div style={{ 
-              display: 'flex',
-              fontSize: 14, 
-              color: 'white', 
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              padding: '6px 16px',
-              borderRadius: 20,
-              marginTop: 12
-            }}>
-              Completa le missioni per premi extra!
-            </div>
-          )}
         </div>
       )
       break
@@ -304,9 +322,9 @@ export async function GET(request: NextRequest) {
           justifyContent: 'center',
           width: '100%',
           height: '100%',
-          backgroundColor: color,
+          background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
         }}>
-          <div style={{ display: 'flex', fontSize: 32, color: 'white' }}>FidelityApp</div>
+          <span style={{ fontSize: 28, color: 'white', fontWeight: 'bold' }}>FidelityApp</span>
         </div>
       )
   }
