@@ -86,62 +86,14 @@ export type WalletCardData = {
 }
 
 // ============================================================================
-// HERO IMAGE URL - 1032x336 High Resolution
+// HERO IMAGE URL - SEMPLIFICATO con cardId
+// I dati vengono caricati dal database nel route.tsx
+// Il timestamp forza il refresh ad ogni chiamata
 // ============================================================================
 
-function getHeroImageUrl(data: WalletCardData): string {
-  const baseUrl = `${APP_URL}/api/wallet-image`
-  const color = encodeURIComponent(data.backgroundColor || '#6366f1')
-  
-  let params = `type=${data.programType}&color=${color}`
-  
-  switch (data.programType) {
-    case 'stamps':
-      params += `&stamps=${data.stampCount || 0}&total=${data.stampsRequired || 10}`
-      if (data.rewardDescription) params += `&reward=${encodeURIComponent(data.rewardDescription)}`
-      if (data.stampRewards && data.stampRewards.length > 0) {
-        params += `&rewards=${encodeURIComponent(JSON.stringify(data.stampRewards))}`
-      }
-      break
-      
-    case 'points':
-      params += `&points=${data.pointsBalance || 0}&goal=${data.pointsForReward || 100}`
-      if (data.rewardDescription) params += `&reward=${encodeURIComponent(data.rewardDescription)}`
-      if (data.pointsRewards && data.pointsRewards.length > 0) {
-        params += `&rewards=${encodeURIComponent(JSON.stringify(data.pointsRewards))}`
-      }
-      break
-      
-    case 'cashback':
-      params += `&cashback=${(data.cashbackBalance || 0).toFixed(2)}&percent=${data.cashbackPercent || 5}`
-      break
-      
-    case 'tiers':
-      params += `&tier=${encodeURIComponent(data.currentTier || 'Base')}`
-      params += `&discount=${data.tierDiscount || 0}`
-      params += `&spent=${Math.floor(data.totalSpent || 0)}`
-      if (data.nextTierName) {
-        params += `&next=${encodeURIComponent(data.nextTierName)}&nextmin=${data.nextTierMinSpend || 0}`
-      }
-      break
-      
-    case 'subscription':
-      const isActive = data.subscriptionStatus === 'active'
-      params += `&status=${isActive ? 'active' : 'expired'}`
-      if (data.subscriptionEnd) {
-        params += `&end=${encodeURIComponent(new Date(data.subscriptionEnd).toLocaleDateString('it-IT'))}`
-      }
-      params += `&uses=${data.dailyUses || 0}&limit=${data.dailyLimit || 1}`
-      break
-      
-    case 'missions':
-      params += `&active=${data.activeMissions || 0}&completed=${data.completedMissions || 0}`
-      break
-  }
-  
-  params += `&t=${Date.now()}`
-  
-  return `${baseUrl}?${params}`
+function getHeroImageUrl(cardId: string): string {
+  // SEMPLICE: passa solo cardId + timestamp per forzare refresh ISTANTANEO
+  return `${APP_URL}/api/wallet-image?cardId=${cardId}&t=${Date.now()}`
 }
 
 // ============================================================================
@@ -161,7 +113,8 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
   const classId = `${ISSUER_ID}.${cleanProgramId}`
   const objectId = `${ISSUER_ID}.${cleanCardId}`
   
-  const heroImageUrl = getHeroImageUrl(data)
+  // Hero image URL con cardId (i dati vengono caricati dal DB)
+  const heroImageUrl = getHeroImageUrl(data.cardId)
   
   // ========== LOYALTY CLASS ==========
   const loyaltyClass: any = {
@@ -314,7 +267,8 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
   const cleanCardId = sanitizeId(data.cardId)
   const objectId = `${ISSUER_ID}.${cleanCardId}`
   
-  const heroImageUrl = getHeroImageUrl(data)
+  // Hero image URL con cardId e timestamp per refresh istantaneo
+  const heroImageUrl = getHeroImageUrl(data.cardId)
 
   const auth = new GoogleAuth({
     credentials: {
