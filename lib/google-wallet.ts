@@ -23,10 +23,6 @@ function sanitizeId(id: string): string {
   return id.replace(/-/g, '').substring(0, 32)
 }
 
-// ============================================================================
-// TIPI
-// ============================================================================
-
 export type ProgramType = 'stamps' | 'points' | 'cashback' | 'tiers' | 'subscription' | 'missions'
 
 export type WalletCardData = {
@@ -46,45 +42,34 @@ export type WalletCardData = {
   walletMessage?: string
   rewardDescription?: string
   
-  // STAMPS
   stampCount?: number
   stampsRequired?: number
   stampRewards?: Array<{ stamps: number, reward: string }>
   
-  // POINTS
   pointsBalance?: number
   pointsForReward?: number
   pointsRewards?: Array<{ points: number, reward: string }>
   
-  // CASHBACK
   cashbackBalance?: number
   cashbackPercent?: number
   
-  // TIERS
   currentTier?: string
   tierDiscount?: number
   totalSpent?: number
   nextTierName?: string
   nextTierMinSpend?: number
   
-  // SUBSCRIPTION
   subscriptionStatus?: string
   subscriptionEnd?: string
   dailyUses?: number
   dailyLimit?: number
   
-  // MISSIONS
   activeMissions?: number
   completedMissions?: number
   
-  // Customer
   customerName?: string
   customerEmail?: string
 }
-
-// ============================================================================
-// HERO IMAGE URL - 1032x336 High Resolution
-// ============================================================================
 
 function getHeroImageUrl(data: WalletCardData): string {
   const baseUrl = `${APP_URL}/api/wallet-image`
@@ -96,7 +81,6 @@ function getHeroImageUrl(data: WalletCardData): string {
     case 'stamps':
       params += `&stamps=${data.stampCount || 0}&total=${data.stampsRequired || 10}`
       if (data.rewardDescription) params += `&reward=${encodeURIComponent(data.rewardDescription)}`
-      // Premi a step
       if (data.stampRewards && data.stampRewards.length > 0) {
         params += `&rewards=${encodeURIComponent(JSON.stringify(data.stampRewards))}`
       }
@@ -105,7 +89,6 @@ function getHeroImageUrl(data: WalletCardData): string {
     case 'points':
       params += `&points=${data.pointsBalance || 0}&goal=${data.pointsForReward || 100}`
       if (data.rewardDescription) params += `&reward=${encodeURIComponent(data.rewardDescription)}`
-      // Premi a step
       if (data.pointsRewards && data.pointsRewards.length > 0) {
         params += `&rewards=${encodeURIComponent(JSON.stringify(data.pointsRewards))}`
       }
@@ -143,10 +126,6 @@ function getHeroImageUrl(data: WalletCardData): string {
   return `${baseUrl}?${params}`
 }
 
-// ============================================================================
-// GENERA LINK WALLET
-// ============================================================================
-
 export async function generateWalletLink(data: WalletCardData): Promise<string> {
   const PRIVATE_KEY = getPrivateKey()
   
@@ -162,7 +141,7 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
   
   const heroImageUrl = getHeroImageUrl(data)
   
-  // ========== LOYALTY CLASS ==========
+  // LOYALTY CLASS
   const loyaltyClass: any = {
     id: classId,
     issuerName: data.issuerName,
@@ -186,7 +165,6 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
       }
     },
     
-    // ⭐ EFFETTO ARCOBALENO SUL QR CODE
     securityAnimation: {
       animationType: 'FOIL_SHIMMER'
     },
@@ -194,7 +172,7 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
     reviewStatus: 'UNDER_REVIEW',
   }
   
-  // Links nel retro della carta
+  // Links
   const links: any[] = []
   
   if (data.termsUrl) {
@@ -213,7 +191,6 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
     })
   }
   
-  // Powered by Zale Marketing - SEMPRE
   links.push({
     uri: 'https://zalemarketing.com',
     description: 'Powered by Zale Marketing',
@@ -245,33 +222,27 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
     loyaltyClass.messages = messages
   }
 
-  // ========== LOYALTY OBJECT ==========
-  // SOLO nome cliente sopra il QR, niente dati duplicati!
+  // LOYALTY OBJECT - Solo nome cliente, niente dati duplicati
   const loyaltyObject: any = {
     id: objectId,
     classId: classId,
     state: 'ACTIVE',
     
-    // ID univoco
     accountId: data.customerEmail || data.scanToken.substring(0, 12),
-    
-    // SOLO IL NOME del cliente - niente altro!
     accountName: data.customerName || 'Cliente',
     
-    // QR Code
     barcode: {
       type: 'QR_CODE',
       value: data.scanToken,
       alternateText: data.scanToken.substring(0, 8).toUpperCase()
     },
     
-    // Hero image con tutti i dati
     heroImage: {
       sourceUri: { uri: heroImageUrl }
     },
   }
 
-  // ========== GENERA JWT ==========
+  // JWT
   const claims = {
     iss: CLIENT_EMAIL,
     aud: 'google',
@@ -286,10 +257,6 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
   const token = jwt.sign(claims, PRIVATE_KEY, { algorithm: 'RS256' })
   return `https://pay.google.com/gp/v/save/${token}`
 }
-
-// ============================================================================
-// AGGIORNA CARD NEL WALLET
-// ============================================================================
 
 export async function updateWalletCard(data: WalletCardData): Promise<void> {
   const { GoogleAuth } = await import('google-auth-library')
@@ -334,10 +301,6 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
     }
   }
 }
-
-// ============================================================================
-// AGGIORNA CLASSE
-// ============================================================================
 
 export async function updateWalletClass(data: {
   programId: string
