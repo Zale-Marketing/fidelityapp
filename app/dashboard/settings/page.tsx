@@ -4,11 +4,10 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { Profile, Merchant } from '@/lib/types'
 
 export default function SettingsPage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [merchant, setMerchant] = useState<Merchant | null>(null)
+  const [profile, setProfile] = useState<any>(null)
+const [merchant, setMerchant] = useState<any>(null)
   const [businessName, setBusinessName] = useState('')
   const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(true)
