@@ -4,11 +4,10 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { Merchant, Program } from '@/lib/types'
 
 export default function BillingPage() {
-  const [merchant, setMerchant] = useState<Merchant | null>(null)
-  const [programs, setPrograms] = useState<Program[]>([])
+  const [merchant, setMerchant] = useState<any>(null)
+  const [programs, setPrograms] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [upgrading, setUpgrading] = useState(false)
   const router = useRouter()
@@ -56,17 +55,18 @@ export default function BillingPage() {
     loadData()
   }, [router, supabase])
 
+  const isPro = merchant?.plan === 'PRO'
+
   const handleUpgrade = async () => {
     setUpgrading(true)
     
-    // Per ora simuliamo l'upgrade (in futuro qui va Stripe)
     const { error } = await supabase
       .from('merchants')
       .update({ plan: 'PRO' })
       .eq('id', merchant?.id)
 
     if (!error) {
-      setMerchant({ ...merchant!, plan: 'PRO' })
+      setMerchant({ ...merchant, plan: 'PRO' })
       alert('🎉 Upgrade a PRO completato!')
     } else {
       alert('Errore durante upgrade')
@@ -90,7 +90,7 @@ export default function BillingPage() {
       .eq('id', merchant?.id)
 
     if (!error) {
-      setMerchant({ ...merchant!, plan: 'FREE' })
+      setMerchant({ ...merchant, plan: 'FREE' })
     }
   }
 
@@ -101,8 +101,6 @@ export default function BillingPage() {
       </div>
     )
   }
-
-  const isPro = merchant?.plan === 'PRO'
 
   return (
     <div className="min-h-screen bg-gray-100">
