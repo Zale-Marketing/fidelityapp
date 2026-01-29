@@ -85,8 +85,12 @@ export default function NewProgramPage() {
   const [walletMessage, setWalletMessage] = useState('')
   
   // Bollini
-  const [stampsRequired, setStampsRequired] = useState(10)
-  const [rewardDescription, setRewardDescription] = useState('')
+const [stampsRequired, setStampsRequired] = useState(10)
+const [rewardDescription, setRewardDescription] = useState('')
+// NUOVO: Premi intermedi
+const [intermediateRewards, setIntermediateRewards] = useState<{name: string, stamps: number}[]>([])
+const [newRewardName, setNewRewardName] = useState('')
+const [newRewardStamps, setNewRewardStamps] = useState(5)
   
   // Punti
   const [eurosPerPoint, setEurosPerPoint] = useState(1)
@@ -224,9 +228,9 @@ export default function NewProgramPage() {
     // Campi specifici per tipo
     switch (selectedType) {
       case 'stamps':
-        programData.stamps_required = stampsRequired
-        programData.reward_description = rewardDescription
-        break
+  programData.stamps_required = stampsRequired
+  programData.reward_description = rewardDescription
+  break
         
       case 'points':
         programData.points_per_euro = eurosPerPoint
@@ -245,6 +249,7 @@ export default function NewProgramPage() {
         programData.stamps_required = 0
         programData.reward_description = 'Programma VIP a livelli'
         break
+        
         
       case 'subscription':
         programData.subscription_price = subscriptionPrice
@@ -290,6 +295,21 @@ export default function NewProgramPage() {
           })
       }
     }
+    // Se è un programma Stamps con premi intermedi, salvali
+if (selectedType === 'stamps' && data && intermediateRewards.length > 0) {
+  for (const reward of intermediateRewards) {
+    await supabase
+      .from('rewards')
+      .insert({
+        program_id: data.id,
+        merchant_id: merchantId,
+        name: reward.name,
+        description: reward.name,
+        stamps_required: reward.stamps,
+        is_active: true
+      })
+  }
+}
 
     setSaving(false)
     router.push(`/dashboard/programs/${data.id}`)
@@ -458,49 +478,202 @@ export default function NewProgramPage() {
                 <h3 className="font-bold text-lg mb-4">⚙️ Configurazione {selectedTypeData?.name}</h3>
 
                 {/* BOLLINI */}
-                {selectedType === 'stamps' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Quanti bollini per ottenere il premio?
-                      </label>
-                      <div className="flex items-center gap-4">
-                        <input
-                          type="range"
-                          min="5"
-                          max="30"
-                          value={stampsRequired}
-                          onChange={(e) => setStampsRequired(parseInt(e.target.value))}
-                          className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                        />
-                        <div className="w-20 text-center">
-                          <span className="text-3xl font-bold text-indigo-600">{stampsRequired}</span>
-                          <p className="text-xs text-gray-400">bollini</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Qual è il premio finale?
-                      </label>
-                      <input
-                        type="text"
-                        value={rewardDescription}
-                        onChange={(e) => setRewardDescription(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="es. Caffè Gratis, Pizza Omaggio, Sconto 50%..."
-                      />
-                    </div>
-                    
-                    <div className="bg-indigo-50 rounded-xl p-4">
-                      <p className="text-sm text-indigo-700">
-                        💡 <strong>Tip:</strong> Dopo la creazione potrai aggiungere premi intermedi 
-                        (es. a 5 bollini = caffè, a 10 = cornetto, a 20 = colazione)
-                      </p>
-                    </div>
+{selectedType === 'stamps' && (
+  <div className="space-y-6">
+    {/* Premio Finale */}
+    <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-5">
+      <h4 className="font-bold text-indigo-900 mb-3">🏆 Premio Finale</h4>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Quanti bollini per il premio finale?
+          </label>
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min="5"
+              max="30"
+              value={stampsRequired}
+              onChange={(e) => {
+                const newValue = parseInt(e.target.value)
+                setStampsRequired(newValue)
+                // Rimuovi premi intermedi che superano la nuova soglia
+                setIntermediateRewards(prev => prev.filter(r => r.stamps < newValue))
+              }}
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            />
+            <div className="w-20 text-center">
+              <span className="text-3xl font-bold text-indigo-600">{stampsRequired}</span>
+              <p className="text-xs text-gray-400">bollini</p>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Qual è il premio finale?
+          </label>
+          <input
+            type="text"
+            value={rewardDescription}
+            onChange={(e) => setRewardDescription(e.target.value)}
+            className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+            placeholder="es. Colazione Completa Gratis"
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* Premi Intermedi */}
+    <div className="bg-white border-2 border-gray-200 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h4 className="font-bold text-gray-900">🎁 Premi Intermedi</h4>
+          <p className="text-sm text-gray-500">Opzionali - incentivano il cliente durante il percorso</p>
+        </div>
+        {intermediateRewards.length > 0 && (
+          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-sm font-medium">
+            {intermediateRewards.length} premi
+          </span>
+        )}
+      </div>
+
+      {/* Lista premi esistenti */}
+      {intermediateRewards.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {intermediateRewards
+            .sort((a, b) => a.stamps - b.stamps)
+            .map((reward, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-lg">
+                  {reward.stamps}
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">{reward.name}</p>
+                  <p className="text-xs text-gray-500">A {reward.stamps} bollini</p>
+                </div>
+                <button
+                  onClick={() => setIntermediateRewards(prev => prev.filter((_, i) => i !== index))}
+                  className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  🗑️
+                </button>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* Form aggiunta nuovo premio */}
+      <div className="border-2 border-dashed border-gray-300 rounded-xl p-4">
+        <p className="text-sm font-medium text-gray-600 mb-3">➕ Aggiungi premio intermedio</p>
+        
+        <div className="flex gap-3">
+          <div className="w-24">
+            <label className="block text-xs text-gray-500 mb-1">Bollini</label>
+            <select
+              value={newRewardStamps}
+              onChange={(e) => setNewRewardStamps(parseInt(e.target.value))}
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-center font-bold"
+            >
+              {Array.from({ length: stampsRequired - 1 }, (_, i) => i + 1)
+                .filter(n => !intermediateRewards.some(r => r.stamps === n))
+                .map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+            </select>
+          </div>
+          
+          <div className="flex-1">
+            <label className="block text-xs text-gray-500 mb-1">Nome Premio</label>
+            <input
+              type="text"
+              value={newRewardName}
+              onChange={(e) => setNewRewardName(e.target.value)}
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg"
+              placeholder="es. Caffè Gratis"
+            />
+          </div>
+          
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                if (!newRewardName.trim()) {
+                  alert('Inserisci un nome per il premio')
+                  return
+                }
+                if (intermediateRewards.some(r => r.stamps === newRewardStamps)) {
+                  alert('Esiste già un premio a questa soglia!')
+                  return
+                }
+                if (newRewardStamps >= stampsRequired) {
+                  alert('I premi intermedi devono essere PRIMA del premio finale!')
+                  return
+                }
+                setIntermediateRewards(prev => [...prev, { name: newRewardName, stamps: newRewardStamps }])
+                setNewRewardName('')
+                // Imposta prossima soglia disponibile
+                const usedStamps = [...intermediateRewards.map(r => r.stamps), newRewardStamps]
+                const nextAvailable = Array.from({ length: stampsRequired - 1 }, (_, i) => i + 1)
+                  .find(n => !usedStamps.includes(n))
+                if (nextAvailable) setNewRewardStamps(nextAvailable)
+              }}
+              disabled={!newRewardName.trim() || intermediateRewards.length >= stampsRequired - 1}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              Aggiungi
+            </button>
+          </div>
+        </div>
+        
+        {intermediateRewards.length >= stampsRequired - 1 && (
+          <p className="text-amber-600 text-sm mt-2">
+            ⚠️ Hai raggiunto il massimo di premi intermedi possibili
+          </p>
+        )}
+      </div>
+
+      {/* Riepilogo visuale */}
+      {(intermediateRewards.length > 0 || rewardDescription) && (
+        <div className="mt-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4">
+          <p className="text-sm font-medium text-gray-700 mb-3">📋 Percorso premi del cliente:</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-sm">
+              0 🎫
+            </div>
+            
+            {intermediateRewards
+              .sort((a, b) => a.stamps - b.stamps)
+              .map((reward, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-gray-400">→</span>
+                  <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                    {reward.stamps} 🎫 = {reward.name}
                   </div>
-                )}
+                </div>
+              ))}
+            
+            {rewardDescription && (
+              <>
+                <span className="text-gray-400">→</span>
+                <div className="bg-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                  {stampsRequired} 🎫 = {rewardDescription} 🏆
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+    
+    <div className="bg-amber-50 rounded-xl p-4">
+      <p className="text-sm text-amber-700">
+        💡 <strong>Tip:</strong> I premi intermedi mantengono alta la motivazione del cliente. 
+        Un caffè gratis a 5 bollini fa tornare il cliente più spesso rispetto ad aspettare 10 bollini!
+      </p>
+    </div>
+  </div>
+)}
 
                 {/* PUNTI */}
                 {selectedType === 'points' && (
