@@ -86,6 +86,20 @@ export default function StampPage() {
     await processCode(manualCode.trim())
   }
 
+  // 🆕 FUNZIONE PER AGGIORNARE IL WALLET
+  async function updateWallet(cardId: string) {
+    try {
+      await fetch('/api/wallet-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardId })
+      })
+      console.log('✅ Wallet aggiornato')
+    } catch (e) {
+      console.log('⚠️ Errore aggiornamento wallet')
+    }
+  }
+
   async function processCode(code: string) {
     setMode('processing')
     setMessage('Cerco la carta...')
@@ -183,6 +197,9 @@ export default function StampPage() {
       console.error('Errore log transazione:', txError)
     }
 
+    // 🆕 AGGIORNA WALLET
+    await updateWallet(card.id)
+
     const customerName = customer?.full_name || customer?.email || cardData?.customer?.full_name || ''
     
     if (newStamps >= program.stamps_required) {
@@ -248,6 +265,9 @@ export default function StampPage() {
       idempotency_key: `${card.id}-${Date.now()}`
     })
 
+    // 🆕 AGGIORNA WALLET
+    await updateWallet(card.id)
+
     const customerName = customer?.full_name || customer?.email || ''
     const pointsForReward = program.stamps_required || 100
 
@@ -288,6 +308,9 @@ export default function StampPage() {
       cashback_earned: cashbackEarned,
       idempotency_key: `${card.id}-${Date.now()}`
     })
+
+    // 🆕 AGGIORNA WALLET
+    await updateWallet(card.id)
 
     const customerName = customer?.full_name || customer?.email || ''
 
@@ -342,6 +365,9 @@ export default function StampPage() {
       idempotency_key: `${card.id}-${Date.now()}`
     })
 
+    // 🆕 AGGIORNA WALLET
+    await updateWallet(card.id)
+
     const tierChanged = newTier !== card.current_tier
     const customerName = customer?.full_name || customer?.email || ''
     
@@ -364,9 +390,7 @@ export default function StampPage() {
     const now = new Date()
     const subEnd = card.subscription_end ? new Date(card.subscription_end) : null
     
-    // Check if subscription is active
     if (!subEnd || subEnd < now || card.subscription_status !== 'active') {
-      // Subscription not active - show activation option
       setShowActivateSubscription(true)
       setMode('error')
       const customerName = customer?.full_name || customer?.email || 'Cliente'
@@ -412,6 +436,9 @@ export default function StampPage() {
       idempotency_key: `${card.id}-${Date.now()}`
     })
 
+    // 🆕 AGGIORNA WALLET
+    await updateWallet(card.id)
+
     const customerName = customer?.full_name || customer?.email || ''
 
     setMode('success')
@@ -443,7 +470,6 @@ export default function StampPage() {
       return
     }
 
-    // Log activation
     await supabase.from('stamp_transactions').insert({
       card_id: card.id,
       program_id: program.id,
@@ -454,6 +480,9 @@ export default function StampPage() {
       transaction_type: 'subscription_activated',
       idempotency_key: `${card.id}-${Date.now()}`
     })
+
+    // 🆕 AGGIORNA WALLET
+    await updateWallet(card.id)
 
     const customerName = customer?.full_name || customer?.email || ''
     
@@ -501,6 +530,9 @@ export default function StampPage() {
       idempotency_key: `${card.id}-${Date.now()}`
     })
 
+    // 🆕 AGGIORNA WALLET
+    await updateWallet(card.id)
+
     setMode('success')
     setMessage(`💰 Riscattati €${balance.toFixed(2)}!`)
   }
@@ -538,6 +570,9 @@ export default function StampPage() {
       transaction_type: 'reward_redeemed',
       idempotency_key: `${card.id}-${Date.now()}`
     })
+
+    // 🆕 AGGIORNA WALLET
+    await updateWallet(card.id)
 
     setMode('success')
     setMessage(`🎁 Premio riscattato!\n\n"${program.reward_description || program.reward_text || 'Premio'}"\n\nBollini azzerati.`)
@@ -584,6 +619,9 @@ export default function StampPage() {
       idempotency_key: `${card.id}-${Date.now()}`
     })
 
+    // 🆕 AGGIORNA WALLET
+    await updateWallet(card.id)
+
     setMode('success')
     setMessage(`🎁 Premio riscattato!\n\n"${program.reward_description || program.reward_text || 'Sconto'}"\n\nPunti rimanenti: ${newBalance}`)
   }
@@ -612,7 +650,6 @@ export default function StampPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-600 to-indigo-800">
-      {/* Header */}
       <header className="px-6 py-4">
         <Link href="/dashboard" className="inline-flex items-center gap-2 text-white/80 hover:text-white">
           <span>←</span>
@@ -622,7 +659,6 @@ export default function StampPage() {
 
       <main className="p-6 max-w-lg mx-auto">
         
-        {/* READY MODE */}
         {mode === 'ready' && (
           <div className="text-center space-y-8">
             <div>
@@ -649,13 +685,11 @@ export default function StampPage() {
           </div>
         )}
 
-        {/* SCANNING MODE */}
         {mode === 'scanning' && (
           <div className="space-y-4">
             <div className="bg-white rounded-3xl p-4 shadow-xl">
               <div id="qr-reader" className="overflow-hidden rounded-2xl"></div>
             </div>
-
             <button
               onClick={resetScanner}
               className="w-full bg-white/20 text-white py-4 rounded-2xl font-medium hover:bg-white/30"
@@ -665,11 +699,9 @@ export default function StampPage() {
           </div>
         )}
 
-        {/* MANUAL MODE */}
         {mode === 'manual' && (
           <div className="bg-white rounded-3xl p-6 shadow-xl">
             <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">⌨️ Codice Manuale</h2>
-            
             <form onSubmit={handleManualSubmit} className="space-y-4">
               <input
                 type="text"
@@ -679,7 +711,6 @@ export default function StampPage() {
                 placeholder="Incolla codice o URL"
                 autoFocus
               />
-              
               <button
                 type="submit"
                 disabled={!manualCode.trim()}
@@ -688,7 +719,6 @@ export default function StampPage() {
                 Cerca Carta
               </button>
             </form>
-
             <button
               onClick={resetScanner}
               className="w-full mt-4 py-3 text-gray-500 hover:text-gray-700"
@@ -698,7 +728,6 @@ export default function StampPage() {
           </div>
         )}
 
-        {/* PROCESSING */}
         {mode === 'processing' && (
           <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
             <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -706,7 +735,6 @@ export default function StampPage() {
           </div>
         )}
 
-        {/* INPUT AMOUNT */}
         {mode === 'input_amount' && cardData && (
           <div className="space-y-4">
             <div 
@@ -725,9 +753,7 @@ export default function StampPage() {
               
               {cardData.customer && (
                 <div className="bg-white/20 rounded-xl px-4 py-2 mb-3">
-                  <p className="text-sm">
-                    👤 {cardData.customer.full_name || cardData.customer.email || 'Cliente'}
-                  </p>
+                  <p className="text-sm">👤 {cardData.customer.full_name || cardData.customer.email || 'Cliente'}</p>
                 </div>
               )}
 
@@ -756,7 +782,6 @@ export default function StampPage() {
 
             <div className="bg-white rounded-3xl p-6 shadow-xl">
               <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">💶 Importo Speso</h3>
-              
               <form onSubmit={handleAmountSubmit} className="space-y-4">
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-3xl text-gray-400">€</span>
@@ -771,7 +796,6 @@ export default function StampPage() {
                     autoFocus
                   />
                 </div>
-
                 <div className="grid grid-cols-4 gap-2">
                   {[5, 10, 20, 50].map(v => (
                     <button
@@ -784,27 +808,19 @@ export default function StampPage() {
                     </button>
                   ))}
                 </div>
-
                 {amount && parseFloat(amount) > 0 && (
                   <div className="bg-gray-50 rounded-xl p-4 text-center">
                     {cardData.program.program_type === 'points' && (
-                      <p className="text-lg">
-                        Guadagna <span className="font-bold text-green-600 text-2xl">+{Math.floor(parseFloat(amount) / (cardData.program.points_per_euro || 1))}</span> punti
-                      </p>
+                      <p className="text-lg">Guadagna <span className="font-bold text-green-600 text-2xl">+{Math.floor(parseFloat(amount) / (cardData.program.points_per_euro || 1))}</span> punti</p>
                     )}
                     {cardData.program.program_type === 'cashback' && (
-                      <p className="text-lg">
-                        Guadagna <span className="font-bold text-amber-600 text-2xl">+€{(parseFloat(amount) * (cardData.program.cashback_percent || 5) / 100).toFixed(2)}</span> cashback
-                      </p>
+                      <p className="text-lg">Guadagna <span className="font-bold text-amber-600 text-2xl">+€{(parseFloat(amount) * (cardData.program.cashback_percent || 5) / 100).toFixed(2)}</span> cashback</p>
                     )}
                     {cardData.program.program_type === 'tiers' && (
-                      <p className="text-lg">
-                        Nuova spesa totale: <span className="font-bold text-purple-600 text-xl">€{((cardData.card.total_spent || 0) + parseFloat(amount)).toFixed(2)}</span>
-                      </p>
+                      <p className="text-lg">Nuova spesa totale: <span className="font-bold text-purple-600 text-xl">€{((cardData.card.total_spent || 0) + parseFloat(amount)).toFixed(2)}</span></p>
                     )}
                   </div>
                 )}
-
                 <button
                   type="submit"
                   disabled={processing || !amount || parseFloat(amount) <= 0}
@@ -813,7 +829,6 @@ export default function StampPage() {
                   {processing ? '⏳ Attendere...' : '✓ Conferma'}
                 </button>
               </form>
-
               {cardData.program.program_type === 'cashback' && (cardData.card.cashback_balance || 0) >= (cardData.program.min_cashback_redeem || 5) && (
                 <button
                   onClick={redeemCashback}
@@ -822,18 +837,11 @@ export default function StampPage() {
                   💰 Riscatta €{(cardData.card.cashback_balance || 0).toFixed(2)} di credito
                 </button>
               )}
-
-              <button
-                onClick={resetScanner}
-                className="w-full mt-4 py-3 text-gray-500 hover:text-gray-700"
-              >
-                ← Annulla
-              </button>
+              <button onClick={resetScanner} className="w-full mt-4 py-3 text-gray-500 hover:text-gray-700">← Annulla</button>
             </div>
           </div>
         )}
 
-        {/* REWARD READY */}
         {mode === 'reward_ready' && cardData && (
           <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
             <div className="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -841,64 +849,39 @@ export default function StampPage() {
             </div>
             <h2 className="text-3xl font-bold text-yellow-600 mb-4">Premio Disponibile!</h2>
             <p className="text-gray-600 text-lg whitespace-pre-line mb-6">{message}</p>
-            
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <p className="text-sm text-gray-500">Premio</p>
-              <p className="text-xl font-bold text-gray-900">
-                {cardData.program.reward_description || cardData.program.reward_text || 'Premio speciale'}
-              </p>
+              <p className="text-xl font-bold text-gray-900">{cardData.program.reward_description || cardData.program.reward_text || 'Premio speciale'}</p>
             </div>
-            
             <div className="space-y-3">
               {(cardData.program.program_type === 'stamps' || !cardData.program.program_type) && (
-                <button
-                  onClick={redeemStampsReward}
-                  className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg hover:bg-green-600 transition-colors"
-                >
+                <button onClick={redeemStampsReward} className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg hover:bg-green-600 transition-colors">
                   🎁 Riscatta Premio (azzera bollini)
                 </button>
               )}
-              
               {cardData.program.program_type === 'points' && (
-                <button
-                  onClick={redeemPointsReward}
-                  className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg hover:bg-green-600 transition-colors"
-                >
+                <button onClick={redeemPointsReward} className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg hover:bg-green-600 transition-colors">
                   🎁 Riscatta Premio (scala {cardData.program.stamps_required || 100} punti)
                 </button>
               )}
-              
               {cardData.program.program_type === 'cashback' && (cardData.card.cashback_balance || 0) >= (cardData.program.min_cashback_redeem || 5) && (
-                <button
-                  onClick={redeemCashback}
-                  className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg hover:bg-green-600 transition-colors"
-                >
+                <button onClick={redeemCashback} className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg hover:bg-green-600 transition-colors">
                   💰 Riscatta €{(cardData.card.cashback_balance || 0).toFixed(2)} di credito
                 </button>
               )}
-              
               {(cardData.program.program_type === 'stamps' || !cardData.program.program_type) && (
                 <button
-                  onClick={async () => {
-                    await addStamp(cardData.card, cardData.program, cardData.customer)
-                  }}
+                  onClick={async () => { await addStamp(cardData.card, cardData.program, cardData.customer) }}
                   className="w-full bg-indigo-100 text-indigo-700 py-3 rounded-xl font-medium hover:bg-indigo-200 transition-colors"
                 >
                   +1 Aggiungi comunque un bollino
                 </button>
               )}
             </div>
-
-            <button
-              onClick={resetScanner}
-              className="w-full mt-4 py-3 text-gray-500 hover:text-gray-700"
-            >
-              ← Scansiona un'altra carta
-            </button>
+            <button onClick={resetScanner} className="w-full mt-4 py-3 text-gray-500 hover:text-gray-700">← Scansiona un'altra carta</button>
           </div>
         )}
 
-        {/* SUCCESS */}
         {mode === 'success' && (
           <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -906,74 +889,36 @@ export default function StampPage() {
             </div>
             <h2 className="text-3xl font-bold text-green-600 mb-4">Fatto!</h2>
             <p className="text-gray-600 text-lg whitespace-pre-line mb-8">{message}</p>
-            <button
-              onClick={resetScanner}
-              className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-colors"
-            >
+            <button onClick={resetScanner} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-colors">
               📷 Scansiona un'altra carta
             </button>
           </div>
         )}
 
-        {/* ERROR */}
         {mode === 'error' && (
           <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
             <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-5xl">{showActivateSubscription ? '🔄' : '❌'}</span>
             </div>
-            <h2 className="text-3xl font-bold text-red-600 mb-4">
-              {showActivateSubscription ? 'Abbonamento Scaduto' : 'Errore'}
-            </h2>
+            <h2 className="text-3xl font-bold text-red-600 mb-4">{showActivateSubscription ? 'Abbonamento Scaduto' : 'Errore'}</h2>
             <p className="text-gray-600 text-lg whitespace-pre-line mb-6">{message}</p>
             
-            {/* Subscription Activation Options */}
             {showActivateSubscription && cardData && (
               <div className="space-y-3 mb-6">
                 <p className="text-sm text-gray-500 mb-4">Seleziona la durata:</p>
-                
-                {/* Subscription info */}
                 <div className="bg-pink-50 rounded-xl p-4 mb-4">
                   <p className="text-sm text-gray-500">Programma</p>
                   <p className="font-bold text-pink-600">{cardData.program.name}</p>
-                  <p className="text-lg font-bold text-gray-900 mt-2">
-                    €{cardData.program.subscription_price || 0}/{cardData.program.subscription_period || 'mese'}
-                  </p>
+                  <p className="text-lg font-bold text-gray-900 mt-2">€{cardData.program.subscription_price || 0}/{cardData.program.subscription_period || 'mese'}</p>
                 </div>
-                
-                <button
-                  onClick={() => activateSubscription(1)}
-                  className="w-full bg-pink-500 text-white py-4 rounded-2xl font-bold text-lg hover:bg-pink-600 transition-colors"
-                >
-                  🔄 Attiva 1 Mese
-                </button>
-                
-                <button
-                  onClick={() => activateSubscription(3)}
-                  className="w-full bg-pink-400 text-white py-3 rounded-xl font-medium hover:bg-pink-500 transition-colors"
-                >
-                  📅 Attiva 3 Mesi
-                </button>
-                
-                <button
-                  onClick={() => activateSubscription(6)}
-                  className="w-full bg-pink-300 text-white py-3 rounded-xl font-medium hover:bg-pink-400 transition-colors"
-                >
-                  📅 Attiva 6 Mesi
-                </button>
-                
-                <button
-                  onClick={() => activateSubscription(12)}
-                  className="w-full bg-pink-200 text-pink-700 py-3 rounded-xl font-medium hover:bg-pink-300 transition-colors"
-                >
-                  🎉 Attiva 1 Anno
-                </button>
+                <button onClick={() => activateSubscription(1)} className="w-full bg-pink-500 text-white py-4 rounded-2xl font-bold text-lg hover:bg-pink-600 transition-colors">🔄 Attiva 1 Mese</button>
+                <button onClick={() => activateSubscription(3)} className="w-full bg-pink-400 text-white py-3 rounded-xl font-medium hover:bg-pink-500 transition-colors">📅 Attiva 3 Mesi</button>
+                <button onClick={() => activateSubscription(6)} className="w-full bg-pink-300 text-white py-3 rounded-xl font-medium hover:bg-pink-400 transition-colors">📅 Attiva 6 Mesi</button>
+                <button onClick={() => activateSubscription(12)} className="w-full bg-pink-200 text-pink-700 py-3 rounded-xl font-medium hover:bg-pink-300 transition-colors">🎉 Attiva 1 Anno</button>
               </div>
             )}
             
-            <button
-              onClick={resetScanner}
-              className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-colors"
-            >
+            <button onClick={resetScanner} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-colors">
               {showActivateSubscription ? '← Annulla' : '🔄 Riprova'}
             </button>
           </div>
