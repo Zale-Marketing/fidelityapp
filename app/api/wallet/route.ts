@@ -128,14 +128,18 @@ export async function POST(request: NextRequest) {
       customerEmail: customer?.email,
     }
 
-    const walletLink = await generateWalletLink(walletData as any)
-
-    await supabase
-      .from('cards')
-      .update({ wallet_provider: 'google' })
-      .eq('id', cardId)
-
-    return NextResponse.json({ walletLink })
+    console.log('=== WALLET DATA ===')
+    console.log(JSON.stringify(walletData, null, 2))
+    
+    try {
+      const walletLink = await generateWalletLink(walletData as any)
+      console.log('=== WALLET LINK GENERATED ===')
+      return NextResponse.json({ walletLink })
+    } catch (walletError: any) {
+      console.error('=== WALLET GENERATION ERROR ===')
+      console.error(walletError)
+      return NextResponse.json({ error: 'Errore generazione: ' + walletError.message }, { status: 500 })
+    }
 
   } catch (error: any) {
     console.error('Errore generazione wallet link:', error)
