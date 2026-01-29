@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   // Fetch card data with program, merchant, and rewards
   const { data: card, error } = await supabase
-    .from('loyalty_cards')
+    .from('cards')
     .select(`
       *,
       programs (
