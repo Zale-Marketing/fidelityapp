@@ -3,498 +3,469 @@ import { NextRequest } from 'next/server'
 
 export const runtime = 'edge'
 
+// Dimensioni raccomandate da Google Wallet per hero image
 const WIDTH = 1032
 const HEIGHT = 336
+
+function adjustColor(hex: string, amount: number): string {
+  hex = hex.replace('#', '')
+  const num = parseInt(hex, 16)
+  let r = (num >> 16) + amount
+  let g = ((num >> 8) & 0x00FF) + amount
+  let b = (num & 0x0000FF) + amount
+  r = Math.max(0, Math.min(255, r))
+  g = Math.max(0, Math.min(255, g))
+  b = Math.max(0, Math.min(255, b))
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   
   const type = searchParams.get('type') || 'stamps'
   const color = searchParams.get('color') || '#6366f1'
+  const darkerColor = adjustColor(color, -40)
   
+  // STAMPS
   const stamps = parseInt(searchParams.get('stamps') || '0')
-  const total = parseInt(searchParams.get('total') || '10')
+  const totalStamps = parseInt(searchParams.get('total') || '10')
+  const reward = searchParams.get('reward') || ''
+  const rewardsJson = searchParams.get('rewards')
+  let stepRewards: Array<{ stamps?: number, points?: number, reward: string }> = []
+  if (rewardsJson) {
+    try { stepRewards = JSON.parse(decodeURIComponent(rewardsJson)) } catch {}
+  }
   
+  // POINTS
   const points = parseInt(searchParams.get('points') || '0')
   const goal = parseInt(searchParams.get('goal') || '100')
   
-  const cashback = searchParams.get('cashback') || '0.00'
-  const percent = searchParams.get('percent') || '5'
+  // CASHBACK
+  const cashback = parseFloat(searchParams.get('cashback') || '0')
+  const percent = parseInt(searchParams.get('percent') || '5')
   
+  // TIERS
   const tier = searchParams.get('tier') || 'Base'
-  const discount = searchParams.get('discount') || '0'
-  const spent = searchParams.get('spent') || '0'
+  const discount = parseInt(searchParams.get('discount') || '0')
+  const spent = parseInt(searchParams.get('spent') || '0')
   const nextTier = searchParams.get('next') || ''
-  const nextMin = searchParams.get('nextmin') || '0'
+  const nextMin = parseInt(searchParams.get('nextmin') || '0')
   
-  const status = searchParams.get('status') || 'expired'
-  const end = searchParams.get('end') || ''
+  // SUBSCRIPTION
+  const status = searchParams.get('status') || 'active'
+  const endDate = searchParams.get('end') || ''
   const uses = parseInt(searchParams.get('uses') || '0')
   const limit = parseInt(searchParams.get('limit') || '1')
   
+  // MISSIONS
   const activeMissions = parseInt(searchParams.get('active') || '0')
   const completedMissions = parseInt(searchParams.get('completed') || '0')
+
+  // ========================================================================
+  // RENDER CONTENT BASED ON TYPE
+  // ========================================================================
   
-  const reward = searchParams.get('reward') || ''
+  let content
   
-  let stepRewards: Array<{ stamps?: number, points?: number, reward: string }> = []
-  try {
-    const rewardsParam = searchParams.get('rewards')
-    if (rewardsParam) {
-      stepRewards = JSON.parse(decodeURIComponent(rewardsParam))
-    }
-  } catch {}
-
-  const darkerColor = adjustColor(color, -40)
-
-  let content: React.ReactElement
-
   switch (type) {
     case 'stamps':
-      const isStampComplete = stamps >= total
-      
-      content = (
-        <div style={{
+      content = renderStamps(stamps, totalStamps, reward, stepRewards, color)
+      break
+    case 'points':
+      content = renderPoints(points, goal, reward, stepRewards)
+      break
+    case 'cashback':
+      content = renderCashback(cashback, percent)
+      break
+    case 'tiers':
+      content = renderTiers(tier, discount, spent, nextTier, nextMin)
+      break
+    case 'subscription':
+      content = renderSubscription(status, endDate, uses, limit)
+      break
+    case 'missions':
+      content = renderMissions(activeMissions, completedMissions)
+      break
+    default:
+      content = renderStamps(stamps, totalStamps, reward, stepRewards, color)
+  }
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: WIDTH,
+          height: HEIGHT,
           display: 'flex',
           flexDirection: 'column',
-          width: '100%',
-          height: '100%',
+          justifyContent: 'center',
+          alignItems: 'center',
           background: `linear-gradient(180deg, ${color} 0%, ${darkerColor} 100%)`,
-          padding: '28px 48px',
-          justifyContent: 'space-between',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 2 }}>
-                I tuoi bollini
-              </span>
-              <span style={{ fontSize: 56, fontWeight: 'bold', color: 'white', lineHeight: 1.1 }}>
-                {stamps} / {total}
-              </span>
-            </div>
-            {isStampComplete && (
-              <div style={{
-                display: 'flex',
-                backgroundColor: '#fef08a',
-                color: '#854d0e',
-                padding: '10px 24px',
-                borderRadius: 24,
-                fontSize: 18,
-                fontWeight: 'bold',
-              }}>
-                🎁 PREMIO PRONTO!
-              </div>
-            )}
-          </div>
-          
-          <div style={{
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          position: 'relative',
+          padding: '24px 48px',
+        }}
+      >
+        {content}
+        
+        {/* Powered by Zale Marketing - sempre visibile in basso a destra */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 16,
+            right: 32,
+            fontSize: 18,
+            color: 'rgba(255,255,255,0.6)',
             display: 'flex',
-            gap: 12,
-            flexWrap: 'wrap',
-            maxWidth: '100%',
-          }}>
-            {Array.from({ length: Math.min(total, 15) }).map((_, i) => (
-              <div key={i} style={{
+          }}
+        >
+          Powered by Zale Marketing
+        </div>
+      </div>
+    ),
+    { width: WIDTH, height: HEIGHT }
+  )
+}
+
+// ============================================================================
+// STAMPS - Bollini
+// ============================================================================
+function renderStamps(
+  stamps: number, 
+  total: number, 
+  reward: string, 
+  stepRewards: Array<{ stamps?: number, reward: string }>,
+  color: string
+) {
+  const isComplete = stamps >= total
+  const maxVisible = Math.min(total, 12) // Massimo 12 bollini visibili
+  
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      {/* Titolo */}
+      <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.8)', marginBottom: 8, display: 'flex' }}>
+        I TUOI BOLLINI
+      </div>
+      
+      {/* Contatore grande */}
+      <div style={{ fontSize: 56, fontWeight: 'bold', color: 'white', marginBottom: 16, display: 'flex' }}>
+        {stamps} / {total}
+      </div>
+      
+      {/* Griglia bollini */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginBottom: 16 }}>
+        {Array.from({ length: maxVisible }).map((_, i) => {
+          const isFilled = i < stamps
+          return (
+            <div
+              key={i}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                backgroundColor: isFilled ? 'white' : 'rgba(255,255,255,0.25)',
                 display: 'flex',
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: i < stamps ? 'white' : 'rgba(255,255,255,0.2)',
-                border: i < stamps ? 'none' : '2px solid rgba(255,255,255,0.4)',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 20,
-                color: color,
+                fontSize: 28,
                 fontWeight: 'bold',
-              }}>
-                {i < stamps ? '✓' : ''}
-              </div>
-            ))}
-            {total > 15 && (
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, alignSelf: 'center' }}>
-                +{total - 15} altri
-              </span>
-            )}
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {stepRewards.length > 0 ? (
-                stepRewards.slice(0, 3).map((r, i) => (
-                  <div key={i} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    fontSize: 14,
-                    color: stamps >= (r.stamps || 0) ? '#fef08a' : 'rgba(255,255,255,0.7)',
-                  }}>
-                    <span>{stamps >= (r.stamps || 0) ? '✓' : '○'}</span>
-                    <span>{r.stamps} bollini → {r.reward}</span>
-                  </div>
-                ))
-              ) : reward ? (
-                <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}>
-                  Premio: {reward}
-                </span>
-              ) : null}
+                color: isFilled ? color : 'rgba(255,255,255,0.5)',
+              }}
+            >
+              {isFilled ? '✓' : ''}
             </div>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-              Powered by Zale Marketing
-            </span>
-          </div>
-        </div>
-      )
-      break
-
-    case 'points':
-      const progressPercent = Math.min((points / goal) * 100, 100)
-      const remaining = Math.max(goal - points, 0)
-      const isPointsComplete = points >= goal
+          )
+        })}
+      </div>
       
-      content = (
-        <div style={{
+      {/* Premio o stato */}
+      {isComplete ? (
+        <div style={{ 
+          backgroundColor: '#fbbf24', 
+          color: '#78350f', 
+          padding: '12px 32px', 
+          borderRadius: 16, 
+          fontSize: 28, 
+          fontWeight: 'bold',
           display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          height: '100%',
-          background: `linear-gradient(180deg, ${color} 0%, ${darkerColor} 100%)`,
-          padding: '28px 48px',
-          justifyContent: 'space-between',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 2 }}>
-                I tuoi punti
-              </span>
-              <span style={{ fontSize: 64, fontWeight: 'bold', color: 'white', lineHeight: 1.1 }}>
-                {points.toLocaleString('it-IT')}
-              </span>
-            </div>
-            {isPointsComplete && (
-              <div style={{
-                display: 'flex',
-                backgroundColor: '#fef08a',
-                color: '#854d0e',
-                padding: '10px 24px',
-                borderRadius: 24,
-                fontSize: 18,
-                fontWeight: 'bold',
-              }}>
-                🎁 PREMIO DISPONIBILE!
-              </div>
-            )}
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{
-              display: 'flex',
-              width: '100%',
-              height: 20,
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              borderRadius: 10,
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                display: 'flex',
-                width: `${progressPercent}%`,
-                height: '100%',
-                backgroundColor: 'white',
-                borderRadius: 10,
-              }} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
-              <span style={{ color: 'rgba(255,255,255,0.7)' }}>{points} / {goal} punti</span>
-              {remaining > 0 ? (
-                <span style={{ color: 'rgba(255,255,255,0.7)' }}>Ancora {remaining} per il premio</span>
-              ) : (
-                <span style={{ color: '#fef08a', fontWeight: 'bold' }}>Premio sbloccato!</span>
-              )}
-            </div>
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {stepRewards.length > 0 ? (
-                stepRewards.slice(0, 3).map((r, i) => (
-                  <div key={i} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    fontSize: 14,
-                    color: points >= (r.points || 0) ? '#fef08a' : 'rgba(255,255,255,0.7)',
-                  }}>
-                    <span>{points >= (r.points || 0) ? '✓' : '○'}</span>
-                    <span>{r.points} punti → {r.reward}</span>
-                  </div>
-                ))
-              ) : reward ? (
-                <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }}>
-                  Premio: {reward}
-                </span>
-              ) : null}
-            </div>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-              Powered by Zale Marketing
-            </span>
-          </div>
+          🎁 PREMIO PRONTO!
         </div>
-      )
-      break
-
-    case 'cashback':
-      content = (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          height: '100%',
-          background: `linear-gradient(180deg, ${color} 0%, ${darkerColor} 100%)`,
-          padding: '28px 48px',
-          justifyContent: 'space-between',
-        }}>
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 2 }}>
-            Credito disponibile
-          </span>
-          
-          <div style={{ display: 'flex', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 48, color: 'white', marginRight: 8 }}>€</span>
-            <span style={{ fontSize: 96, fontWeight: 'bold', color: 'white', lineHeight: 1 }}>
-              {cashback}
-            </span>
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div style={{
-              display: 'flex',
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              padding: '12px 24px',
-              borderRadius: 24,
-              alignItems: 'center',
-              gap: 12,
-            }}>
-              <span style={{ fontSize: 24 }}>💰</span>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>+{percent}%</span>
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>su ogni acquisto</span>
-              </div>
-            </div>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-              Powered by Zale Marketing
-            </span>
-          </div>
+      ) : reward ? (
+        <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.9)', display: 'flex' }}>
+          🎁 Premio: {reward}
         </div>
-      )
-      break
+      ) : null}
+    </div>
+  )
+}
 
-    case 'tiers':
-      const discountNum = parseInt(discount)
+// ============================================================================
+// POINTS - Punti
+// ============================================================================
+function renderPoints(
+  points: number, 
+  goal: number, 
+  reward: string,
+  stepRewards: Array<{ points?: number, reward: string }>
+) {
+  const progress = Math.min((points / goal) * 100, 100)
+  const remaining = Math.max(goal - points, 0)
+  
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      {/* Titolo */}
+      <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.8)', marginBottom: 8, display: 'flex' }}>
+        I TUOI PUNTI
+      </div>
       
-      content = (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          height: '100%',
-          background: `linear-gradient(180deg, ${color} 0%, ${darkerColor} 100%)`,
-          padding: '28px 48px',
-          justifyContent: 'space-between',
-        }}>
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 2 }}>
-            Il tuo livello
-          </span>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <span style={{ fontSize: 48 }}>👑</span>
-            <span style={{ fontSize: 56, fontWeight: 'bold', color: 'white' }}>{tier}</span>
-            {discountNum > 0 && (
-              <div style={{
-                display: 'flex',
-                backgroundColor: '#fef08a',
-                color: '#854d0e',
-                padding: '8px 20px',
-                borderRadius: 20,
-                fontSize: 22,
-                fontWeight: 'bold',
-              }}>
-                -{discount}% SCONTO
-              </div>
-            )}
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>
-                Spesa totale: €{parseInt(spent).toLocaleString('it-IT')}
-              </span>
-              {nextTier && (
-                <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>
-                  Prossimo: {nextTier} (€{parseInt(nextMin).toLocaleString('it-IT')})
-                </span>
-              )}
-            </div>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-              Powered by Zale Marketing
-            </span>
-          </div>
-        </div>
-      )
-      break
-
-    case 'subscription':
-      const isActive = status === 'active'
-      const bgGradient = isActive 
-        ? `linear-gradient(180deg, ${color} 0%, ${darkerColor} 100%)`
-        : 'linear-gradient(180deg, #6b7280 0%, #374151 100%)'
+      {/* Punti grandi */}
+      <div style={{ fontSize: 72, fontWeight: 'bold', color: 'white', marginBottom: 16, display: 'flex' }}>
+        {points}
+      </div>
       
-      content = (
-        <div style={{
+      {/* Barra progresso */}
+      <div style={{ 
+        width: '80%', 
+        height: 24, 
+        backgroundColor: 'rgba(255,255,255,0.25)', 
+        borderRadius: 12,
+        overflow: 'hidden',
+        display: 'flex',
+        marginBottom: 12,
+      }}>
+        <div style={{ 
+          width: `${progress}%`, 
+          height: '100%', 
+          backgroundColor: 'white', 
+          borderRadius: 12,
           display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          height: '100%',
-          background: bgGradient,
-          padding: '28px 48px',
-          justifyContent: 'space-between',
-        }}>
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 2 }}>
-            Stato abbonamento
-          </span>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <div style={{
-              display: 'flex',
-              width: 64,
-              height: 64,
-              borderRadius: 32,
-              backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 36,
-            }}>
-              {isActive ? '✓' : '✗'}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 42, fontWeight: 'bold', color: 'white' }}>
-                {isActive ? 'ATTIVO' : 'SCADUTO'}
-              </span>
-              {isActive && end && (
-                <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }}>
-                  Valido fino al {end}
-                </span>
-              )}
-            </div>
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            {isActive ? (
-              <div style={{
-                display: 'flex',
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                padding: '10px 20px',
-                borderRadius: 16,
-                alignItems: 'baseline',
-                gap: 8,
-              }}>
-                <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Utilizzi oggi:</span>
-                <span style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>{uses} / {limit}</span>
-              </div>
-            ) : (
-              <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }}>
-                Rinnova per continuare a usufruire dei vantaggi
-              </span>
-            )}
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-              Powered by Zale Marketing
-            </span>
-          </div>
+        }} />
+      </div>
+      
+      {/* Info progresso */}
+      <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.9)', marginBottom: 8, display: 'flex' }}>
+        {points} / {goal} punti
+      </div>
+      
+      {remaining > 0 ? (
+        <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.7)', display: 'flex' }}>
+          Ancora {remaining} punti per il premio
         </div>
-      )
-      break
-
-    case 'missions':
-      content = (
-        <div style={{
+      ) : (
+        <div style={{ 
+          backgroundColor: '#fbbf24', 
+          color: '#78350f', 
+          padding: '10px 28px', 
+          borderRadius: 12, 
+          fontSize: 26, 
+          fontWeight: 'bold',
           display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          height: '100%',
-          background: `linear-gradient(180deg, ${color} 0%, ${darkerColor} 100%)`,
-          padding: '28px 48px',
-          justifyContent: 'space-between',
         }}>
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 2 }}>
-            Le tue missioni
-          </span>
-          
-          <div style={{ display: 'flex', gap: 32 }}>
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              backgroundColor: 'rgba(255,255,255,0.15)',
-              padding: '16px 32px',
-              borderRadius: 16,
-            }}>
-              <span style={{ fontSize: 48, fontWeight: 'bold', color: 'white' }}>{activeMissions}</span>
-              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Attive</span>
-            </div>
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              backgroundColor: '#fef08a',
-              padding: '16px 32px',
-              borderRadius: 16,
-            }}>
-              <span style={{ fontSize: 48, fontWeight: 'bold', color: '#854d0e' }}>{completedMissions}</span>
-              <span style={{ fontSize: 14, color: '#a16207' }}>Completate</span>
-            </div>
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }}>
-              Completa le sfide per ottenere premi esclusivi!
-            </span>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-              Powered by Zale Marketing
-            </span>
-          </div>
+          🎁 PREMIO PRONTO!
         </div>
-      )
-      break
+      )}
+      
+      {reward && remaining > 0 && (
+        <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.8)', marginTop: 8, display: 'flex' }}>
+          🎁 {reward}
+        </div>
+      )}
+    </div>
+  )
+}
 
-    default:
-      content = (
-        <div style={{
+// ============================================================================
+// CASHBACK - Credito
+// ============================================================================
+function renderCashback(cashback: number, percent: number) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      {/* Titolo */}
+      <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.8)', marginBottom: 12, display: 'flex' }}>
+        CREDITO DISPONIBILE
+      </div>
+      
+      {/* Importo GRANDE */}
+      <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: 20 }}>
+        <span style={{ fontSize: 56, color: 'white', marginRight: 8 }}>€</span>
+        <span style={{ fontSize: 96, fontWeight: 'bold', color: 'white' }}>
+          {cashback.toFixed(2)}
+        </span>
+      </div>
+      
+      {/* Badge percentuale */}
+      <div style={{ 
+        backgroundColor: 'rgba(255,255,255,0.2)', 
+        padding: '12px 32px', 
+        borderRadius: 24, 
+        fontSize: 28, 
+        color: 'white',
+        display: 'flex',
+      }}>
+        💰 +{percent}% su ogni acquisto
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// TIERS - Livelli VIP
+// ============================================================================
+function renderTiers(
+  tier: string, 
+  discount: number, 
+  spent: number, 
+  nextTier: string, 
+  nextMin: number
+) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      {/* Titolo */}
+      <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.8)', marginBottom: 12, display: 'flex' }}>
+        IL TUO LIVELLO
+      </div>
+      
+      {/* Corona e livello */}
+      <div style={{ fontSize: 64, marginBottom: 8, display: 'flex' }}>👑</div>
+      <div style={{ fontSize: 48, fontWeight: 'bold', color: 'white', marginBottom: 12, display: 'flex' }}>
+        {tier}
+      </div>
+      
+      {/* Sconto */}
+      {discount > 0 && (
+        <div style={{ 
+          backgroundColor: '#fbbf24', 
+          color: '#78350f', 
+          padding: '10px 28px', 
+          borderRadius: 16, 
+          fontSize: 28, 
+          fontWeight: 'bold',
+          marginBottom: 16,
+          display: 'flex',
+        }}>
+          🏷️ {discount}% SCONTO
+        </div>
+      )}
+      
+      {/* Spesa totale */}
+      <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.8)', marginBottom: 8, display: 'flex' }}>
+        Spesa totale: €{spent}
+      </div>
+      
+      {/* Prossimo livello */}
+      {nextTier && nextMin > spent && (
+        <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.7)', display: 'flex' }}>
+          Prossimo: {nextTier} (€{nextMin - spent} mancanti)
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================================================
+// SUBSCRIPTION - Abbonamento
+// ============================================================================
+function renderSubscription(status: string, endDate: string, uses: number, limit: number) {
+  const isActive = status === 'active'
+  
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      {/* Titolo */}
+      <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.8)', marginBottom: 16, display: 'flex' }}>
+        STATO ABBONAMENTO
+      </div>
+      
+      {/* Cerchio stato */}
+      <div style={{ 
+        width: 100, 
+        height: 100, 
+        borderRadius: '50%', 
+        backgroundColor: isActive ? '#22c55e' : '#ef4444',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+      }}>
+        <span style={{ fontSize: 48, color: 'white' }}>
+          {isActive ? '✓' : '✗'}
+        </span>
+      </div>
+      
+      {/* Stato */}
+      <div style={{ fontSize: 42, fontWeight: 'bold', color: 'white', marginBottom: 12, display: 'flex' }}>
+        {isActive ? 'ATTIVO' : 'SCADUTO'}
+      </div>
+      
+      {/* Data scadenza */}
+      {endDate && (
+        <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.8)', marginBottom: 8, display: 'flex' }}>
+          {isActive ? `Valido fino al ${endDate}` : `Scaduto il ${endDate}`}
+        </div>
+      )}
+      
+      {/* Utilizzi giornalieri */}
+      {isActive && (
+        <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.7)', display: 'flex' }}>
+          Utilizzi oggi: {uses} / {limit}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================================================
+// MISSIONS - Missioni
+// ============================================================================
+function renderMissions(active: number, completed: number) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      {/* Titolo */}
+      <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.8)', marginBottom: 20, display: 'flex' }}>
+        LE TUE MISSIONI
+      </div>
+      
+      {/* Box statistiche */}
+      <div style={{ display: 'flex', gap: 48, marginBottom: 24 }}>
+        {/* Attive */}
+        <div style={{ 
+          backgroundColor: 'rgba(255,255,255,0.15)', 
+          padding: '24px 48px', 
+          borderRadius: 20,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          width: '100%',
-          height: '100%',
-          background: `linear-gradient(180deg, ${color} 0%, ${darkerColor} 100%)`,
         }}>
-          <span style={{ fontSize: 48, color: 'white', fontWeight: 'bold' }}>
-            FidelityApp
-          </span>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 16 }}>
-            Powered by Zale Marketing
-          </span>
+          <div style={{ fontSize: 56, fontWeight: 'bold', color: 'white', display: 'flex' }}>
+            {active}
+          </div>
+          <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.8)', display: 'flex' }}>
+            Attive
+          </div>
         </div>
-      )
-  }
-
-  return new ImageResponse(content, {
-    width: WIDTH,
-    height: HEIGHT,
-  })
-}
-
-function adjustColor(hex: string, amount: number): string {
-  hex = hex.replace('#', '')
-  const num = parseInt(hex, 16)
-  let r = Math.max(0, Math.min(255, (num >> 16) + amount))
-  let g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount))
-  let b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount))
-  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
+        
+        {/* Completate */}
+        <div style={{ 
+          backgroundColor: '#fbbf24', 
+          padding: '24px 48px', 
+          borderRadius: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}>
+          <div style={{ fontSize: 56, fontWeight: 'bold', color: '#78350f', display: 'flex' }}>
+            {completed}
+          </div>
+          <div style={{ fontSize: 22, color: '#78350f', display: 'flex' }}>
+            Completate
+          </div>
+        </div>
+      </div>
+      
+      {/* Messaggio motivazionale */}
+      <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.9)', display: 'flex' }}>
+        🎯 Completa missioni per guadagnare premi!
+      </div>
+    </div>
+  )
 }

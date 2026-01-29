@@ -75,17 +75,21 @@ export default function NewProgramPage() {
   const [description, setDescription] = useState('')
   const [primaryColor, setPrimaryColor] = useState('#6366f1')
   const [logoUrl, setLogoUrl] = useState('')
-const [logoPreview, setLogoPreview] = useState<string | null>(null)
-const [uploading, setUploading] = useState(false)
-const [externalRewardsUrl, setExternalRewardsUrl] = useState('')
-const [rulesUrl, setRulesUrl] = useState('')
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  
+  // Link e Google Wallet (UNIFICATI)
+  const [externalRewardsUrl, setExternalRewardsUrl] = useState('')
+  const [termsUrl, setTermsUrl] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [walletMessage, setWalletMessage] = useState('')
   
   // Bollini
   const [stampsRequired, setStampsRequired] = useState(10)
   const [rewardDescription, setRewardDescription] = useState('')
   
   // Punti
-const [eurosPerPoint, setEurosPerPoint] = useState(1) // Ogni X€ = 1 punto
+  const [eurosPerPoint, setEurosPerPoint] = useState(1)
   const [pointsForReward, setPointsForReward] = useState(100)
   const [pointsRewardValue, setPointsRewardValue] = useState(10)
   
@@ -93,12 +97,12 @@ const [eurosPerPoint, setEurosPerPoint] = useState(1) // Ogni X€ = 1 punto
   const [cashbackPercent, setCashbackPercent] = useState(5)
   const [minCashbackRedeem, setMinCashbackRedeem] = useState(5)
   
- // Tiers
-const [tiers, setTiers] = useState([
-  { name: 'Bronze', minSpend: 0, discount: 0, emoji: '🥉', benefits: 'Accesso al programma fedeltà' },
-  { name: 'Silver', minSpend: 200, discount: 5, emoji: '🥈', benefits: '5% sconto su tutto + regalo compleanno' },
-  { name: 'Gold', minSpend: 500, discount: 10, emoji: '🥇', benefits: '10% sconto + priorità prenotazioni + eventi esclusivi' },
-])
+  // Tiers
+  const [tiers, setTiers] = useState([
+    { name: 'Bronze', minSpend: 0, discount: 0, emoji: '🥉', benefits: 'Accesso al programma fedeltà' },
+    { name: 'Silver', minSpend: 200, discount: 5, emoji: '🥈', benefits: '5% sconto su tutto + regalo compleanno' },
+    { name: 'Gold', minSpend: 500, discount: 10, emoji: '🥇', benefits: '10% sconto + priorità prenotazioni + eventi esclusivi' },
+  ])
   
   // Subscription
   const [subscriptionPrice, setSubscriptionPrice] = useState(19.99)
@@ -138,26 +142,84 @@ const [tiers, setTiers] = useState([
     setStep(2)
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !merchantId) return
+
+    // ⛔ BLOCCA SVG - Google Wallet NON lo supporta!
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert('❌ Formato non supportato!\n\nGoogle Wallet accetta solo:\n• PNG\n• JPG/JPEG\n• WebP\n\n⚠️ I file SVG NON sono supportati.')
+      e.target.value = ''
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('L\'immagine deve essere inferiore a 2MB')
+      return
+    }
+
+    setUploading(true)
+
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${merchantId}/new-${Date.now()}.${fileExt}`
+
+      const { error } = await supabase.storage
+        .from('logos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (error) {
+        alert('Errore upload: ' + error.message)
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('logos')
+        .getPublicUrl(fileName)
+
+      setLogoUrl(publicUrl)
+      setLogoPreview(publicUrl)
+    } catch (err) {
+      alert('Errore durante il caricamento')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function removeLogo() {
+    setLogoUrl('')
+    setLogoPreview(null)
+  }
+
   async function createProgram() {
     if (!merchantId || !name || !selectedType) return
 
     setSaving(true)
 
     // Dati base del programma
-const programData: any = {
-  merchant_id: merchantId,
-  name,
-  description,
-  program_type: selectedType,
-  primary_color: primaryColor,
-  secondary_color: primaryColor,
-  text_color: '#ffffff',
-  logo_url: logoUrl || null,
-external_rewards_url: externalRewardsUrl || null,
-rules_url: rulesUrl || null,
-is_active: true,
-  allow_multiple_redemption: true
-}
+    const programData: any = {
+      merchant_id: merchantId,
+      name,
+      description,
+      program_type: selectedType,
+      primary_color: primaryColor,
+      secondary_color: primaryColor,
+      text_color: '#ffffff',
+      logo_url: logoUrl || null,
+      // Link e Google Wallet
+      external_rewards_url: externalRewardsUrl || null,
+      terms_url: termsUrl || null,
+      rules_url: termsUrl || null, // Mantieni sincronizzato
+      website_url: websiteUrl || null,
+      wallet_message: walletMessage || null,
+      is_active: true,
+      allow_multiple_redemption: true
+    }
 
     // Campi specifici per tipo
     switch (selectedType) {
@@ -167,8 +229,8 @@ is_active: true,
         break
         
       case 'points':
-        programData.points_per_euro = eurosPerPoint // Salviamo € per punto
-        programData.stamps_required = pointsForReward // usiamo questo campo per i punti necessari
+        programData.points_per_euro = eurosPerPoint
+        programData.stamps_required = pointsForReward
         programData.reward_description = `€${pointsRewardValue} di sconto`
         break
         
@@ -212,81 +274,26 @@ is_active: true,
     }
 
     // Se è un programma Tiers, crea i livelli
-if (selectedType === 'tiers' && data) {
-  for (let i = 0; i < tiers.length; i++) {
-    await supabase
-      .from('tiers')
-      .insert({
-        program_id: data.id,
-        merchant_id: merchantId,
-        name: tiers[i].name,
-        min_spend: tiers[i].minSpend,
-        discount_percent: tiers[i].discount,
-        badge_emoji: tiers[i].emoji,
-        benefits: tiers[i].benefits,
-        sort_order: i
-      })
-  }
-}
+    if (selectedType === 'tiers' && data) {
+      for (let i = 0; i < tiers.length; i++) {
+        await supabase
+          .from('tiers')
+          .insert({
+            program_id: data.id,
+            merchant_id: merchantId,
+            name: tiers[i].name,
+            min_spend: tiers[i].minSpend,
+            discount_percent: tiers[i].discount,
+            badge_emoji: tiers[i].emoji,
+            benefits: tiers[i].benefits,
+            sort_order: i
+          })
+      }
+    }
 
     setSaving(false)
-    router.push(`/dashboard/programs/${data.id}/edit`)
+    router.push(`/dashboard/programs/${data.id}`)
   }
-
-  function removeTier(index: number) {
-    if (tiers.length > 2) {
-      setTiers(tiers.filter((_, i) => i !== index))
-    }
-  }
-  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-  const file = e.target.files?.[0]
-  if (!file || !merchantId) return
-
-  if (!file.type.startsWith('image/')) {
-    alert('Per favore seleziona un\'immagine')
-    return
-  }
-
-  if (file.size > 2 * 1024 * 1024) {
-    alert('L\'immagine deve essere inferiore a 2MB')
-    return
-  }
-
-  setUploading(true)
-
-  try {
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${merchantId}/new-${Date.now()}.${fileExt}`
-
-    const { error } = await supabase.storage
-      .from('logos')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: true
-      })
-
-    if (error) {
-      alert('Errore upload: ' + error.message)
-      return
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('logos')
-      .getPublicUrl(fileName)
-
-    setLogoUrl(publicUrl)
-    setLogoPreview(publicUrl)
-  } catch (err) {
-    alert('Errore durante il caricamento')
-  } finally {
-    setUploading(false)
-  }
-}
-
-function removeLogo() {
-  setLogoUrl('')
-  setLogoPreview(null)
-}
 
   const selectedTypeData = PROGRAM_TYPES.find(t => t.id === selectedType)
 
@@ -334,7 +341,6 @@ function removeLogo() {
                   onClick={() => selectType(type.id)}
                   className="bg-white rounded-2xl p-6 text-left hover:shadow-xl transition-all border-2 border-transparent hover:border-indigo-300 group relative overflow-hidden"
                 >
-                  {/* Background gradient */}
                   <div 
                     className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity"
                     style={{ backgroundColor: type.color }}
@@ -397,6 +403,23 @@ function removeLogo() {
                 </div>
               </div>
 
+              {/* ⚠️ DISCLAIMER IMPORTANTE */}
+              <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">⚠️</span>
+                  <div>
+                    <p className="font-bold text-amber-900">Importante: scegli bene!</p>
+                    <p className="text-sm text-amber-800 mt-1">
+                      Dopo la creazione <strong>NON potrai modificare</strong>: nome programma, logo e colori.
+                      Questi elementi sono permanenti per garantire continuità ai tuoi clienti.
+                    </p>
+                    <p className="text-sm text-amber-700 mt-2">
+                      ✅ Potrai sempre modificare: soglie, premi, percentuali, link e messaggi.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Basic Info */}
               <div className="bg-white rounded-2xl shadow-sm p-6">
                 <h3 className="font-bold text-lg mb-4">📝 Informazioni Base</h3>
@@ -404,7 +427,7 @@ function removeLogo() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nome Programma *
+                      Nome Programma * <span className="text-amber-600 text-xs">(non modificabile dopo)</span>
                     </label>
                     <input
                       type="text"
@@ -480,68 +503,68 @@ function removeLogo() {
                 )}
 
                 {/* PUNTI */}
-{selectedType === 'points' && (
-  <div className="space-y-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Ogni quanti € spesi il cliente guadagna 1 punto?
-      </label>
-      <div className="flex items-center gap-3">
-        <span className="text-gray-500">Ogni</span>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">€</span>
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={eurosPerPoint}
-            onChange={(e) => setEurosPerPoint(parseInt(e.target.value) || 1)}
-            className="w-24 pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl text-center text-xl font-bold focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          />
-        </div>
-        <span className="text-gray-500">= 1 punto</span>
-      </div>
-    </div>
-    
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Punti per ottenere il premio
-        </label>
-        <input
-          type="number"
-          min="5"
-          step="5"
-          value={pointsForReward}
-          onChange={(e) => setPointsForReward(parseInt(e.target.value) || 100)}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-center text-xl font-bold focus:ring-2 focus:ring-green-500 focus:border-green-500"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Valore premio (€)
-        </label>
-        <input
-          type="number"
-          min="1"
-          value={pointsRewardValue}
-          onChange={(e) => setPointsRewardValue(parseInt(e.target.value) || 10)}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-center text-xl font-bold focus:ring-2 focus:ring-green-500 focus:border-green-500"
-        />
-      </div>
-    </div>
-    
-    <div className="bg-green-50 rounded-xl p-4">
-      <p className="text-sm text-green-700">
-        📊 <strong>Esempio:</strong> Cliente spende €{eurosPerPoint * 50} → Guadagna {50} punti → 
-        A {pointsForReward} punti ottiene €{pointsRewardValue} di sconto
-      </p>
-      <p className="text-xs text-green-600 mt-2">
-        💡 Il cliente deve spendere €{eurosPerPoint * pointsForReward} per ottenere il premio
-      </p>
-    </div>
-  </div>
-)}
+                {selectedType === 'points' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Ogni quanti € spesi il cliente guadagna 1 punto?
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <span className="text-gray-500">Ogni</span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">€</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={eurosPerPoint}
+                            onChange={(e) => setEurosPerPoint(parseInt(e.target.value) || 1)}
+                            className="w-24 pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl text-center text-xl font-bold focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          />
+                        </div>
+                        <span className="text-gray-500">= 1 punto</span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Punti per ottenere il premio
+                        </label>
+                        <input
+                          type="number"
+                          min="5"
+                          step="5"
+                          value={pointsForReward}
+                          onChange={(e) => setPointsForReward(parseInt(e.target.value) || 100)}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-center text-xl font-bold focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Valore premio (€)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={pointsRewardValue}
+                          onChange={(e) => setPointsRewardValue(parseInt(e.target.value) || 10)}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-center text-xl font-bold focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="bg-green-50 rounded-xl p-4">
+                      <p className="text-sm text-green-700">
+                        📊 <strong>Esempio:</strong> Cliente spende €{eurosPerPoint * 50} → Guadagna {50} punti → 
+                        A {pointsForReward} punti ottiene €{pointsRewardValue} di sconto
+                      </p>
+                      <p className="text-xs text-green-600 mt-2">
+                        💡 Il cliente deve spendere €{eurosPerPoint * pointsForReward} per ottenere il premio
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* CASHBACK */}
                 {selectedType === 'cashback' && (
@@ -587,170 +610,166 @@ function removeLogo() {
                   </div>
                 )}
 
-                {/* TIERS / LIVELLI VIP */}
-{selectedType === 'tiers' && (
-  <div className="space-y-4">
-    <div className="bg-purple-50 rounded-xl p-4 mb-4">
-      <p className="text-sm text-purple-800">
-        <strong>👑 Come funziona:</strong> I clienti salgono automaticamente di livello in base a quanto spendono 
-        nel tempo. Ogni livello sblocca vantaggi esclusivi che incentivano a tornare.
-      </p>
-    </div>
-    
-    <div className="space-y-4">
-      {tiers.map((tier, i) => (
-        <div key={i} className="border-2 border-gray-200 rounded-xl p-4 hover:border-purple-300 transition-colors">
-          {/* Header del livello */}
-          <div className="flex items-center gap-3 mb-3">
-            <select
-              value={tier.emoji}
-              onChange={(e) => {
-                const newTiers = [...tiers]
-                newTiers[i].emoji = e.target.value
-                setTiers(newTiers)
-              }}
-              className="w-16 text-2xl bg-purple-50 border-2 border-purple-200 rounded-lg p-2 cursor-pointer"
-            >
-              <option value="🥉">🥉</option>
-              <option value="🥈">🥈</option>
-              <option value="🥇">🥇</option>
-              <option value="💎">💎</option>
-              <option value="👑">👑</option>
-              <option value="⭐">⭐</option>
-              <option value="🌟">🌟</option>
-              <option value="💜">💜</option>
-            </select>
-            
-            <input
-              type="text"
-              value={tier.name}
-              onChange={(e) => {
-                const newTiers = [...tiers]
-                newTiers[i].name = e.target.value
-                setTiers(newTiers)
-              }}
-              className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg font-bold text-lg focus:border-purple-400 focus:ring-2 focus:ring-purple-200"
-              placeholder="Nome livello"
-            />
-            
-            {tiers.length > 2 && (
-              <button
-                onClick={() => setTiers(tiers.filter((_, idx) => idx !== i))}
-                className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                🗑️
-              </button>
-            )}
-          </div>
-          
-          {/* Requisiti e Sconto */}
-          <div className="grid grid-cols-2 gap-4 mb-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                📊 Spesa minima per raggiungere
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">€</span>
-                <input
-                  type="number"
-                  value={tier.minSpend}
-                  onChange={(e) => {
-                    const newTiers = [...tiers]
-                    newTiers[i].minSpend = parseInt(e.target.value) || 0
-                    setTiers(newTiers)
-                  }}
-                  className="w-full pl-8 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400"
-                  placeholder="0"
-                />
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {tier.minSpend === 0 ? 'Livello iniziale' : `Dopo €${tier.minSpend} di spesa totale`}
-              </p>
-            </div>
-            
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
-                🏷️ Sconto permanente
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={tier.discount}
-                  onChange={(e) => {
-                    const newTiers = [...tiers]
-                    newTiers[i].discount = parseInt(e.target.value) || 0
-                    setTiers(newTiers)
-                  }}
-                  className="w-full pr-8 pl-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400"
-                  placeholder="0"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {tier.discount === 0 ? 'Nessuno sconto' : `${tier.discount}% su ogni acquisto`}
-              </p>
-            </div>
-          </div>
-          
-          {/* Vantaggi */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              🎁 Vantaggi di questo livello
-            </label>
-            <textarea
-              value={tier.benefits}
-              onChange={(e) => {
-                const newTiers = [...tiers]
-                newTiers[i].benefits = e.target.value
-                setTiers(newTiers)
-              }}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400 text-sm"
-              rows={2}
-              placeholder="es. 5% sconto, regalo compleanno, accesso anticipato promozioni..."
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-    
-    <button
-      onClick={() => setTiers([...tiers, { 
-        name: `Livello ${tiers.length + 1}`, 
-        minSpend: (tiers[tiers.length - 1]?.minSpend || 0) + 300, 
-        discount: (tiers[tiers.length - 1]?.discount || 0) + 5,
-        emoji: '💎',
-        benefits: ''
-      }])}
-      className="w-full py-3 border-2 border-dashed border-purple-300 rounded-xl text-purple-600 hover:border-purple-500 hover:bg-purple-50 transition-colors font-medium"
-    >
-      + Aggiungi Livello
-    </button>
-    
-    {/* Riepilogo */}
-    <div className="bg-gray-50 rounded-xl p-4">
-      <p className="text-sm font-medium text-gray-700 mb-2">📋 Riepilogo del tuo programma:</p>
-      <div className="space-y-2">
-        {tiers.map((tier, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
-            <span>{tier.emoji}</span>
-            <span className="font-medium">{tier.name}</span>
-            <span className="text-gray-400">→</span>
-            <span className="text-gray-600">
-              {tier.minSpend === 0 ? 'Inizio' : `da €${tier.minSpend}`}
-            </span>
-            {tier.discount > 0 && (
-              <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">
-                {tier.discount}% sconto
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-)}
+                {/* TIERS */}
+                {selectedType === 'tiers' && (
+                  <div className="space-y-4">
+                    <div className="bg-purple-50 rounded-xl p-4 mb-4">
+                      <p className="text-sm text-purple-800">
+                        <strong>👑 Come funziona:</strong> I clienti salgono automaticamente di livello in base a quanto spendono 
+                        nel tempo. Ogni livello sblocca vantaggi esclusivi che incentivano a tornare.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {tiers.map((tier, i) => (
+                        <div key={i} className="border-2 border-gray-200 rounded-xl p-4 hover:border-purple-300 transition-colors">
+                          <div className="flex items-center gap-3 mb-3">
+                            <select
+                              value={tier.emoji}
+                              onChange={(e) => {
+                                const newTiers = [...tiers]
+                                newTiers[i].emoji = e.target.value
+                                setTiers(newTiers)
+                              }}
+                              className="w-16 text-2xl bg-purple-50 border-2 border-purple-200 rounded-lg p-2 cursor-pointer"
+                            >
+                              <option value="🥉">🥉</option>
+                              <option value="🥈">🥈</option>
+                              <option value="🥇">🥇</option>
+                              <option value="💎">💎</option>
+                              <option value="👑">👑</option>
+                              <option value="⭐">⭐</option>
+                              <option value="🌟">🌟</option>
+                              <option value="💜">💜</option>
+                            </select>
+                            
+                            <input
+                              type="text"
+                              value={tier.name}
+                              onChange={(e) => {
+                                const newTiers = [...tiers]
+                                newTiers[i].name = e.target.value
+                                setTiers(newTiers)
+                              }}
+                              className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg font-bold text-lg focus:border-purple-400 focus:ring-2 focus:ring-purple-200"
+                              placeholder="Nome livello"
+                            />
+                            
+                            {tiers.length > 2 && (
+                              <button
+                                onClick={() => setTiers(tiers.filter((_, idx) => idx !== i))}
+                                className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">
+                                📊 Spesa minima per raggiungere
+                              </label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">€</span>
+                                <input
+                                  type="number"
+                                  value={tier.minSpend}
+                                  onChange={(e) => {
+                                    const newTiers = [...tiers]
+                                    newTiers[i].minSpend = parseInt(e.target.value) || 0
+                                    setTiers(newTiers)
+                                  }}
+                                  className="w-full pl-8 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400"
+                                  placeholder="0"
+                                />
+                              </div>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {tier.minSpend === 0 ? 'Livello iniziale' : `Dopo €${tier.minSpend} di spesa totale`}
+                              </p>
+                            </div>
+                            
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">
+                                🏷️ Sconto permanente
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  value={tier.discount}
+                                  onChange={(e) => {
+                                    const newTiers = [...tiers]
+                                    newTiers[i].discount = parseInt(e.target.value) || 0
+                                    setTiers(newTiers)
+                                  }}
+                                  className="w-full pr-8 pl-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400"
+                                  placeholder="0"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+                              </div>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {tier.discount === 0 ? 'Nessuno sconto' : `${tier.discount}% su ogni acquisto`}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">
+                              🎁 Vantaggi di questo livello
+                            </label>
+                            <textarea
+                              value={tier.benefits}
+                              onChange={(e) => {
+                                const newTiers = [...tiers]
+                                newTiers[i].benefits = e.target.value
+                                setTiers(newTiers)
+                              }}
+                              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400 text-sm"
+                              rows={2}
+                              placeholder="es. 5% sconto, regalo compleanno, accesso anticipato promozioni..."
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => setTiers([...tiers, { 
+                        name: `Livello ${tiers.length + 1}`, 
+                        minSpend: (tiers[tiers.length - 1]?.minSpend || 0) + 300, 
+                        discount: (tiers[tiers.length - 1]?.discount || 0) + 5,
+                        emoji: '💎',
+                        benefits: ''
+                      }])}
+                      className="w-full py-3 border-2 border-dashed border-purple-300 rounded-xl text-purple-600 hover:border-purple-500 hover:bg-purple-50 transition-colors font-medium"
+                    >
+                      + Aggiungi Livello
+                    </button>
+                    
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">📋 Riepilogo del tuo programma:</p>
+                      <div className="space-y-2">
+                        {tiers.map((tier, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            <span>{tier.emoji}</span>
+                            <span className="font-medium">{tier.name}</span>
+                            <span className="text-gray-400">→</span>
+                            <span className="text-gray-600">
+                              {tier.minSpend === 0 ? 'Inizio' : `da €${tier.minSpend}`}
+                            </span>
+                            {tier.discount > 0 && (
+                              <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">
+                                {tier.discount}% sconto
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                {/* SUBSCRIPTION / ABBONAMENTO */}
+                {/* SUBSCRIPTION */}
                 {selectedType === 'subscription' && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -787,7 +806,7 @@ function removeLogo() {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Limite giornaliero (quante volte può usare l'abbonamento al giorno)
+                        Limite giornaliero (quante volte può usare l&apos;abbonamento al giorno)
                       </label>
                       <input
                         type="number"
@@ -801,7 +820,7 @@ function removeLogo() {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Cosa include l'abbonamento?
+                        Cosa include l&apos;abbonamento?
                       </label>
                       <textarea
                         value={subscriptionBenefits}
@@ -829,7 +848,7 @@ function removeLogo() {
                     <p className="text-cyan-700">
                       Le missioni sono un add-on che si aggiunge agli altri programmi.<br/>
                       Crea prima un programma base (Bollini, Punti, ecc.) e poi potrai<br/>
-                      aggiungere missioni per aumentare l'engagement!
+                      aggiungere missioni per aumentare l&apos;engagement!
                     </p>
                     <button
                       onClick={() => setStep(1)}
@@ -842,60 +861,63 @@ function removeLogo() {
               </div>
 
               {/* Logo Upload */}
-{selectedType !== 'missions' && (
-  <div className="bg-white rounded-2xl shadow-sm p-6">
-    <h3 className="font-bold text-lg mb-4">🖼️ Logo Aziendale</h3>
-    
-    <div className="flex items-start gap-4">
-      {logoPreview ? (
-        <div className="relative">
-          <img 
-            src={logoPreview} 
-            alt="Logo" 
-            className="w-24 h-24 object-contain bg-gray-100 rounded-xl"
-          />
-          <button
-            onClick={removeLogo}
-            className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-sm hover:bg-red-600"
-          >
-            ×
-          </button>
-        </div>
-      ) : (
-        <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center text-gray-400">
-          <span className="text-3xl">📷</span>
-        </div>
-      )}
-      
-      <div className="flex-1">
-        <label className="block">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleLogoUpload}
-            disabled={uploading}
-            className="block w-full text-sm text-gray-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-lg file:border-0
-              file:text-sm file:font-medium
-              file:bg-indigo-50 file:text-indigo-700
-              hover:file:bg-indigo-100
-              disabled:opacity-50"
-          />
-        </label>
-        {uploading && (
-          <p className="text-sm text-indigo-600 mt-2">⏳ Caricamento...</p>
-        )}
-        <p className="text-xs text-gray-400 mt-2">PNG, JPG o SVG. Max 2MB.</p>
-      </div>
-    </div>
-  </div>
-)}
+              {selectedType !== 'missions' && (
+                <div className="bg-white rounded-2xl shadow-sm p-6">
+                  <h3 className="font-bold text-lg mb-2">🖼️ Logo Aziendale <span className="text-amber-600 text-xs font-normal">(non modificabile dopo)</span></h3>
+                  <p className="text-sm text-gray-500 mb-4">Scegli con cura: non potrai cambiarlo dopo la creazione</p>
+                  
+                  <div className="flex items-start gap-4">
+                    {logoPreview ? (
+                      <div className="relative">
+                        <img 
+                          src={logoPreview} 
+                          alt="Logo" 
+                          className="w-24 h-24 object-contain bg-gray-100 rounded-xl"
+                        />
+                        <button
+                          onClick={removeLogo}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-sm hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center text-gray-400">
+                        <span className="text-3xl">📷</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex-1">
+                      <label className="block">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/jpg,image/webp"
+                          onChange={handleLogoUpload}
+                          disabled={uploading}
+                          className="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-lg file:border-0
+                            file:text-sm file:font-medium
+                            file:bg-indigo-50 file:text-indigo-700
+                            hover:file:bg-indigo-100
+                            disabled:opacity-50"
+                        />
+                      </label>
+                      {uploading && (
+                        <p className="text-sm text-indigo-600 mt-2">⏳ Caricamento...</p>
+                      )}
+                      <p className="text-xs text-gray-400 mt-2">⚠️ Solo PNG, JPG, WebP • Max 2MB • NO SVG!</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Color Picker */}
               {selectedType !== 'missions' && (
                 <div className="bg-white rounded-2xl shadow-sm p-6">
-                  <h3 className="font-bold text-lg mb-4">🎨 Colore del Programma</h3>
+                  <h3 className="font-bold text-lg mb-2">🎨 Colore del Programma <span className="text-amber-600 text-xs font-normal">(non modificabile dopo)</span></h3>
+                  <p className="text-sm text-gray-500 mb-4">Scegli con cura: non potrai cambiarlo dopo la creazione</p>
+                  
                   <div className="flex items-center gap-4">
                     <input
                       type="color"
@@ -917,41 +939,91 @@ function removeLogo() {
                 </div>
               )}
 
-              {/* Links */}
-{selectedType !== 'missions' && (
-  <div className="bg-white rounded-2xl shadow-sm p-6">
-    <h3 className="font-bold text-lg mb-4">🔗 Link Esterni (opzionali)</h3>
-    
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Link Catalogo Premi
-        </label>
-        <input
-          type="url"
-          value={externalRewardsUrl}
-          onChange={(e) => setExternalRewardsUrl(e.target.value)}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="https://tuosito.it/premi"
-        />
-        <p className="text-xs text-gray-400 mt-1">Se hai una pagina con tutti i premi sul tuo sito</p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Link Regolamento
-        </label>
-        <input
-          type="url"
-          value={rulesUrl}
-          onChange={(e) => setRulesUrl(e.target.value)}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="https://tuosito.it/regolamento"
-        />
-      </div>
-    </div>
-  </div>
-)}
+              {/* 🔗 LINK E GOOGLE WALLET - SEZIONE UNIFICATA */}
+              {selectedType !== 'missions' && (
+                <div className="bg-white rounded-2xl shadow-sm p-6">
+                  <h3 className="font-bold text-lg mb-2">🔗 Link e Google Wallet</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Questi link appariranno nel retro della carta Google Wallet dei tuoi clienti
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        📋 Link Catalogo Premi
+                      </label>
+                      <input
+                        type="url"
+                        value={externalRewardsUrl}
+                        onChange={(e) => setExternalRewardsUrl(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="https://tuosito.com/premi"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Mostrato come &quot;Catalogo Premi&quot; nel Wallet</p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        📜 Link Regolamento
+                      </label>
+                      <input
+                        type="url"
+                        value={termsUrl}
+                        onChange={(e) => setTermsUrl(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="https://tuosito.com/regolamento"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Mostrato come &quot;Regolamento&quot; nel Wallet</p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        🌐 Sito Web Attività
+                      </label>
+                      <input
+                        type="url"
+                        value={websiteUrl}
+                        onChange={(e) => setWebsiteUrl(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="https://tuosito.com"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Mostrato come &quot;Sito Web&quot; nel Wallet</p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        💬 Messaggio Personalizzato
+                      </label>
+                      <textarea
+                        value={walletMessage}
+                        onChange={(e) => setWalletMessage(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        rows={2}
+                        placeholder="es. Grazie per essere nostro cliente! Presenta la carta ad ogni acquisto."
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Appare come messaggio nella carta</p>
+                    </div>
+                    
+                    <div className="bg-indigo-50 rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl">💡</span>
+                        <div>
+                          <p className="font-medium text-indigo-900">Come appariranno i link</p>
+                          <p className="text-sm text-indigo-700 mt-1">
+                            Nel retro della carta Google Wallet i clienti vedranno:
+                          </p>
+                          <ul className="text-sm text-indigo-700 mt-2 space-y-1">
+                            <li>• <strong>Catalogo Premi</strong> → link al tuo catalogo</li>
+                            <li>• <strong>Regolamento</strong> → link alle regole</li>
+                            <li>• <strong>Sito Web</strong> → link al tuo sito</li>
+                            <li>• <strong>Zale Marketing</strong> → sempre presente in fondo</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Actions */}
               {selectedType !== 'missions' && (
@@ -979,28 +1051,25 @@ function removeLogo() {
                 <div className="bg-white rounded-2xl shadow-sm p-6">
                   <h3 className="font-bold text-lg mb-4 text-center">📱 Anteprima</h3>
                   
-                  {/* Phone Frame */}
                   <div className="bg-gray-900 rounded-[2.5rem] p-3 max-w-[280px] mx-auto">
                     <div className="bg-gray-800 rounded-[2rem] overflow-hidden">
                       
-                      {/* Card Content */}
                       <div 
                         className="p-5"
                         style={{ backgroundColor: primaryColor }}
                       >
-                        {/* Header */}
                         <div className="flex items-center gap-3 mb-4">
                           {logoPreview ? (
-  <img 
-    src={logoPreview} 
-    alt="Logo" 
-    className="w-11 h-11 object-contain rounded-xl bg-white/20 p-1"
-  />
-) : (
-  <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center text-2xl">
-    {selectedTypeData?.icon}
-  </div>
-)}
+                            <img 
+                              src={logoPreview} 
+                              alt="Logo" 
+                              className="w-11 h-11 object-contain rounded-xl bg-white/20 p-1"
+                            />
+                          ) : (
+                            <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center text-2xl">
+                              {selectedTypeData?.icon}
+                            </div>
+                          )}
                           <div>
                             <h3 className="font-bold text-white text-sm leading-tight">
                               {name || 'Nome Programma'}
@@ -1009,7 +1078,6 @@ function removeLogo() {
                           </div>
                         </div>
 
-                        {/* Type-specific preview */}
                         <div className="bg-white/15 rounded-xl p-4 mb-4">
                           {selectedType === 'stamps' && (
                             <>
@@ -1021,7 +1089,7 @@ function removeLogo() {
                                       i < 4 ? 'bg-white text-indigo-600' : 'bg-white/30 text-white'
                                     }`}
                                   >
-                                    {i < 4 ? '✓' : i + 1}
+                                    {i < 4 ? '✓' : ''}
                                   </div>
                                 ))}
                               </div>
@@ -1033,73 +1101,47 @@ function removeLogo() {
                           )}
 
                           {selectedType === 'points' && (
-  <div className="text-center">
-    <p className="text-white/60 text-xs mb-1">I TUOI PUNTI</p>
-    <p className="text-4xl font-bold text-white">{Math.floor(50 * (100 / eurosPerPoint) / 100 * eurosPerPoint)}</p>
-    <div className="mt-3 h-2 bg-white/30 rounded-full overflow-hidden">
-      <div 
-        className="h-full bg-white rounded-full transition-all" 
-        style={{ width: `${Math.min((50 / pointsForReward) * 100, 100)}%` }} 
-      />
-    </div>
-    <p className="text-white/70 text-xs mt-2">
-      {50}/{pointsForReward} punti → €{pointsRewardValue} sconto
-    </p>
-    <p className="text-white/50 text-xs mt-1">
-      (ogni €{eurosPerPoint} = 1 punto)
-    </p>
-  </div>
-)}
+                            <div className="text-center">
+                              <p className="text-white/60 text-xs mb-1">I TUOI PUNTI</p>
+                              <p className="text-4xl font-bold text-white">50</p>
+                              <div className="mt-3 h-2 bg-white/30 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-white rounded-full transition-all" 
+                                  style={{ width: `${Math.min((50 / pointsForReward) * 100, 100)}%` }} 
+                                />
+                              </div>
+                              <p className="text-white/70 text-xs mt-2">
+                                50/{pointsForReward} punti → €{pointsRewardValue} sconto
+                              </p>
+                            </div>
+                          )}
 
                           {selectedType === 'cashback' && (
-  <div className="text-center">
-    <p className="text-white/60 text-xs mb-1">IL TUO CREDITO</p>
-    <p className="text-4xl font-bold text-white">€12.50</p>
-    <p className="text-white/70 text-xs mt-2">
-      +{cashbackPercent}% su ogni acquisto
-    </p>
-    <p className="text-white/50 text-xs mt-1">
-      Min. €{minCashbackRedeem} per riscattare
-    </p>
-    {12.50 >= minCashbackRedeem ? (
-      <div className="mt-3 bg-white/20 rounded-lg py-2 text-white text-sm font-medium">
-        ✓ Puoi usare il credito!
-      </div>
-    ) : (
-      <div className="mt-3 bg-white/10 rounded-lg py-2 text-white/70 text-xs">
-        🔒 Ancora €{(minCashbackRedeem - 12.50).toFixed(2)} per riscattare
-      </div>
-    )}
-  </div>
-)}
+                            <div className="text-center">
+                              <p className="text-white/60 text-xs mb-1">IL TUO CREDITO</p>
+                              <p className="text-4xl font-bold text-white">€12.50</p>
+                              <p className="text-white/70 text-xs mt-2">
+                                +{cashbackPercent}% su ogni acquisto
+                              </p>
+                            </div>
+                          )}
 
                           {selectedType === 'tiers' && (
-  <div className="text-center">
-    <p className="text-white/60 text-xs mb-2">IL TUO LIVELLO</p>
-    <div className="flex justify-center items-end gap-2 mb-2">
-      {tiers.slice(0, 4).map((tier, i) => (
-        <div 
-          key={i} 
-          className={`text-center transition-all ${i === 1 ? 'scale-125 opacity-100' : 'scale-90 opacity-50'}`}
-        >
-          <p className="text-2xl">{tier.emoji}</p>
-          <p className="text-white text-xs font-medium">{tier.name}</p>
-          {i === 1 && tier.discount > 0 && (
-            <p className="text-white/80 text-xs">-{tier.discount}%</p>
-          )}
-        </div>
-      ))}
-    </div>
-    <div className="bg-white/20 rounded-lg p-2 mt-2">
-      <p className="text-white text-xs">
-        {tiers[1]?.benefits || 'Vantaggi esclusivi'}
-      </p>
-    </div>
-    <p className="text-white/50 text-xs mt-2">
-      Prossimo: {tiers[2]?.emoji} {tiers[2]?.name} (€{tiers[2]?.minSpend})
-    </p>
-  </div>
-)}
+                            <div className="text-center">
+                              <p className="text-white/60 text-xs mb-2">IL TUO LIVELLO</p>
+                              <div className="flex justify-center items-end gap-2 mb-2">
+                                {tiers.slice(0, 3).map((tier, i) => (
+                                  <div 
+                                    key={i} 
+                                    className={`text-center transition-all ${i === 1 ? 'scale-125 opacity-100' : 'scale-90 opacity-50'}`}
+                                  >
+                                    <p className="text-2xl">{tier.emoji}</p>
+                                    <p className="text-white text-xs font-medium">{tier.name}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           {selectedType === 'subscription' && (
                             <div className="text-center">
@@ -1117,19 +1159,25 @@ function removeLogo() {
                           )}
                         </div>
 
-                        {/* QR */}
                         <div className="bg-white rounded-xl p-3 text-center">
                           <div className="w-20 h-20 mx-auto bg-gray-100 rounded-lg flex items-center justify-center mb-1">
                             <span className="text-3xl">📱</span>
                           </div>
                           <p className="text-xs text-gray-400">Scansiona</p>
                         </div>
+
+                        {(externalRewardsUrl || termsUrl || websiteUrl) && (
+                          <div className="flex justify-center gap-3 mt-3 text-xs text-white/70 flex-wrap">
+                            {externalRewardsUrl && <span className="underline">📋 Premi</span>}
+                            {termsUrl && <span className="underline">📜 Regolamento</span>}
+                            {websiteUrl && <span className="underline">🌐 Sito</span>}
+                          </div>
+                        )}
                       </div>
                       
-                      {/* Footer */}
                       <div className="bg-gray-100 py-2 text-center">
                         <p className="text-xs text-gray-400">
-                          Creato con ❤️ da <span className="font-medium">Zale Marketing</span>
+                          Powered by <span className="font-medium">Zale Marketing</span>
                         </p>
                       </div>
                     </div>

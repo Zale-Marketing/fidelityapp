@@ -39,38 +39,34 @@ export default function EditProgramPage() {
   const [tiers, setTiers] = useState<Tier[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [merchantId, setMerchantId] = useState<string | null>(null)
   const [merchantName, setMerchantName] = useState('')
   
-  // Form base
+  // Form base (questi NON sono modificabili dopo la creazione)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [primaryColor, setPrimaryColor] = useState('#6366f1')
-  const [secondaryColor, setSecondaryColor] = useState('#4f46e5')
-  const [textColor, setTextColor] = useState('#ffffff')
   const [logoUrl, setLogoUrl] = useState('')
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
-  const [externalRewardsUrl, setExternalRewardsUrl] = useState('')
-  const [rulesUrl, setRulesUrl] = useState('')
-  // Google Wallet
-const [termsUrl, setTermsUrl] = useState('')
-const [websiteUrl, setWebsiteUrl] = useState('')
-const [walletMessage, setWalletMessage] = useState('')
   
-  // Bollini
+  // Link e Google Wallet (MODIFICABILI)
+  const [externalRewardsUrl, setExternalRewardsUrl] = useState('')
+  const [termsUrl, setTermsUrl] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [walletMessage, setWalletMessage] = useState('')
+  
+  // Bollini (MODIFICABILI)
   const [stampsRequired, setStampsRequired] = useState(10)
   const [rewardDescription, setRewardDescription] = useState('')
   const [allowMultipleRedemption, setAllowMultipleRedemption] = useState(true)
   
-  // Punti
-  const [eurosPerPoint, setEurosPerPoint] = useState(1) // Ogni X€ = 1 punto
+  // Punti (MODIFICABILI)
+  const [eurosPerPoint, setEurosPerPoint] = useState(1)
   
-  // Cashback
+  // Cashback (MODIFICABILI)
   const [cashbackPercent, setCashbackPercent] = useState(5)
   const [minCashbackRedeem, setMinCashbackRedeem] = useState(5)
   
-  // Subscription
+  // Subscription (MODIFICABILI)
   const [subscriptionPrice, setSubscriptionPrice] = useState(19.99)
   const [subscriptionPeriod, setSubscriptionPeriod] = useState('monthly')
   const [subscriptionBenefits, setSubscriptionBenefits] = useState('')
@@ -110,7 +106,6 @@ const [walletMessage, setWalletMessage] = useState('')
     setMerchantId(profile.merchant_id)
     setMerchantName((profile.merchants as any)?.name || 'La tua attività')
 
-    // Load program
     const { data: programData } = await supabase
       .from('programs')
       .select('*')
@@ -125,19 +120,17 @@ const [walletMessage, setWalletMessage] = useState('')
 
     setProgram(programData)
     
-    // Set form values
+    // Campi NON modificabili (solo visualizzazione)
     setName(programData.name || '')
     setDescription(programData.description || '')
     setPrimaryColor(programData.primary_color || '#6366f1')
-    setSecondaryColor(programData.secondary_color || '#4f46e5')
-    setTextColor(programData.text_color || '#ffffff')
     setLogoUrl(programData.logo_url || '')
-    setLogoPreview(programData.logo_url || null)
+    
+    // Campi MODIFICABILI
     setExternalRewardsUrl(programData.external_rewards_url || '')
-    setRulesUrl(programData.rules_url || '')
-    setTermsUrl(programData.terms_url || '')
-setWebsiteUrl(programData.website_url || '')
-setWalletMessage(programData.wallet_message || '')
+    setTermsUrl(programData.terms_url || programData.rules_url || '')
+    setWebsiteUrl(programData.website_url || '')
+    setWalletMessage(programData.wallet_message || '')
     setStampsRequired(programData.stamps_required || 10)
     setRewardDescription(programData.reward_description || '')
     setAllowMultipleRedemption(programData.allow_multiple_redemption ?? true)
@@ -149,7 +142,7 @@ setWalletMessage(programData.wallet_message || '')
     setSubscriptionBenefits(programData.subscription_benefits || '')
     setDailyLimit(programData.daily_limit || 1)
 
-    // Load rewards (for stamps/points)
+    // Load rewards
     if (programData.program_type === 'stamps' || programData.program_type === 'points') {
       const { data: rewardsData } = await supabase
         .from('rewards')
@@ -160,7 +153,7 @@ setWalletMessage(programData.wallet_message || '')
       if (rewardsData) setRewards(rewardsData)
     }
 
-    // Load tiers (for tiers type)
+    // Load tiers
     if (programData.program_type === 'tiers') {
       const { data: tiersData } = await supabase
         .from('tiers')
@@ -174,68 +167,18 @@ setWalletMessage(programData.wallet_message || '')
     setLoading(false)
   }
 
-  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file || !merchantId) return
-
-    // ⛔ Blocca SVG - Google Wallet non lo supporta!
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
-    
-    if (!allowedTypes.includes(file.type)) {
-      alert('❌ Formato non supportato!\n\nGoogle Wallet accetta solo:\n• PNG\n• JPG/JPEG\n• WebP\n\n⚠️ I file SVG NON sono supportati.')
-      e.target.value = ''
-      return
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      alert('L\'immagine deve essere inferiore a 2MB')
-      return
-    }
-
-    setUploading(true)
-
-    try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${merchantId}/${programId}-${Date.now()}.${fileExt}`
-
-      const { error } = await supabase.storage
-        .from('logos')
-        .upload(fileName, file, { cacheControl: '3600', upsert: true })
-
-      if (error) {
-        alert('Errore: ' + error.message)
-        return
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('logos')
-        .getPublicUrl(fileName)
-
-      setLogoUrl(publicUrl)
-      setLogoPreview(publicUrl)
-    } catch (err) {
-      alert('Errore durante il caricamento')
-    } finally {
-      setUploading(false)
-    }
-  }
-
   async function saveProgram() {
     if (!program) return
     setSaving(true)
 
+    // NOTA: NON salviamo name, logo_url, primary_color - sono bloccati!
     const updateData: any = {
-      name,
       description,
-      primary_color: primaryColor,
-      secondary_color: secondaryColor,
-      text_color: textColor,
-      logo_url: logoUrl || null,
       external_rewards_url: externalRewardsUrl || null,
-      rules_url: rulesUrl || null,
       terms_url: termsUrl || null,
-website_url: websiteUrl || null,
-wallet_message: walletMessage || null,
+      rules_url: termsUrl || null, // Mantieni sincronizzato
+      website_url: websiteUrl || null,
+      wallet_message: walletMessage || null,
       updated_at: new Date().toISOString()
     }
 
@@ -248,7 +191,7 @@ wallet_message: walletMessage || null,
         break
       case 'points':
         updateData.points_per_euro = eurosPerPoint
-        updateData.stamps_required = stampsRequired // points for reward
+        updateData.stamps_required = stampsRequired
         updateData.reward_description = rewardDescription
         break
       case 'cashback':
@@ -279,7 +222,7 @@ wallet_message: walletMessage || null,
   }
 
   async function deleteProgram() {
-    if (!confirm('Sei sicuro? Tutte le card verranno eliminate.')) return
+    if (!confirm('Sei sicuro? Tutte le card dei clienti verranno eliminate. Questa azione è irreversibile.')) return
 
     const { error } = await supabase
       .from('programs')
@@ -431,10 +374,10 @@ wallet_message: walletMessage || null,
             </button>
             <button
               onClick={saveProgram}
-              disabled={saving || !name}
+              disabled={saving}
               className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
             >
-              {saving ? 'Salvando...' : '💾 Salva'}
+              {saving ? 'Salvando...' : '💾 Salva Modifiche'}
             </button>
           </div>
         </div>
@@ -446,29 +389,84 @@ wallet_message: walletMessage || null,
           {/* Form Column */}
           <div className="space-y-6">
             
-            {/* Basic Info */}
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-              <h2 className="font-bold text-lg mb-4">📝 Informazioni Base</h2>
+            {/* ⚠️ DISCLAIMER PRINCIPALE */}
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl">⚠️</span>
+                <div>
+                  <p className="font-bold text-amber-900 text-lg">Cosa puoi modificare</p>
+                  <div className="mt-2 space-y-2 text-sm text-amber-800">
+                    <p><strong>✅ MODIFICABILI</strong> (si applicano subito a TUTTE le carte):</p>
+                    <ul className="list-disc list-inside ml-2 space-y-1">
+                      <li>Soglie (bollini richiesti, punti, percentuali)</li>
+                      <li>Premi e livelli</li>
+                      <li>Link e messaggi</li>
+                    </ul>
+                    <p className="mt-3"><strong>🔒 NON MODIFICABILI</strong> (per cambiarli, crea un nuovo programma):</p>
+                    <ul className="list-disc list-inside ml-2 space-y-1">
+                      <li>Nome programma</li>
+                      <li>Logo</li>
+                      <li>Colori</li>
+                    </ul>
+                    <p className="mt-3 text-amber-700 italic">
+                      I QR code delle carte esistenti continueranno a funzionare normalmente.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Info Base - BLOCCATE */}
+            <div className="bg-white rounded-2xl shadow-sm p-6 opacity-75">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-lg">🔒 Informazioni Base</h2>
+                <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Non modificabile</span>
+              </div>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome Programma *</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
-                  />
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Nome Programma</label>
+                  <div className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-xl text-gray-600">
+                    {name}
+                  </div>
                 </div>
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Descrizione</label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
                     rows={2}
+                    placeholder="Descrizione del programma..."
                   />
+                  <p className="text-xs text-green-600 mt-1">✓ La descrizione è modificabile</p>
                 </div>
+                
+                <div className="flex items-center gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Logo</label>
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="Logo" className="w-16 h-16 object-contain bg-gray-100 rounded-xl border"/>
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-2xl">
+                        {typeInfo.icon}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Colore</label>
+                    <div 
+                      className="w-16 h-16 rounded-xl border-2 border-gray-200"
+                      style={{ backgroundColor: primaryColor }}
+                    />
+                  </div>
+                </div>
+                
+                <p className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+                  💡 Per cambiare nome, logo o colori devi creare un nuovo programma. 
+                  I clienti con carte esistenti continueranno a usare questo programma.
+                </p>
               </div>
             </div>
 
@@ -583,66 +581,65 @@ wallet_message: walletMessage || null,
             )}
 
             {/* PUNTI CONFIG */}
-{program.program_type === 'points' && (
-  <div className="bg-white rounded-2xl shadow-sm p-6">
-    <h2 className="font-bold text-lg mb-4">⭐ Configurazione Punti</h2>
-    
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Ogni quanti € spesi = 1 punto?
-        </label>
-        <div className="flex items-center gap-3">
-          <span className="text-gray-500">Ogni</span>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">€</span>
-            <input
-              type="number"
-              min="1"
-              value={eurosPerPoint}
-              onChange={(e) => setEurosPerPoint(parseInt(e.target.value) || 1)}
-              className="w-24 pl-8 pr-2 py-2 border rounded-xl text-center font-bold"
-            />
-          </div>
-          <span className="text-gray-500">= 1 punto</span>
-        </div>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Punti per premio</label>
-        <input
-          type="number"
-          value={stampsRequired}
-          onChange={(e) => setStampsRequired(parseInt(e.target.value) || 100)}
-          className="w-full px-4 py-2 border rounded-xl"
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Premio</label>
-        <input
-          type="text"
-          value={rewardDescription}
-          onChange={(e) => setRewardDescription(e.target.value)}
-          className="w-full px-4 py-2 border rounded-xl"
-          placeholder="es. €10 di sconto"
-        />
-      </div>
-      
-      <div className="bg-green-50 p-4 rounded-xl">
-        <p className="text-sm text-green-700">
-          📊 <strong>Come funziona:</strong>
-        </p>
-        <ul className="text-sm text-green-700 mt-2 space-y-1">
-          <li>• Cliente spende €{eurosPerPoint} → Guadagna 1 punto</li>
-          <li>• Cliente spende €{eurosPerPoint * 10} → Guadagna 10 punti</li>
-          <li>• A {stampsRequired} punti → Ottiene: {rewardDescription || 'premio'}</li>
-          <li>• <strong>Spesa totale per premio: €{eurosPerPoint * stampsRequired}</strong></li>
-        </ul>
-      </div>
-    </div>
-  </div>
-)}
+            {program.program_type === 'points' && (
+              <div className="bg-white rounded-2xl shadow-sm p-6">
+                <h2 className="font-bold text-lg mb-4">⭐ Configurazione Punti</h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ogni quanti € spesi = 1 punto?
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <span className="text-gray-500">Ogni</span>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">€</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={eurosPerPoint}
+                          onChange={(e) => setEurosPerPoint(parseInt(e.target.value) || 1)}
+                          className="w-24 pl-8 pr-2 py-2 border rounded-xl text-center font-bold"
+                        />
+                      </div>
+                      <span className="text-gray-500">= 1 punto</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Punti per premio</label>
+                    <input
+                      type="number"
+                      value={stampsRequired}
+                      onChange={(e) => setStampsRequired(parseInt(e.target.value) || 100)}
+                      className="w-full px-4 py-2 border rounded-xl"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Premio</label>
+                    <input
+                      type="text"
+                      value={rewardDescription}
+                      onChange={(e) => setRewardDescription(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-xl"
+                      placeholder="es. €10 di sconto"
+                    />
+                  </div>
+                  
+                  <div className="bg-green-50 p-4 rounded-xl">
+                    <p className="text-sm text-green-700">
+                      📊 <strong>Riepilogo:</strong>
+                    </p>
+                    <ul className="text-sm text-green-700 mt-2 space-y-1">
+                      <li>• Cliente spende €{eurosPerPoint} → Guadagna 1 punto</li>
+                      <li>• A {stampsRequired} punti → Ottiene: {rewardDescription || 'premio'}</li>
+                      <li>• <strong>Spesa totale per premio: €{eurosPerPoint * stampsRequired}</strong></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* CASHBACK CONFIG */}
             {program.program_type === 'cashback' && (
@@ -686,155 +683,148 @@ wallet_message: walletMessage || null,
             )}
 
             {/* TIERS CONFIG */}
-{program.program_type === 'tiers' && (
-  <div className="bg-white rounded-2xl shadow-sm p-6">
-    <div className="flex justify-between items-center mb-4">
-      <h2 className="font-bold text-lg">👑 Livelli VIP</h2>
-      <button
-        onClick={() => setShowAddTier(true)}
-        className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700"
-      >
-        + Aggiungi Livello
-      </button>
-    </div>
-    
-    <div className="bg-purple-50 rounded-xl p-4 mb-4">
-      <p className="text-sm text-purple-800">
-        <strong>💡 Come funziona:</strong> I clienti salgono di livello in base alla spesa totale. 
-        Ogni livello sblocca vantaggi esclusivi permanenti.
-      </p>
-    </div>
-
-    {tiers.length === 0 ? (
-      <p className="text-center text-gray-400 py-8">Nessun livello configurato. Aggiungi il primo!</p>
-    ) : (
-      <div className="space-y-3">
-        {tiers.map((tier, i) => (
-          <div key={tier.id} className="border-2 border-gray-200 rounded-xl p-4 hover:border-purple-300 transition-colors">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl">{tier.badge_emoji}</span>
-              <div className="flex-1">
-                <p className="font-bold text-lg">{tier.name}</p>
-                <div className="flex items-center gap-3 text-sm text-gray-500">
-                  <span>📊 {tier.min_spend === 0 ? 'Livello iniziale' : `Da €${tier.min_spend}`}</span>
-                  {tier.discount_percent > 0 && (
-                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                      🏷️ {tier.discount_percent}% sconto
-                    </span>
-                  )}
+            {program.program_type === 'tiers' && (
+              <div className="bg-white rounded-2xl shadow-sm p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="font-bold text-lg">👑 Livelli VIP</h2>
+                  <button
+                    onClick={() => setShowAddTier(true)}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700"
+                  >
+                    + Aggiungi Livello
+                  </button>
                 </div>
-              </div>
-              <div className="flex gap-1">
-                <button 
-                  onClick={() => setEditingTier(tier)} 
-                  className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg"
-                >
-                  ✏️
-                </button>
-                <button 
-                  onClick={() => deleteTier(tier.id)} 
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
-            {tier.benefits && (
-              <div className="bg-gray-50 rounded-lg p-3 mt-2">
-                <p className="text-xs font-medium text-gray-500 mb-1">🎁 Vantaggi:</p>
-                <p className="text-sm text-gray-700">{tier.benefits}</p>
+
+                {tiers.length === 0 ? (
+                  <p className="text-center text-gray-400 py-8">Nessun livello configurato. Aggiungi il primo!</p>
+                ) : (
+                  <div className="space-y-3">
+                    {tiers.map((tier) => (
+                      <div key={tier.id} className="border-2 border-gray-200 rounded-xl p-4 hover:border-purple-300 transition-colors">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-3xl">{tier.badge_emoji}</span>
+                          <div className="flex-1">
+                            <p className="font-bold text-lg">{tier.name}</p>
+                            <div className="flex items-center gap-3 text-sm text-gray-500">
+                              <span>📊 {tier.min_spend === 0 ? 'Livello iniziale' : `Da €${tier.min_spend}`}</span>
+                              {tier.discount_percent > 0 && (
+                                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                  🏷️ {tier.discount_percent}% sconto
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <button 
+                              onClick={() => setEditingTier(tier)} 
+                              className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg"
+                            >
+                              ✏️
+                            </button>
+                            <button 
+                              onClick={() => deleteTier(tier.id)} 
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                        {tier.benefits && (
+                          <div className="bg-gray-50 rounded-lg p-3 mt-2">
+                            <p className="text-xs font-medium text-gray-500 mb-1">🎁 Vantaggi:</p>
+                            <p className="text-sm text-gray-700">{tier.benefits}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {showAddTier && (
+                  <div className="mt-4 p-5 bg-purple-50 rounded-xl space-y-4">
+                    <h3 className="font-bold text-purple-800">➕ Nuovo Livello</h3>
+                    
+                    <div className="flex gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Icona</label>
+                        <select
+                          value={newTier.badge_emoji}
+                          onChange={(e) => setNewTier({...newTier, badge_emoji: e.target.value})}
+                          className="w-16 px-2 py-2 border-2 border-purple-200 rounded-lg text-2xl bg-white"
+                        >
+                          <option value="🥉">🥉</option>
+                          <option value="🥈">🥈</option>
+                          <option value="🥇">🥇</option>
+                          <option value="💎">💎</option>
+                          <option value="👑">👑</option>
+                          <option value="⭐">⭐</option>
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Nome Livello *</label>
+                        <input
+                          type="text"
+                          placeholder="es. Platinum"
+                          value={newTier.name}
+                          onChange={(e) => setNewTier({...newTier, name: e.target.value})}
+                          className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">📊 Spesa minima (€)</label>
+                        <input
+                          type="number"
+                          placeholder="es. 1000"
+                          value={newTier.min_spend}
+                          onChange={(e) => setNewTier({...newTier, min_spend: parseInt(e.target.value) || 0})}
+                          className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">🏷️ Sconto permanente (%)</label>
+                        <input
+                          type="number"
+                          placeholder="es. 15"
+                          value={newTier.discount_percent}
+                          onChange={(e) => setNewTier({...newTier, discount_percent: parseInt(e.target.value) || 0})}
+                          className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">🎁 Vantaggi di questo livello</label>
+                      <textarea
+                        placeholder="es. 15% sconto, spedizione gratuita, accesso eventi VIP..."
+                        value={newTier.benefits}
+                        onChange={(e) => setNewTier({...newTier, benefits: e.target.value})}
+                        className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg"
+                        rows={2}
+                      />
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => setShowAddTier(false)} 
+                        className="flex-1 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50"
+                      >
+                        Annulla
+                      </button>
+                      <button 
+                        onClick={addTier} 
+                        disabled={!newTier.name}
+                        className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        Aggiungi Livello
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        ))}
-      </div>
-    )}
-
-    {showAddTier && (
-      <div className="mt-4 p-5 bg-purple-50 rounded-xl space-y-4">
-        <h3 className="font-bold text-purple-800">➕ Nuovo Livello</h3>
-        
-        <div className="flex gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Icona</label>
-            <select
-              value={newTier.badge_emoji}
-              onChange={(e) => setNewTier({...newTier, badge_emoji: e.target.value})}
-              className="w-16 px-2 py-2 border-2 border-purple-200 rounded-lg text-2xl bg-white"
-            >
-              <option value="🥉">🥉</option>
-              <option value="🥈">🥈</option>
-              <option value="🥇">🥇</option>
-              <option value="💎">💎</option>
-              <option value="👑">👑</option>
-              <option value="⭐">⭐</option>
-            </select>
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Nome Livello *</label>
-            <input
-              type="text"
-              placeholder="es. Platinum"
-              value={newTier.name}
-              onChange={(e) => setNewTier({...newTier, name: e.target.value})}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg"
-            />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">📊 Spesa minima (€)</label>
-            <input
-              type="number"
-              placeholder="es. 1000"
-              value={newTier.min_spend}
-              onChange={(e) => setNewTier({...newTier, min_spend: parseInt(e.target.value) || 0})}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">🏷️ Sconto permanente (%)</label>
-            <input
-              type="number"
-              placeholder="es. 15"
-              value={newTier.discount_percent}
-              onChange={(e) => setNewTier({...newTier, discount_percent: parseInt(e.target.value) || 0})}
-              className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg"
-            />
-          </div>
-        </div>
-        
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">🎁 Vantaggi di questo livello</label>
-          <textarea
-            placeholder="es. 15% sconto, spedizione gratuita, accesso eventi VIP..."
-            value={newTier.benefits}
-            onChange={(e) => setNewTier({...newTier, benefits: e.target.value})}
-            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg"
-            rows={2}
-          />
-        </div>
-        
-        <div className="flex gap-3">
-          <button 
-            onClick={() => setShowAddTier(false)} 
-            className="flex-1 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Annulla
-          </button>
-          <button 
-            onClick={addTier} 
-            disabled={!newTier.name}
-            className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-          >
-            Aggiungi Livello
-          </button>
-        </div>
-      </div>
-    )}
-  </div>
-)}
 
             {/* SUBSCRIPTION CONFIG */}
             {program.program_type === 'subscription' && (
@@ -892,106 +882,31 @@ wallet_message: walletMessage || null,
               </div>
             )}
 
-            {/* Logo */}
-<div className="bg-white rounded-2xl shadow-sm p-6">
-  <h2 className="font-bold text-lg mb-4">🖼️ Logo Aziendale</h2>
-  
-  <div className="space-y-4">
-    {logoPreview ? (
-      <div className="flex items-center gap-4">
-        <img 
-          src={logoPreview} 
-          alt="Logo" 
-          className="w-24 h-24 object-contain bg-gray-100 rounded-xl border"
-        />
-        <div className="flex-1">
-          <p className="text-sm text-green-600 font-medium mb-2">✓ Logo caricato</p>
-          <div className="flex gap-2">
-            <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              📷 Cambia
-              <input 
-  type="file" 
-  accept="image/png,image/jpeg,image/jpg,image/webp" 
-  onChange={handleLogoUpload}
-                disabled={uploading}
-                className="hidden"
-              />
-            </label>
-            <button 
-              onClick={() => { setLogoUrl(''); setLogoPreview(null) }}
-              className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              🗑️ Rimuovi
-            </button>
-          </div>
-        </div>
-      </div>
-    ) : (
-      <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-indigo-400 transition-colors">
-        <div className="text-4xl mb-2">📷</div>
-        <p className="text-gray-500 mb-3">Nessun logo caricato</p>
-        <label className="cursor-pointer inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-          + Carica Logo
-          <input 
-            type="file" 
-            accept="image/*" 
-            onChange={handleLogoUpload} 
-            disabled={uploading}
-            className="hidden"
-          />
-        </label>
-        <p className="text-xs text-gray-400 mt-3">PNG, JPG o WebP • Max 2MB • ⚠️ NO SVG</p>
-      </div>
-    )}
-    
-    {uploading && (
-      <div className="flex items-center gap-2 text-indigo-600">
-        <div className="animate-spin w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
-        <span className="text-sm">Caricamento in corso...</span>
-      </div>
-    )}
-  </div>
-</div>
-
-            {/* Colors */}
+            {/* 🔗 LINK E GOOGLE WALLET - SEZIONE UNIFICATA */}
             <div className="bg-white rounded-2xl shadow-sm p-6">
-              <h2 className="font-bold text-lg mb-4">🎨 Colori</h2>
-              <div className="flex items-center gap-4">
-                <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-12 h-12 rounded-lg cursor-pointer"/>
-                <div className="flex gap-2 flex-wrap">
-                  {['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#1e293b'].map(c => (
-                    <button key={c} onClick={() => setPrimaryColor(c)} className={`w-8 h-8 rounded-lg ${primaryColor === c ? 'ring-2 ring-offset-2 ring-gray-400' : ''}`} style={{ backgroundColor: c }}/>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Links */}
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-              <h2 className="font-bold text-lg mb-4">🔗 Link Esterni</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Link Catalogo Premi</label>
-                  <input type="url" value={externalRewardsUrl} onChange={(e) => setExternalRewardsUrl(e.target.value)} className="w-full px-4 py-2 border rounded-xl" placeholder="https://..."/>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Link Regolamento</label>
-                  <input type="url" value={rulesUrl} onChange={(e) => setRulesUrl(e.target.value)} className="w-full px-4 py-2 border rounded-xl" placeholder="https://..."/>
-                </div>
-              </div>
-            </div>
-
-            {/* Google Wallet Settings */}
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-              <h2 className="font-bold text-lg mb-4">📱 Google Wallet</h2>
+              <h2 className="font-bold text-lg mb-2">🔗 Link e Google Wallet</h2>
               <p className="text-sm text-gray-500 mb-4">
-                Personalizza come appare la carta nel Google Wallet dei tuoi clienti
+                Questi link appariranno nel retro della carta Google Wallet dei tuoi clienti
               </p>
               
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Link Regolamento (mostrato nel Wallet)
+                    📋 Link Catalogo Premi
+                  </label>
+                  <input
+                    type="url"
+                    value={externalRewardsUrl}
+                    onChange={(e) => setExternalRewardsUrl(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    placeholder="https://tuosito.com/premi"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Mostrato come &quot;Catalogo Premi&quot; nel Wallet</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    📜 Link Regolamento
                   </label>
                   <input
                     type="url"
@@ -1000,12 +915,12 @@ wallet_message: walletMessage || null,
                     className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
                     placeholder="https://tuosito.com/regolamento"
                   />
-                  <p className="text-xs text-gray-400 mt-1">I clienti vedranno questo link nella loro carta</p>
+                  <p className="text-xs text-gray-400 mt-1">Mostrato come &quot;Regolamento&quot; nel Wallet</p>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Sito Web Attività
+                    🌐 Sito Web Attività
                   </label>
                   <input
                     type="url"
@@ -1014,11 +929,12 @@ wallet_message: walletMessage || null,
                     className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
                     placeholder="https://tuosito.com"
                   />
+                  <p className="text-xs text-gray-400 mt-1">Mostrato come &quot;Sito Web&quot; nel Wallet</p>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Messaggio Personalizzato
+                    💬 Messaggio Personalizzato
                   </label>
                   <textarea
                     value={walletMessage}
@@ -1027,44 +943,43 @@ wallet_message: walletMessage || null,
                     rows={2}
                     placeholder="es. Grazie per essere nostro cliente! Presenta la carta ad ogni acquisto."
                   />
-                  <p className="text-xs text-gray-400 mt-1">Questo messaggio appare nella carta Google Wallet</p>
+                  <p className="text-xs text-gray-400 mt-1">Appare come messaggio nella carta</p>
                 </div>
                 
                 <div className="bg-indigo-50 rounded-xl p-4">
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">💡</span>
                     <div>
-                      <p className="font-medium text-indigo-900">Come funziona</p>
+                      <p className="font-medium text-indigo-900">Come appariranno i link</p>
                       <p className="text-sm text-indigo-700 mt-1">
-                        Quando un cliente aggiunge la carta al Google Wallet, vedrà il logo, 
-                        i colori e i link che hai configurato. L&apos;immagine della carta si aggiorna 
-                        automaticamente con i bollini/punti/credito attuali.
+                        Nel retro della carta Google Wallet i clienti vedranno:
                       </p>
+                      <ul className="text-sm text-indigo-700 mt-2 space-y-1">
+                        <li>• <strong>Catalogo Premi</strong> → link al tuo catalogo</li>
+                        <li>• <strong>Regolamento</strong> → link alle regole</li>
+                        <li>• <strong>Sito Web</strong> → link al tuo sito</li>
+                        <li>• <strong>Zale Marketing</strong> → sempre presente in fondo</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl">⚠️</span>
+                    <span className="text-2xl">✅</span>
                     <div>
-                      <p className="font-medium text-amber-900">Importante</p>
-                      <p className="text-sm text-amber-700 mt-1">
-                        Se modifichi il <strong>logo</strong> o il <strong>nome del programma</strong>, 
-                        le carte già salvate nel wallet dei clienti manterranno i dati precedenti. 
-                        Solo le nuove carte mostreranno le modifiche. Questo è un limite tecnico di Google Wallet.
-                      </p>
-                      <p className="text-sm text-amber-700 mt-2">
-                        <strong>Consiglio:</strong> Configura logo e nome definitivi prima di distribuire le carte ai clienti.
+                      <p className="font-medium text-green-900">Queste modifiche si applicano subito</p>
+                      <p className="text-sm text-green-700 mt-1">
+                        I link e i messaggi modificati qui saranno visibili nelle <strong>nuove carte</strong> 
+                        che i clienti aggiungeranno al loro wallet.
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Preview Column */}
+          </div>
 
           {/* Preview Column */}
           <div className="lg:sticky lg:top-6 h-fit">
@@ -1076,8 +991,8 @@ wallet_message: walletMessage || null,
                   <div className="p-5" style={{ backgroundColor: primaryColor }}>
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-4">
-                      {logoPreview ? (
-                        <img src={logoPreview} alt="Logo" className="w-12 h-12 object-contain rounded-xl bg-white/20 p-1"/>
+                      {logoUrl ? (
+                        <img src={logoUrl} alt="Logo" className="w-12 h-12 object-contain rounded-xl bg-white/20 p-1"/>
                       ) : (
                         <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-2xl">{typeInfo.icon}</div>
                       )}
@@ -1094,95 +1009,56 @@ wallet_message: walletMessage || null,
                           <div className="flex justify-center gap-1.5 flex-wrap mb-2">
                             {Array.from({ length: Math.min(stampsRequired, 8) }).map((_, i) => (
                               <div key={i} className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${i < 4 ? 'bg-white' : 'bg-white/30'}`} style={{ color: i < 4 ? primaryColor : 'white' }}>
-                                {i < 4 ? '✓' : i + 1}
+                                {i < 4 ? '✓' : ''}
                               </div>
                             ))}
                           </div>
                           <p className="text-center text-white text-sm">4/{stampsRequired} bollini</p>
+                          {rewardDescription && (
+                            <p className="text-center text-white/80 text-xs mt-1">🎁 {rewardDescription}</p>
+                          )}
                         </>
                       )}
 
                       {program.program_type === 'points' && (
-  <div className="text-center">
-    <p className="text-white/60 text-xs">I TUOI PUNTI</p>
-    <p className="text-3xl font-bold text-white">47</p>
-    <div className="mt-2 h-2 bg-white/30 rounded-full overflow-hidden">
-      <div 
-        className="h-full bg-white rounded-full" 
-        style={{ width: `${Math.min((47 / stampsRequired) * 100, 100)}%` }}
-      />
-    </div>
-    <p className="text-white/60 text-xs mt-2">
-      47/{stampsRequired} punti
-    </p>
-    <p className="text-white/50 text-xs">
-      (ogni €{eurosPerPoint} = 1 pt)
-    </p>
-    {rewardDescription && (
-      <p className="text-white text-xs mt-1">🎁 {rewardDescription}</p>
-    )}
-  </div>
-)}
+                        <div className="text-center">
+                          <p className="text-white/60 text-xs">I TUOI PUNTI</p>
+                          <p className="text-3xl font-bold text-white">47</p>
+                          <div className="mt-2 h-2 bg-white/30 rounded-full overflow-hidden">
+                            <div className="h-full bg-white rounded-full" style={{ width: `${Math.min((47 / stampsRequired) * 100, 100)}%` }}/>
+                          </div>
+                          <p className="text-white/60 text-xs mt-2">47/{stampsRequired} punti</p>
+                          {rewardDescription && (
+                            <p className="text-white text-xs mt-1">🎁 {rewardDescription}</p>
+                          )}
+                        </div>
+                      )}
 
                       {program.program_type === 'cashback' && (
-  <div className="text-center">
-    <p className="text-white/60 text-xs">IL TUO CREDITO</p>
-    <p className="text-3xl font-bold text-white">€12.50</p>
-    <p className="text-white/70 text-xs mt-1">
-      +{cashbackPercent}% su ogni acquisto
-    </p>
-    <p className="text-white/50 text-xs mt-1">
-      Min. €{minCashbackRedeem} per riscattare
-    </p>
-    {12.50 >= minCashbackRedeem ? (
-      <div className="mt-2 bg-white/20 rounded-lg py-1.5 text-white text-xs font-medium">
-        ✓ Credito disponibile!
-      </div>
-    ) : (
-      <div className="mt-2 bg-white/10 rounded-lg py-1.5 text-white/60 text-xs">
-        🔒 Ancora €{(minCashbackRedeem - 12.50).toFixed(2)}
-      </div>
-    )}
-  </div>
-)}
+                        <div className="text-center">
+                          <p className="text-white/60 text-xs">IL TUO CREDITO</p>
+                          <p className="text-3xl font-bold text-white">€12.50</p>
+                          <p className="text-white/70 text-xs mt-1">+{cashbackPercent}% su ogni acquisto</p>
+                        </div>
+                      )}
 
                       {program.program_type === 'tiers' && (
-  <div className="text-center">
-    <p className="text-white/60 text-xs mb-2">IL TUO LIVELLO</p>
-    {tiers.length > 0 ? (
-      <>
-        <div className="flex justify-center items-end gap-2 mb-2">
-          {tiers.slice(0, 4).map((tier, i) => (
-            <div 
-              key={i} 
-              className={`text-center transition-all ${i === 1 ? 'scale-125 opacity-100' : 'scale-90 opacity-50'}`}
-            >
-              <p className="text-2xl">{tier.badge_emoji}</p>
-              <p className="text-white text-xs font-medium">{tier.name}</p>
-              {i === 1 && tier.discount_percent > 0 && (
-                <p className="text-white/80 text-xs">-{tier.discount_percent}%</p>
-              )}
-            </div>
-          ))}
-        </div>
-        {tiers[1]?.benefits && (
-          <div className="bg-white/20 rounded-lg p-2 mt-2">
-            <p className="text-white text-xs">
-              {tiers[1].benefits}
-            </p>
-          </div>
-        )}
-        {tiers[2] && (
-          <p className="text-white/50 text-xs mt-2">
-            Prossimo: {tiers[2].badge_emoji} {tiers[2].name} (€{tiers[2].min_spend})
-          </p>
-        )}
-      </>
-    ) : (
-      <p className="text-white/60 text-sm">Configura i livelli</p>
-    )}
-  </div>
-)}
+                        <div className="text-center">
+                          <p className="text-white/60 text-xs mb-2">IL TUO LIVELLO</p>
+                          {tiers.length > 0 ? (
+                            <div className="flex justify-center items-end gap-2">
+                              {tiers.slice(0, 3).map((tier, i) => (
+                                <div key={i} className={`text-center transition-all ${i === 1 ? 'scale-125 opacity-100' : 'scale-90 opacity-50'}`}>
+                                  <p className="text-2xl">{tier.badge_emoji}</p>
+                                  <p className="text-white text-xs font-medium">{tier.name}</p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-white/60 text-sm">Configura i livelli</p>
+                          )}
+                        </div>
+                      )}
 
                       {program.program_type === 'subscription' && (
                         <div className="text-center">
@@ -1201,16 +1077,17 @@ wallet_message: walletMessage || null,
                       <p className="text-xs text-gray-400 mt-1">Scansiona</p>
                     </div>
 
-                    {(externalRewardsUrl || rulesUrl) && (
-                      <div className="flex justify-center gap-3 mt-3 text-xs text-white/70">
+                    {(externalRewardsUrl || termsUrl || websiteUrl) && (
+                      <div className="flex justify-center gap-3 mt-3 text-xs text-white/70 flex-wrap">
                         {externalRewardsUrl && <span className="underline">📋 Premi</span>}
-                        {rulesUrl && <span className="underline">📜 Regolamento</span>}
+                        {termsUrl && <span className="underline">📜 Regolamento</span>}
+                        {websiteUrl && <span className="underline">🌐 Sito</span>}
                       </div>
                     )}
                   </div>
                   
                   <div className="bg-gray-100 py-2 text-center">
-                    <p className="text-xs text-gray-400">Creato con ❤️ da <span className="font-medium">Zale Marketing</span></p>
+                    <p className="text-xs text-gray-400">Powered by <span className="font-medium">Zale Marketing</span></p>
                   </div>
                 </div>
               </div>
@@ -1237,83 +1114,83 @@ wallet_message: walletMessage || null,
       )}
 
       {/* Edit Tier Modal */}
-{editingTier && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl w-full max-w-md p-6">
-      <h2 className="text-xl font-bold mb-4">✏️ Modifica Livello</h2>
-      
-      <div className="space-y-4">
-        <div className="flex gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Icona</label>
-            <select 
-              value={editingTier.badge_emoji} 
-              onChange={(e) => setEditingTier({...editingTier, badge_emoji: e.target.value})} 
-              className="w-16 px-2 py-2 border rounded-lg text-2xl"
-            >
-              <option value="🥉">🥉</option>
-              <option value="🥈">🥈</option>
-              <option value="🥇">🥇</option>
-              <option value="💎">💎</option>
-              <option value="👑">👑</option>
-              <option value="⭐">⭐</option>
-            </select>
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
-            <input 
-              type="text" 
-              value={editingTier.name} 
-              onChange={(e) => setEditingTier({...editingTier, name: e.target.value})} 
-              className="w-full px-4 py-2 border rounded-lg"
-            />
+      {editingTier && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <h2 className="text-xl font-bold mb-4">✏️ Modifica Livello</h2>
+            
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Icona</label>
+                  <select 
+                    value={editingTier.badge_emoji} 
+                    onChange={(e) => setEditingTier({...editingTier, badge_emoji: e.target.value})} 
+                    className="w-16 px-2 py-2 border rounded-lg text-2xl"
+                  >
+                    <option value="🥉">🥉</option>
+                    <option value="🥈">🥈</option>
+                    <option value="🥇">🥇</option>
+                    <option value="💎">💎</option>
+                    <option value="👑">👑</option>
+                    <option value="⭐">⭐</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+                  <input 
+                    type="text" 
+                    value={editingTier.name} 
+                    onChange={(e) => setEditingTier({...editingTier, name: e.target.value})} 
+                    className="w-full px-4 py-2 border rounded-lg"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">📊 Spesa minima (€)</label>
+                  <input 
+                    type="number" 
+                    value={editingTier.min_spend} 
+                    onChange={(e) => setEditingTier({...editingTier, min_spend: parseInt(e.target.value) || 0})} 
+                    className="w-full px-4 py-2 border rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">🏷️ Sconto (%)</label>
+                  <input 
+                    type="number" 
+                    value={editingTier.discount_percent} 
+                    onChange={(e) => setEditingTier({...editingTier, discount_percent: parseInt(e.target.value) || 0})} 
+                    className="w-full px-4 py-2 border rounded-lg"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">🎁 Vantaggi</label>
+                <textarea 
+                  value={editingTier.benefits || ''} 
+                  onChange={(e) => setEditingTier({...editingTier, benefits: e.target.value})} 
+                  className="w-full px-4 py-2 border rounded-lg" 
+                  rows={3}
+                  placeholder="Descrivi i vantaggi di questo livello..."
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setEditingTier(null)} className="flex-1 py-2 border rounded-lg hover:bg-gray-50">
+                Annulla
+              </button>
+              <button onClick={updateTier} className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                Salva Modifiche
+              </button>
+            </div>
           </div>
         </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">📊 Spesa minima (€)</label>
-            <input 
-              type="number" 
-              value={editingTier.min_spend} 
-              onChange={(e) => setEditingTier({...editingTier, min_spend: parseInt(e.target.value) || 0})} 
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">🏷️ Sconto (%)</label>
-            <input 
-              type="number" 
-              value={editingTier.discount_percent} 
-              onChange={(e) => setEditingTier({...editingTier, discount_percent: parseInt(e.target.value) || 0})} 
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-          </div>
-        </div>
-        
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">🎁 Vantaggi</label>
-          <textarea 
-            value={editingTier.benefits || ''} 
-            onChange={(e) => setEditingTier({...editingTier, benefits: e.target.value})} 
-            className="w-full px-4 py-2 border rounded-lg" 
-            rows={3}
-            placeholder="Descrivi i vantaggi di questo livello..."
-          />
-        </div>
-      </div>
-      
-      <div className="flex gap-3 mt-6">
-        <button onClick={() => setEditingTier(null)} className="flex-1 py-2 border rounded-lg hover:bg-gray-50">
-          Annulla
-        </button>
-        <button onClick={updateTier} className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-          Salva Modifiche
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   )
 }

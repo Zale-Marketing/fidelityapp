@@ -23,6 +23,10 @@ function sanitizeId(id: string): string {
   return id.replace(/-/g, '').substring(0, 32)
 }
 
+// ============================================================================
+// TIPI
+// ============================================================================
+
 export type ProgramType = 'stamps' | 'points' | 'cashback' | 'tiers' | 'subscription' | 'missions'
 
 export type WalletCardData = {
@@ -37,39 +41,53 @@ export type WalletCardData = {
   backgroundColor: string
   logoUrl?: string
   
-  termsUrl?: string
-  websiteUrl?: string
-  walletMessage?: string
-  rewardDescription?: string
+  // Link esterni (dal form)
+  externalRewardsUrl?: string  // Link Catalogo Premi
+  rulesUrl?: string            // Link Regolamento (vecchio campo)
+  termsUrl?: string            // Link Regolamento (Google Wallet)
+  websiteUrl?: string          // Sito Web
+  walletMessage?: string       // Messaggio personalizzato
+  rewardDescription?: string   // Premio
   
+  // STAMPS
   stampCount?: number
   stampsRequired?: number
   stampRewards?: Array<{ stamps: number, reward: string }>
   
+  // POINTS
   pointsBalance?: number
   pointsForReward?: number
   pointsRewards?: Array<{ points: number, reward: string }>
   
+  // CASHBACK
   cashbackBalance?: number
   cashbackPercent?: number
   
+  // TIERS
   currentTier?: string
   tierDiscount?: number
   totalSpent?: number
   nextTierName?: string
   nextTierMinSpend?: number
   
+  // SUBSCRIPTION
   subscriptionStatus?: string
   subscriptionEnd?: string
   dailyUses?: number
   dailyLimit?: number
   
+  // MISSIONS
   activeMissions?: number
   completedMissions?: number
   
+  // Customer
   customerName?: string
   customerEmail?: string
 }
+
+// ============================================================================
+// HERO IMAGE URL - 1032x336 High Resolution
+// ============================================================================
 
 function getHeroImageUrl(data: WalletCardData): string {
   const baseUrl = `${APP_URL}/api/wallet-image`
@@ -126,6 +144,10 @@ function getHeroImageUrl(data: WalletCardData): string {
   return `${baseUrl}?${params}`
 }
 
+// ============================================================================
+// GENERA LINK WALLET
+// ============================================================================
+
 export async function generateWalletLink(data: WalletCardData): Promise<string> {
   const PRIVATE_KEY = getPrivateKey()
   
@@ -141,7 +163,7 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
   
   const heroImageUrl = getHeroImageUrl(data)
   
-  // LOYALTY CLASS
+  // ========== LOYALTY CLASS ==========
   const loyaltyClass: any = {
     id: classId,
     issuerName: data.issuerName,
@@ -165,6 +187,7 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
       }
     },
     
+    // ⭐ EFFETTO ARCOBALENO SUL QR CODE
     securityAnimation: {
       animationType: 'FOIL_SHIMMER'
     },
@@ -172,34 +195,48 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
     reviewStatus: 'UNDER_REVIEW',
   }
   
-  // Links
+  // ========== LINKS NEL RETRO DELLA CARTA ==========
+  // IMPORTANTE: description è quello che appare come label (max 20 caratteri consigliati)
   const links: any[] = []
   
-  if (data.termsUrl) {
+  // Link Catalogo Premi
+  if (data.externalRewardsUrl) {
     links.push({
-      uri: data.termsUrl,
+      uri: data.externalRewardsUrl.startsWith('http') ? data.externalRewardsUrl : `https://${data.externalRewardsUrl}`,
+      description: 'Catalogo Premi',
+      id: 'rewards_link'
+    })
+  }
+  
+  // Link Regolamento (usa termsUrl se presente, altrimenti rulesUrl)
+  const regolamentoUrl = data.termsUrl || data.rulesUrl
+  if (regolamentoUrl) {
+    links.push({
+      uri: regolamentoUrl.startsWith('http') ? regolamentoUrl : `https://${regolamentoUrl}`,
       description: 'Regolamento',
       id: 'terms_link'
     })
   }
   
+  // Sito Web
   if (data.websiteUrl) {
     links.push({
-      uri: data.websiteUrl,
+      uri: data.websiteUrl.startsWith('http') ? data.websiteUrl : `https://${data.websiteUrl}`,
       description: 'Sito Web',
       id: 'website_link'
     })
   }
   
+  // Powered by Zale Marketing - SEMPRE in fondo
   links.push({
-    uri: 'https://zalemarketing.com',
-    description: 'Powered by Zale Marketing',
+    uri: 'https://zalemarketing.it',
+    description: 'Zale Marketing',
     id: 'powered_by'
   })
   
   loyaltyClass.linksModuleData = { uris: links }
   
-  // Messaggi
+  // ========== MESSAGGI (opzionali) ==========
   const messages: any[] = []
   
   if (data.walletMessage) {
@@ -222,27 +259,33 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
     loyaltyClass.messages = messages
   }
 
-  // LOYALTY OBJECT - Solo nome cliente, niente dati duplicati
+  // ========== LOYALTY OBJECT ==========
+  // SOLO nome cliente sopra il QR, NIENTE dati duplicati!
   const loyaltyObject: any = {
     id: objectId,
     classId: classId,
     state: 'ACTIVE',
     
+    // ID univoco
     accountId: data.customerEmail || data.scanToken.substring(0, 12),
+    
+    // ⭐ SOLO IL NOME del cliente - niente altro sopra il QR!
     accountName: data.customerName || 'Cliente',
     
+    // QR Code
     barcode: {
       type: 'QR_CODE',
       value: data.scanToken,
       alternateText: data.scanToken.substring(0, 8).toUpperCase()
     },
     
+    // Hero image con tutti i dati visivi
     heroImage: {
       sourceUri: { uri: heroImageUrl }
     },
   }
 
-  // JWT
+  // ========== GENERA JWT ==========
   const claims = {
     iss: CLIENT_EMAIL,
     aud: 'google',
@@ -257,6 +300,10 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
   const token = jwt.sign(claims, PRIVATE_KEY, { algorithm: 'RS256' })
   return `https://pay.google.com/gp/v/save/${token}`
 }
+
+// ============================================================================
+// AGGIORNA CARD NEL WALLET (solo dati oggetto - bollini, punti, saldo)
+// ============================================================================
 
 export async function updateWalletCard(data: WalletCardData): Promise<void> {
   const { GoogleAuth } = await import('google-auth-library')
@@ -292,7 +339,7 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
       method: 'PATCH',
       data: updateData,
     })
-    console.log(`✅ Wallet aggiornato`)
+    console.log(`✅ Wallet aggiornato: ${objectId}`)
   } catch (error: any) {
     if (error.code === 404) {
       console.log('ℹ️ Carta non ancora nel wallet')
@@ -302,54 +349,15 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
   }
 }
 
-export async function updateWalletClass(data: {
-  programId: string
-  programName: string
-  issuerName: string
-  backgroundColor?: string
-  logoUrl?: string
-}): Promise<void> {
-  const { GoogleAuth } = await import('google-auth-library')
-  
-  const PRIVATE_KEY = getPrivateKey()
-  if (!PRIVATE_KEY || !ISSUER_ID) return
-  
-  const cleanProgramId = sanitizeId(data.programId)
-  const classId = `${ISSUER_ID}.${cleanProgramId}`
-
-  const auth = new GoogleAuth({
-    credentials: {
-      client_email: CLIENT_EMAIL,
-      private_key: PRIVATE_KEY,
-    },
-    scopes: ['https://www.googleapis.com/auth/wallet_object.issuer']
-  })
-
-  const client = await auth.getClient()
-
-  const updateData: any = {
-    programName: data.programName,
-    issuerName: data.issuerName,
-  }
-  
-  if (data.backgroundColor) {
-    updateData.hexBackgroundColor = data.backgroundColor
-  }
-
-  if (data.logoUrl) {
-    updateData.programLogo = {
-      sourceUri: { uri: data.logoUrl }
-    }
-  }
-
-  try {
-    await client.request({
-      url: `https://walletobjects.googleapis.com/walletobjects/v1/loyaltyClass/${classId}`,
-      method: 'PATCH',
-      data: updateData,
-    })
-    console.log(`✅ Classe Wallet aggiornata`)
-  } catch (error: any) {
-    console.log('⚠️ Classe non aggiornata:', error.message)
-  }
-}
+// ============================================================================
+// NOTA IMPORTANTE SUGLI UPDATE
+// ============================================================================
+// 
+// Le modifiche alla CLASSE (logo, nome programma, colori) NON si applicano
+// alle carte già salvate nel wallet degli utenti.
+// 
+// Solo le modifiche all'OGGETTO (bollini, punti, saldo, hero image) si
+// aggiornano in tempo reale tramite PATCH API.
+// 
+// Questo è un limite tecnico di Google Wallet, non del nostro sistema.
+//
