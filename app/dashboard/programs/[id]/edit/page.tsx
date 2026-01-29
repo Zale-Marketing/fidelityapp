@@ -178,8 +178,12 @@ setWalletMessage(programData.wallet_message || '')
     const file = e.target.files?.[0]
     if (!file || !merchantId) return
 
-    if (!file.type.startsWith('image/')) {
-      alert('Per favore seleziona un\'immagine')
+    // ⛔ Blocca SVG - Google Wallet non lo supporta!
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert('❌ Formato non supportato!\n\nGoogle Wallet accetta solo:\n• PNG\n• JPG/JPEG\n• WebP\n\n⚠️ I file SVG NON sono supportati.')
+      e.target.value = ''
       return
     }
 
@@ -906,9 +910,9 @@ wallet_message: walletMessage || null,
             <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
               📷 Cambia
               <input 
-                type="file" 
-                accept="image/*" 
-                onChange={handleLogoUpload} 
+  type="file" 
+  accept="image/png,image/jpeg,image/jpg,image/webp" 
+  onChange={handleLogoUpload}
                 disabled={uploading}
                 className="hidden"
               />
@@ -936,7 +940,7 @@ wallet_message: walletMessage || null,
             className="hidden"
           />
         </label>
-        <p className="text-xs text-gray-400 mt-3">PNG, JPG o SVG • Max 2MB</p>
+        <p className="text-xs text-gray-400 mt-3">PNG, JPG o WebP • Max 2MB • ⚠️ NO SVG</p>
       </div>
     )}
     
