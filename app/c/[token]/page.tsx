@@ -14,11 +14,18 @@ type Tier = {
   benefits: string
 }
 
+type Reward = {
+  id: string
+  name: string
+  stamps_required: number
+}
+
 export default function CustomerCardPage() {
   const [card, setCard] = useState<Card | null>(null)
   const [program, setProgram] = useState<Program | null>(null)
   const [merchant, setMerchant] = useState<Merchant | null>(null)
   const [tiers, setTiers] = useState<Tier[]>([])
+  const [rewards, setRewards] = useState<Reward[]>([])
   const [loading, setLoading] = useState(true)
   const [walletLoading, setWalletLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -60,8 +67,19 @@ export default function CustomerCardPage() {
             .select('*')
             .eq('program_id', programData.id)
             .order('min_spend', { ascending: true })
-          
+
           if (tiersData) setTiers(tiersData)
+        }
+
+        // Load rewards for stamps program (separate query per CLAUDE.md rules)
+        if (programData.program_type === 'stamps') {
+          const { data: rewardsData } = await supabase
+            .from('rewards')
+            .select('id, name, stamps_required')
+            .eq('program_id', programData.id)
+            .eq('is_active', true)
+            .order('stamps_required', { ascending: true })
+          if (rewardsData) setRewards(rewardsData)
         }
       }
 
@@ -173,6 +191,59 @@ export default function CustomerCardPage() {
       subscription: '🔄'
     }
     return icons[type] || '🎫'
+  }
+
+  function getProgressMessage(): string {
+    if (!program || !card) return ''
+
+    const programType = (program as any).program_type || 'stamps'
+    const currentStamps = card.stamp_count || (card as any).current_stamps || 0
+    const pointsBalance = (card as any).points_balance || 0
+    const pointsForReward = program.stamps_required || 100
+    const cashbackBalance = (card as any).cashback_balance || 0
+    const minCashbackRedeem = (program as any).min_cashback_redeem || 5
+    const canRedeemCashback = cashbackBalance >= minCashbackRedeem
+    const totalSpent = (card as any).total_spent || 0
+    const nextTier = getNextTier(totalSpent)
+    const subscriptionStatus = (card as any).subscription_status
+    const subscriptionEnd = (card as any).subscription_end
+    const isSubscriptionActive = subscriptionStatus === 'active' && subscriptionEnd && new Date(subscriptionEnd) > new Date()
+
+    if (programType === 'stamps') {
+      const nextReward = rewards
+        .filter(r => r.stamps_required > currentStamps)
+        .sort((a, b) => a.stamps_required - b.stamps_required)[0]
+      if (nextReward) {
+        const remaining = nextReward.stamps_required - currentStamps
+        return `Ancora ${remaining} bollin${remaining === 1 ? 'o' : 'i'} per ${nextReward.name}`
+      }
+      const remaining = program.stamps_required - currentStamps
+      if (remaining <= 0) return 'Premio pronto! Mostra la carta in cassa'
+      return `Ancora ${remaining} bollin${remaining === 1 ? 'o' : 'i'} al premio`
+    }
+
+    if (programType === 'points') {
+      const remaining = pointsForReward - pointsBalance
+      if (remaining <= 0) return 'Premio pronto! Mostra la carta in cassa'
+      return `Ancora ${remaining} punt${remaining === 1 ? 'o' : 'i'} al premio`
+    }
+
+    if (programType === 'cashback') {
+      if (canRedeemCashback) return 'Pronto per riscattare!'
+      return `Ancora €${(minCashbackRedeem - cashbackBalance).toFixed(2)} per riscattare`
+    }
+
+    if (programType === 'tiers') {
+      if (!nextTier) return 'Livello massimo raggiunto'
+      const remaining = nextTier.min_spend - totalSpent
+      return `Ancora €${remaining.toFixed(2)} per ${nextTier.name}`
+    }
+
+    if (programType === 'subscription') {
+      return isSubscriptionActive ? 'Abbonamento Attivo' : 'Abbonamento Scaduto'
+    }
+
+    return ''
   }
 
   if (loading) {
