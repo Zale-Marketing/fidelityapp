@@ -74,12 +74,12 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 ## Current Position
 
-Phase: 4 of 5 (Retention Tools)
-Plan: 2 of 3 in current phase (plan 04-02 complete)
+Phase: 5 of 5 (Landing Page)
+Plan: 1 of 1 in current phase (plan 05-01 complete — awaiting human-verify checkpoint)
 Status: In Progress
-Last activity: 2026-03-02 — Plan 04-02 complete (Notification tag segmentation — tag dropdown, live recipient count preview, tag-filtered wallet sends)
+Last activity: 2026-03-02 — Plan 05-01 Task 1 complete (Landing page rewrite — navbar, hero, social proof bar, 3-step, CTA, footer)
 
-Progress: [########░░] 83%
+Progress: [##########] 100%
 
 ## Performance Metrics
 
@@ -139,6 +139,9 @@ Recent decisions affecting current work:
 - [Phase 04-02]: computeRecipientCount() accepts explicit params to avoid stale closure in debounced callback
 - [Phase 04-02]: recipientCount counts distinct card_holder_ids (customers) not card rows — aligns with 'X clienti' wording
 - [Phase 04-02]: Tag dropdown hidden when merchant has no tags — zero-friction baseline UX
+- [05-01]: Landing page as pure Server Component — no client JS needed for static marketing page
+- [05-01]: Phone mockup entirely in CSS/Tailwind — no external images, no SVG
+- [05-01]: Accented characters removed from copy text for HTML cleanliness
 
 ### Pending Todos
 
@@ -154,5 +157,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 04-02-PLAN.md (Notification tag segmentation)
+Stopped at: Checkpoint 05-01 Task 2 — human-verify landing page at http://localhost:3000
 Resume file: None

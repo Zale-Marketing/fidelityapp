@@ -100,7 +100,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01-PLAN.md — Landing page self-service (above-fold value prop + phone mockup CSS, social proof bar, 3-step flow, CTA → /register → /onboarding)
+- [x] 05-01-PLAN.md — Landing page self-service (above-fold value prop + phone mockup CSS, social proof bar, 3-step flow, CTA → /register → /onboarding)
 
 ## Progress
 
@@ -113,4 +113,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Merchant UX | 2/2 | Complete   | 2026-03-02 |
 | 3. Customer Pages | 2/2 | Complete | 2026-03-02 |
 | 4. Retention Tools | 3/3 | Complete   | 2026-03-02 |
-| 5. Landing Page | 0/1 | Not started | - |
+| 5. Landing Page | 1/1 | Complete | 2026-03-02 |
