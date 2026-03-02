@@ -153,12 +153,13 @@ function buildClassTemplateInfo(programType: ProgramType): any {
       cardRowTemplateInfos = [
         {
           twoItems: {
-            startItem: {
-              firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] },
-            },
-            endItem: {
-              firstValue: { fields: [{ fieldPath: "object.textModulesData['premio']" }] },
-            },
+            startItem: { firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] } },
+            endItem: { firstValue: { fields: [{ fieldPath: "object.textModulesData['premio_finale']" }] } },
+          },
+        },
+        {
+          oneItem: {
+            item: { firstValue: { fields: [{ fieldPath: "object.textModulesData['prossimo']" }] } },
           },
         },
       ]
@@ -167,16 +168,14 @@ function buildClassTemplateInfo(programType: ProgramType): any {
     case 'points':
       cardRowTemplateInfos = [
         {
-          threeItems: {
-            startItem: {
-              firstValue: { fields: [{ fieldPath: "object.textModulesData['conversione']" }] },
-            },
-            middleItem: {
-              firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] },
-            },
-            endItem: {
-              firstValue: { fields: [{ fieldPath: "object.textModulesData['premio']" }] },
-            },
+          twoItems: {
+            startItem: { firstValue: { fields: [{ fieldPath: "object.textModulesData['conversione']" }] } },
+            endItem: { firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] } },
+          },
+        },
+        {
+          oneItem: {
+            item: { firstValue: { fields: [{ fieldPath: "object.textModulesData['premio']" }] } },
           },
         },
       ]
@@ -283,16 +282,23 @@ function buildTextModulesData(data: WalletCardData): any[] {
     case 'stamps': {
       const currentStamps = data.stampCount ?? 0
       const total = data.stampsRequired || 10
-      const { header: prizeHeader, body: prizeBody } = getNextRewardText(
+      // Modulo 1 — premio finale fisso
+      modules.push({
+        id: 'premio_finale',
+        header: 'PREMIO FINALE',
+        body: `${data.rewardDescription || 'Premio'} a ${total}`,
+      })
+      // Modulo 2 — prossimo premio dinamico
+      const { header: prossimoHeader, body: prossimoBody } = getNextRewardText(
         currentStamps,
         total,
         data.rewardDescription || '',
         data.dbRewards || []
       )
       modules.push({
-        id: 'premio',
-        header: prizeHeader,
-        body: prizeBody,
+        id: 'prossimo',
+        header: prossimoHeader,
+        body: prossimoBody,
       })
       break
     }
@@ -418,7 +424,8 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
   const classId = `${ISSUER_ID}.${cleanProgramId}`
   const objectId = `${ISSUER_ID}.${cleanCardId}`
 
-  const heroImageUrl = getHeroImageUrl(data.cardId)
+  const hasHeroImage = data.programType === 'stamps' || data.programType === 'points'
+  const heroImageUrl = hasHeroImage ? getHeroImageUrl(data.cardId) : null
 
   // ========== LOYALTY CLASS ==========
   const loyaltyClass: any = {
@@ -438,13 +445,6 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
 
     hexBackgroundColor: data.backgroundColor || '#6366f1',
 
-    heroImage: {
-      sourceUri: { uri: heroImageUrl },
-      contentDescription: {
-        defaultValue: { language: 'it-IT', value: data.programName },
-      },
-    },
-
     // ⭐ Effetto arcobaleno sul QR code
     securityAnimation: { animationType: 'FOIL_SHIMMER' },
 
@@ -452,6 +452,15 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
     classTemplateInfo: buildClassTemplateInfo(data.programType),
 
     reviewStatus: 'UNDER_REVIEW',
+  }
+
+  if (hasHeroImage && heroImageUrl) {
+    loyaltyClass.heroImage = {
+      sourceUri: { uri: heroImageUrl },
+      contentDescription: {
+        defaultValue: { language: 'it-IT', value: data.programName },
+      },
+    }
   }
 
   // ========== LINKS NEL RETRO DELLA CARTA ==========
@@ -522,15 +531,15 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
       alternateText: data.scanToken.substring(0, 8).toUpperCase(),
     },
 
-    heroImage: {
-      sourceUri: { uri: heroImageUrl },
-    },
-
     // Campo nativo per il bilancio (bollini, punti, credito, livello, stato)
     loyaltyPoints: buildLoyaltyPoints(data),
 
     // Moduli testo per cardTemplateOverride e vista espansa
     textModulesData: buildTextModulesData(data),
+  }
+
+  if (hasHeroImage && heroImageUrl) {
+    loyaltyObject.heroImage = { sourceUri: { uri: heroImageUrl } }
   }
 
   // ========== GENERA JWT ==========
@@ -578,18 +587,19 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
   const cleanCardId = sanitizeId(data.cardId)
   const objectId = `${ISSUER_ID}.${cleanCardId}`
 
-  const heroImageUrl = getHeroImageUrl(data.cardId)
+  const hasHeroImage = data.programType === 'stamps' || data.programType === 'points'
 
   const client = await getAuthClient()
 
   const updateData: any = {
     accountName: data.customerName || 'Cliente',
-    heroImage: {
-      sourceUri: { uri: heroImageUrl },
-    },
     loyaltyPoints: buildLoyaltyPoints(data),
     textModulesData: buildTextModulesData(data),
     notifyPreference: 'notifyOnUpdate',
+  }
+
+  if (hasHeroImage) {
+    updateData.heroImage = { sourceUri: { uri: getHeroImageUrl(data.cardId) } }
   }
 
   try {

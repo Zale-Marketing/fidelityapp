@@ -30,6 +30,11 @@ export async function GET(request: Request) {
   const programType = program.program_type || 'stamps'
   const primaryColor = program.primary_color || '#6366f1'
 
+  // Hero image generata solo per stamps e points
+  if (programType !== 'stamps' && programType !== 'points') {
+    return new Response('Not needed', { status: 204 })
+  }
+
   const { data: rewardsData } = await supabase
     .from('rewards')
     .select('*')
