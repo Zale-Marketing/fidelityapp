@@ -226,13 +226,7 @@ export default function NotificationsPage() {
       let errorCount = 0
 
       for (const prog of targetPrograms) {
-        // 1. Aggiorna wallet_message nel programma
-        await supabase
-          .from('programs')
-          .update({ wallet_message: message.trim() })
-          .eq('id', prog.id)
-
-        // 2. Prendi le card attive del programma (filtrate per tag se selezionato)
+        // 1. Prendi le card attive del programma (filtrate per tag se selezionato)
         let query = supabase
           .from('cards')
           .select('id')
@@ -249,15 +243,15 @@ export default function NotificationsPage() {
 
         totalCards += cards.length
 
-        // 3. Aggiorna ogni carta nel Google Wallet (batch)
+        // 2. Invia notifica push a ogni carta (batch da 10)
         const batchSize = 10
         for (let i = 0; i < cards.length; i += batchSize) {
           const batch = cards.slice(i, i + batchSize)
           const updates = batch.map(card =>
-            fetch('/api/wallet-update', {
+            fetch('/api/send-notification', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ cardId: card.id })
+              body: JSON.stringify({ cardId: card.id, message: message.trim(), header: prog.name })
             }).catch(() => { errorCount++ })
           )
           await Promise.allSettled(updates)

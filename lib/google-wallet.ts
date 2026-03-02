@@ -552,12 +552,28 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
 }
 
 // ============================================================================
+// AUTH CLIENT — riusabile da altri moduli (es. send-notification)
+// ============================================================================
+
+export async function getAuthClient() {
+  const { GoogleAuth } = await import('google-auth-library')
+  const PRIVATE_KEY = getPrivateKey()
+  if (!PRIVATE_KEY || !ISSUER_ID) throw new Error('Google Wallet non configurato')
+  const auth = new GoogleAuth({
+    credentials: {
+      client_email: CLIENT_EMAIL,
+      private_key: PRIVATE_KEY,
+    },
+    scopes: ['https://www.googleapis.com/auth/wallet_object.issuer'],
+  })
+  return auth.getClient()
+}
+
+// ============================================================================
 // AGGIORNA CARD NEL WALLET (solo dati oggetto - bollini, punti, saldo)
 // ============================================================================
 
 export async function updateWalletCard(data: WalletCardData): Promise<void> {
-  const { GoogleAuth } = await import('google-auth-library')
-
   const PRIVATE_KEY = getPrivateKey()
   if (!PRIVATE_KEY || !ISSUER_ID) return
 
@@ -566,15 +582,7 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
 
   const heroImageUrl = getHeroImageUrl(data.cardId)
 
-  const auth = new GoogleAuth({
-    credentials: {
-      client_email: CLIENT_EMAIL,
-      private_key: PRIVATE_KEY,
-    },
-    scopes: ['https://www.googleapis.com/auth/wallet_object.issuer'],
-  })
-
-  const client = await auth.getClient()
+  const client = await getAuthClient()
 
   const updateData: any = {
     accountName: data.customerName || 'Cliente',
@@ -610,34 +618,65 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
       const currentStamps = data.stampCount ?? 0
       const stampsRequired = data.stampsRequired ?? 10
       const nextReward = data.dbRewards?.find(r => r.stamps_required > currentStamps)
-      let premioBody: string
       if (!nextReward) {
-        premioBody = `PREMIO PRONTO: ${data.rewardDescription || ''}`
-      } else if (nextReward.stamps_required >= stampsRequired) {
-        premioBody = `${nextReward.name} a ${nextReward.stamps_required}`
+        notifHeader = 'Premio raggiunto!'
+        notifBody = `Premio raggiunto! Mostra la carta al cassiere per riscattare: ${data.rewardDescription || ''}`
       } else {
-        premioBody = `${nextReward.name} a ${nextReward.stamps_required}`
+        const mancano = nextReward.stamps_required - currentStamps
+        notifHeader = 'Bollino aggiunto!'
+        notifBody = `Hai ${currentStamps} / ${stampsRequired} bollini. ${mancano} per il prossimo premio: ${nextReward.name}`
       }
-      notifHeader = 'Bollino aggiunto!'
-      notifBody = `Hai ${currentStamps} bollini su ${stampsRequired}. ${premioBody}`
       break
     }
-    case 'points':
-      notifHeader = 'Punti aggiunti!'
-      notifBody = `Hai ${Math.round(data.pointsBalance || 0)} punti.`
+    case 'points': {
+      const points = Math.round(data.pointsBalance || 0)
+      const forReward = data.pointsForReward || 100
+      if (points >= forReward) {
+        notifHeader = 'Premio raggiunto!'
+        notifBody = `Premio raggiunto! Riscatta ora: ${data.rewardDescription || ''}`
+      } else {
+        notifHeader = 'Punti aggiunti!'
+        notifBody = `Hai ${points} punti. Ne mancano ${forReward - points} per il premio: ${data.rewardDescription || ''}`
+      }
       break
-    case 'cashback':
-      notifHeader = 'Cashback aggiornato!'
-      notifBody = `Il tuo credito e EUR ${(data.cashbackBalance || 0).toFixed(2)}`
+    }
+    case 'cashback': {
+      const cashback = data.cashbackBalance || 0
+      const minRedeem = data.minCashbackRedeem || 5
+      if (cashback >= minRedeem) {
+        notifHeader = 'Cashback disponibile!'
+        notifBody = `Hai EUR ${cashback.toFixed(2)} da riscattare. Vieni a trovarci!`
+      } else {
+        notifHeader = 'Cashback aggiornato!'
+        notifBody = `Hai EUR ${cashback.toFixed(2)} di credito. Ancora EUR ${(minRedeem - cashback).toFixed(2)} per riscattare`
+      }
       break
-    case 'tiers':
-      notifHeader = 'Livello aggiornato!'
-      notifBody = `Sei ${data.currentTier || 'Base'}`
+    }
+    case 'tiers': {
+      const tierDiscount = data.tierDiscount || 0
+      if (data.nextTierName) {
+        const remaining = (data.nextTierMinSpend && data.totalSpent)
+          ? Math.ceil(data.nextTierMinSpend - data.totalSpent)
+          : 0
+        notifHeader = 'Spesa registrata!'
+        notifBody = `Livello ${data.currentTier || 'Base'}. Spendi ancora EUR ${remaining} per raggiungere ${data.nextTierName}`
+      } else {
+        notifHeader = 'Livello massimo!'
+        notifBody = `Sei al livello massimo: ${data.currentTier || 'Base'} con sconto -${tierDiscount}%`
+      }
       break
-    case 'subscription':
-      notifHeader = 'Abbonamento'
-      notifBody = `Utilizzi oggi: ${data.dailyUses || 0} / ${data.dailyLimit || 1}`
+    }
+    case 'subscription': {
+      const isActive = data.subscriptionStatus === 'active'
+      if (isActive) {
+        notifHeader = 'Abbonamento attivo'
+        notifBody = `Utilizzi oggi: ${data.dailyUses || 0} / ${data.dailyLimit || 1}`
+      } else {
+        notifHeader = 'Abbonamento scaduto'
+        notifBody = 'Il tuo abbonamento e scaduto. Rinnova per continuare'
+      }
       break
+    }
     default:
       notifHeader = 'Aggiornamento'
       notifBody = 'La tua carta e stata aggiornata.'
