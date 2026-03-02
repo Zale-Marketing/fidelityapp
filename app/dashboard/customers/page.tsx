@@ -15,6 +15,7 @@ export default function CustomersPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showTagModal, setShowTagModal] = useState(false)
   const [merchantId, setMerchantId] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -179,6 +180,114 @@ export default function CustomersPage() {
     })))
   }
 
+  async function exportCSV() {
+    if (exporting) return
+    setExporting(true)
+
+    try {
+      // Fetch cards with program data for filtered customers only
+      const holderIds = filteredCustomers.map(c => c.id)
+
+      if (holderIds.length === 0) {
+        setExporting(false)
+        return
+      }
+
+      const { data: cards } = await supabase
+        .from('cards')
+        .select(`
+          card_holder_id,
+          stamp_count,
+          points_balance,
+          cashback_balance,
+          current_tier,
+          subscription_status,
+          programs:program_id (name, program_type)
+        `)
+        .in('card_holder_id', holderIds)
+        .eq('status', 'active')
+
+      // Build rows: one per customer+program combination
+      const rows: string[][] = []
+
+      // Header row
+      rows.push(['Nome', 'Email', 'Telefono', 'Programma', 'Saldo Corrente', 'Data Iscrizione', 'Tag'])
+
+      for (const customer of filteredCustomers) {
+        const customerCards = (cards || []).filter(c => c.card_holder_id === customer.id)
+        const tagNames = customer.tags.map(t => t.name).join('; ')
+        const dateIscrizione = new Date(customer.created_at).toLocaleDateString('it-IT')
+
+        if (customerCards.length === 0) {
+          // Customer with no active cards — include with empty program/saldo
+          rows.push([
+            customer.full_name || '',
+            customer.contact_email || '',
+            customer.phone || '',
+            '',
+            '',
+            dateIscrizione,
+            tagNames,
+          ])
+        } else {
+          for (const card of customerCards) {
+            const programRaw = card.programs as unknown
+            const program = Array.isArray(programRaw) ? (programRaw[0] as { name: string; program_type: string } | undefined) : (programRaw as { name: string; program_type: string } | null)
+            const programName = program?.name || ''
+            const programType = program?.program_type || ''
+
+            let saldo = ''
+            if (programType === 'stamps') saldo = String(card.stamp_count ?? 0)
+            else if (programType === 'points') saldo = String(card.points_balance ?? 0)
+            else if (programType === 'cashback') saldo = `€${card.cashback_balance ?? 0}`
+            else if (programType === 'tiers') saldo = card.current_tier || ''
+            else if (programType === 'subscription') saldo = card.subscription_status || ''
+
+            rows.push([
+              customer.full_name || '',
+              customer.contact_email || '',
+              customer.phone || '',
+              programName,
+              saldo,
+              dateIscrizione,
+              tagNames,
+            ])
+          }
+        }
+      }
+
+      // Convert to CSV string — escape fields containing commas or quotes
+      const csvContent = rows.map(row =>
+        row.map(cell => {
+          const str = String(cell ?? '')
+          if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return `"${str.replace(/"/g, '""')}"`
+          }
+          return str
+        }).join(',')
+      ).join('\n')
+
+      // Trigger browser download
+      const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+      const filename = `clienti-${today}.csv`
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+    } catch (err) {
+      console.error('Errore export CSV:', err)
+      alert('Errore durante l\'esportazione. Riprova.')
+    }
+
+    setExporting(false)
+  }
+
   function toggleTagInForm(tagId: string) {
     if (newCustomer.selectedTags.includes(tagId)) {
       setNewCustomer({
@@ -244,6 +353,13 @@ export default function CustomersPage() {
               🏷️ Gestisci Tag
             </button>
             <button
+              onClick={exportCSV}
+              disabled={exporting || filteredCustomers.length === 0}
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-200 disabled:opacity-50"
+            >
+              {exporting ? 'Esportazione...' : 'Esporta CSV'}
+            </button>
+            <button
               onClick={() => setShowAddModal(true)}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
             >
@@ -302,12 +418,12 @@ export default function CustomersPage() {
                   key={tag.id}
                   onClick={() => setFilterTag(filterTag === tag.id ? 'all' : tag.id)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    filterTag === tag.id 
-                      ? 'ring-2 ring-offset-2' 
+                    filterTag === tag.id
+                      ? 'ring-2 ring-offset-2'
                       : 'opacity-70 hover:opacity-100'
                   }`}
-                  style={{ 
-                    backgroundColor: tag.color + '20', 
+                  style={{
+                    backgroundColor: tag.color + '20',
                     color: tag.color
                   }}
                 >
@@ -315,6 +431,12 @@ export default function CustomersPage() {
                 </button>
               ))}
             </div>
+          </div>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t">
+            <span className="text-sm text-gray-500">
+              {filteredCustomers.length} client{filteredCustomers.length === 1 ? 'e' : 'i'}
+              {(searchQuery || filterTag !== 'all') ? ' (filtrati)' : ''}
+            </span>
           </div>
         </div>
 
