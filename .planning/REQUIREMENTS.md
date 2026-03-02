@@ -45,7 +45,7 @@
 
 ### EXPORT — Export Dati Clienti
 
-- [ ] **EXPORT-01**: Merchant può scaricare un file CSV con la lista dei clienti (nome, email, telefono, programma, saldo corrente) dalla pagina /dashboard/customers
+- [x] **EXPORT-01**: Merchant può scaricare un file CSV con la lista dei clienti (nome, email, telefono, programma, saldo corrente) dalla pagina /dashboard/customers
 
 ### LAND — Landing Page Self-Service
 
@@ -128,7 +128,7 @@
 | NOTIFY-01 | Phase 4 | Pending |
 | NOTIFY-02 | Phase 4 | Pending |
 | NOTIFY-03 | Phase 4 | Pending |
-| EXPORT-01 | Phase 4 | Pending |
+| EXPORT-01 | Phase 4 | Complete |
 | LAND-01 | Phase 5 | Pending |
 | LAND-02 | Phase 5 | Pending |
 | LAND-03 | Phase 5 | Pending |

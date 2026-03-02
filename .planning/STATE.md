@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
+last_updated: "2026-03-02T13:00:01.724Z"
+progress:
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 10
+  completed_plans: 10
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: unknown
 last_updated: "2026-03-02T12:52:55.277Z"
 progress:
   total_phases: 4
@@ -76,6 +89,8 @@ Progress: [########░░] 83%
 
 *Updated after each plan completion*
 | Phase 04-retention-tools P01 | 2 | 1 tasks | 1 files |
+| Phase 04-retention-tools P03 | 4 | 1 tasks | 1 files |
+| Phase 04-retention-tools P02 | 3 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -106,6 +121,11 @@ Recent decisions affecting current work:
 - [03-02] Bold text badges (ATTIVO/SCADUTO) replace emoji circles for subscription status — avoids unicode rendering issues
 - [Phase 04-01]: RLS on card_holder_tags uses nested subquery through card_holders.merchant_id for indirect ownership
 - [Phase 04-01]: All card_holders extended columns use ADD COLUMN IF NOT EXISTS for full idempotency
+- [Phase 04-retention-tools]: Supabase nested join (programs:program_id) used in client component — valid outside Edge runtime; Array.isArray guard handles Supabase JS array response for FK joins
+- [Phase 04-retention-tools]: UTF-8 BOM prepended to CSV blob for Excel-compatible Italian character encoding
+- [Phase 04-02]: computeRecipientCount() accepts explicit params to avoid stale closure in debounced callback
+- [Phase 04-02]: recipientCount counts distinct card_holder_ids (customers) not card rows — aligns with 'X clienti' wording
+- [Phase 04-02]: Tag dropdown hidden when merchant has no tags — zero-friction baseline UX
 
 ### Pending Todos
 
