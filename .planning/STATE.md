@@ -11,26 +11,26 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 Phase: 1 of 5 (Stability)
 Plan: 3 of 3 in current phase
-Status: In progress
-Last activity: 2026-03-02 — Plan 01-01 complete (idempotency fix + Missioni removal)
+Status: Complete
+Last activity: 2026-03-02 — Plan 01-02 complete (SQL migrations: notification_logs + Stripe columns)
 
-Progress: [###░░░░░░░] 30%
+Progress: [####░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 3 min
-- Total execution time: 6 min
+- Total execution time: 9 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-stability | 2 | 6 min | 3 min |
+| 01-stability | 3 | 9 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (2 min), 01-01 (4 min)
+- Last 5 plans: 01-02 (5 min), 01-03 (2 min), 01-01 (4 min)
 - Trend: -
 
 *Updated after each plan completion*
@@ -48,6 +48,8 @@ Recent decisions affecting current work:
 - [01-03] Wallet API auth: NEXT_PUBLIC_ prefix for client secret (anti-abuse, not full auth); guard skipped when env var unset for dev safety; Vercel env vars required for production enforcement
 - [01-01] Idempotency key: use useRef alongside useState for sync access in immediate transaction calls (React state async); Date.now() kept as last-resort fallback only
 - [01-01] Missioni guards: simplified selectedType !== 'missions' to selectedType truthy check rather than full structural unwrap
+- [01-02] DB migrations: plain .sql files in supabase/migrations/ — no Supabase CLI configured; all columns use ADD COLUMN IF NOT EXISTS for idempotency
+- [01-02] notification_logs RLS: scoped via profiles subquery matching existing codebase pattern
 
 ### Pending Todos
 
@@ -55,12 +57,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- BUG-04: Migration SQL Stripe richiede accesso diretto a Supabase Dashboard (non automatizzabile via codice)
-- BUG-02: Tabella notification_logs da creare manualmente in Supabase se non si usa migration file
 - Tech debt noto (current_stamps vs stamp_count, 84 `any` cast) è v2 scope — non blocca v1
+- BUG-02 RISOLTO: notification_logs table creata in Supabase (01-02 complete)
+- BUG-04 RISOLTO: stripe_* columns aggiunte a merchants (01-02 complete)
 
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 01-stability-01-PLAN.md (idempotency + Missioni fixes)
+Stopped at: Completed 01-stability-02-PLAN.md (SQL migrations: notification_logs + Stripe columns)
 Resume file: None

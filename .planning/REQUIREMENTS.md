@@ -57,9 +57,9 @@
 ### BUG — Fix Critici
 
 - [x] **BUG-01**: Idempotency key generata una volta al momento della scansione (non con Date.now() dentro ogni handler) — previene doppi stamp
-- [ ] **BUG-02**: Tabella `notification_logs` creata in Supabase — lo storico notifiche funziona
+- [x] **BUG-02**: Tabella `notification_logs` creata in Supabase — lo storico notifiche funziona
 - [x] **BUG-03**: Tipo "Missioni" rimosso dal selettore di creazione programma (o disabled con tooltip) — previene crash wallet API
-- [ ] **BUG-04**: Colonne Stripe (`stripe_customer_id`, `stripe_subscription_id`, `stripe_subscription_status`, `plan_expires_at`) aggiunte alla tabella `merchants` via SQL migration
+- [x] **BUG-04**: Colonne Stripe (`stripe_customer_id`, `stripe_subscription_id`, `stripe_subscription_status`, `plan_expires_at`) aggiunte alla tabella `merchants` via SQL migration
 - [x] **BUG-05**: API routes `/api/wallet` e `/api/wallet-update` verificano che la richiesta provenga da un contesto valido (auth check di base)
 
 ## v2 Requirements
@@ -103,10 +103,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | Phase 1 | Pending |
-| BUG-02 | Phase 1 | Pending |
-| BUG-03 | Phase 1 | Pending |
-| BUG-04 | Phase 1 | Pending |
+| BUG-01 | Phase 1 | Complete |
+| BUG-02 | Phase 1 | Complete |
+| BUG-03 | Phase 1 | Complete |
+| BUG-04 | Phase 1 | Complete |
 | BUG-05 | Phase 1 | Complete |
 | UI-01 | Phase 2 | Pending |
 | UI-02 | Phase 2 | Pending |
@@ -141,4 +141,4 @@
 
 ---
 *Requirements defined: 2026-03-02*
-*Last updated: 2026-03-02 after roadmap creation (traceability confirmed)*
+*Last updated: 2026-03-02 — Phase 1 complete: all BUG requirements resolved*
