@@ -26,10 +26,10 @@
 
 ### STAMP — Scanner Cassiere
 
-- [ ] **STAMP-01**: Cassiere apre /stamp e la fotocamera si attiva automaticamente senza step intermedi
-- [ ] **STAMP-02**: Cassiere riceve feedback visivo immediato (verde/rosso) entro 1 secondo dalla scansione
+- [x] **STAMP-01**: Cassiere apre /stamp e la fotocamera si attiva automaticamente senza step intermedi
+- [x] **STAMP-02**: Cassiere riceve feedback visivo immediato (verde/rosso) entro 1 secondo dalla scansione
 - [ ] **STAMP-03**: Cassiere può inserire l'importo speso inline per programmi points e cashback, senza navigare altrove
-- [ ] **STAMP-04**: Cassiere può fare scansioni multiple consecutive senza ricaricare la pagina (reset automatico dopo conferma)
+- [x] **STAMP-04**: Cassiere può fare scansioni multiple consecutive senza ricaricare la pagina (reset automatico dopo conferma)
 
 ### PROFILE — Profilazione Clienti Leggera
 
@@ -111,10 +111,10 @@
 | UI-01 | Phase 2 | Pending |
 | UI-02 | Phase 2 | Pending |
 | UI-03 | Phase 2 | Pending |
-| STAMP-01 | Phase 2 | Pending |
-| STAMP-02 | Phase 2 | Pending |
+| STAMP-01 | Phase 2 | Complete |
+| STAMP-02 | Phase 2 | Complete |
 | STAMP-03 | Phase 2 | Pending |
-| STAMP-04 | Phase 2 | Pending |
+| STAMP-04 | Phase 2 | Complete |
 | JOIN-01 | Phase 3 | Pending |
 | JOIN-02 | Phase 3 | Pending |
 | JOIN-03 | Phase 3 | Pending |
@@ -141,4 +141,4 @@
 
 ---
 *Requirements defined: 2026-03-02*
-*Last updated: 2026-03-02 — Phase 1 complete: all BUG requirements resolved*
+*Last updated: 2026-03-02 — Phase 2 plan 02-02 complete: STAMP-01, STAMP-02, STAMP-04 resolved*

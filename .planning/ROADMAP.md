@@ -52,7 +52,7 @@ Plans:
 
 Plans:
 - [ ] 02-01-PLAN.md — Mobile-first dashboard design system (responsive layout, consistent rounded-2xl/rounded-xl tokens across all dashboard pages)
-- [ ] 02-02-PLAN.md — Scanner UX optimization (auto-start camera, full-screen feedback, auto-reset after 3s)
+- [x] 02-02-PLAN.md — Scanner UX optimization (auto-start camera, full-screen feedback, auto-reset after 3s)
 
 ### Phase 3: Customer Pages
 **Goal**: Clienti si iscrivono al programma e capiscono lo stato della loro carta senza spiegazioni
@@ -110,7 +110,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stability | 3/3 | Complete | 2026-03-02 |
-| 2. Merchant UX | 0/2 | Not started | - |
+| 2. Merchant UX | 1/2 | In Progress | - |
 | 3. Customer Pages | 0/2 | Not started | - |
 | 4. Retention Tools | 0/3 | Not started | - |
 | 5. Landing Page | 0/1 | Not started | - |
