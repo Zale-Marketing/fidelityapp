@@ -40,7 +40,10 @@ export default function StampPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       router.push('/login')
+      return
     }
+    // Auto-start camera immediately after auth — STAMP-01
+    await startScanner()
   }
 
   async function startScanner() {
