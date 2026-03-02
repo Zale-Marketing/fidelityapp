@@ -30,18 +30,27 @@ Un cassiere italiano inquadra il QR del cliente e in 3 secondi il Google Wallet 
 
 ### Active
 
-<!-- Scope corrente: portare il prodotto a standard self-service per primo merchant reale -->
+<!-- Scope corrente v2.0: bug fixes critici + design system professionale + nuove funzionalità -->
 
-- [ ] UI polish globale mobile-first (livello Stamp.me / Loopy) — componenti coerenti, spacing uniforme, design system
-- [ ] /join/[programId] ridisegnata — branded col colore merchant, spiega bene il programma, conversion-optimized
-- [ ] /c/[token] migliorata — chiara per il cliente finale, gerarchia visiva corretta per ogni tipo programma
-- [ ] Scanner /stamp ottimizzato — UX veloce per il cassiere, UI senza distrazioni, feedback immediato
-- [ ] Profilazione clienti leggera — tag su card_holders, liste segmentate nella dashboard
-- [ ] Notifiche segmentate — invio messaggi a tag specifici o liste personalizzate
-- [ ] Export CSV clienti dalla dashboard
-- [ ] Landing page self-service — merchant la vede, si convince, si registra senza parlare con Alessandro
-- [ ] Bug fixes critici — idempotency key corretta, notification_logs table, missions type disabilitato, SQL migrations Stripe
-- [ ] Sicurezza base API routes — auth check su /api/wallet e /api/wallet-update
+**Bug Fixes Critici:**
+- [ ] Form landing /app/page.tsx salva lead nel DB
+- [ ] Soft delete + hard delete con cascade per programs/cards (modal conferma nome)
+- [ ] Hero image color applicato correttamente da query param ?color=
+
+**Design System v2.0:**
+- [ ] Zero emoji in tutta la dashboard → tutte sostituite con icone Lucide React
+- [ ] Sidebar sinistra fissa 240px #111111 + area contenuto #F5F5F5
+- [ ] Cards, tabelle, bottoni, form, badge, empty states redesignati — stile professionale unificato
+
+**Nuove Funzionalità:**
+- [ ] Segmentazione clienti dormienti (Tutti/Attivi/Dormienti/Persi) + bulk actions
+- [ ] Automazione compleanno (birth_date + cron job giornaliero + notifica push)
+- [ ] Raccolta recensioni Google post-riscatto
+- [ ] Sistema piani Free/Pro/Business con feature gating + pagina upgrade
+- [ ] WhatsApp marketing via Maytapi (connect + send + rate limit)
+- [ ] Webhook per integrazioni (tabella + UI + lib/webhooks.ts)
+- [ ] Analytics avanzata con recharts (trend, tasso ritorno, torta segmenti)
+- [ ] Export CSV in /dashboard/cards (PRO/BUSINESS only)
 
 ### Out of Scope
 
@@ -83,5 +92,20 @@ Un cassiere italiano inquadra il QR del cliente e in 3 secondi il Google Wallet 
 | Mantenere tipo "Missioni" nascosto | Selezionabile ma non implementato — causa crash wallet API | ⚠️ Disabilitare subito dalla UI |
 | Tailwind v4 + Next.js 16 + React 19 | Stack moderno, già in uso, non cambiare | — Pending stabilità |
 
+## Current Milestone: v2.0 Redesign Completo
+
+**Goal:** Bug fixes critici + design system professionale + nuove funzionalità di engagement e monetizzazione
+
+**Target features:**
+- Bug fixes: landing lead capture, delete cascata, hero image color
+- Design system: sidebar nera, zero emoji, tokens coerenti in tutta la dashboard
+- Segmentazione clienti dormienti + bulk actions
+- Birthday automation con cron job
+- Google Reviews post-riscatto
+- Piani Free/Pro/Business con feature gating
+- WhatsApp via Maytapi
+- Webhook per integrazioni
+- Analytics avanzata + CSV export PRO
+
 ---
-*Last updated: 2026-03-02 after initialization*
+*Last updated: 2026-03-02 after v2.0 milestone started*
