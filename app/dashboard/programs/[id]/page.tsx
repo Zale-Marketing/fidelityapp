@@ -359,7 +359,20 @@ if (programData.program_type === 'tiers') {
             </Link>
             <h1 className="text-2xl font-bold text-gray-900 mt-1">{program.name}</h1>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={() => {
+                const joinUrl = `${window.location.origin}/join/${program.id}`
+                if (navigator.share) {
+                  navigator.share({ title: `Iscriviti a ${program.name}`, url: joinUrl })
+                } else {
+                  navigator.clipboard.writeText(joinUrl).then(() => alert('Link iscrizione copiato!'))
+                }
+              }}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+            >
+              🔗 Link Iscrizione
+            </button>
             <Link
               href={`/dashboard/programs/${program.id}/edit`}
               className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
@@ -377,8 +390,31 @@ if (programData.program_type === 'tiers') {
       </header>
 
       <main className="p-6 max-w-6xl mx-auto">
+        {/* Link Iscrizione Clienti */}
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <p className="font-semibold text-green-800">Link iscrizione clienti</p>
+            <p className="text-green-700 text-sm font-mono truncate max-w-xs">
+              {typeof window !== 'undefined' ? `${window.location.origin}/join/${program.id}` : `/join/${program.id}`}
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              const joinUrl = `${window.location.origin}/join/${program.id}`
+              if (navigator.share) {
+                navigator.share({ title: `Iscriviti a ${program.name}`, url: joinUrl })
+              } else {
+                navigator.clipboard.writeText(joinUrl).then(() => alert('Link copiato!'))
+              }
+            }}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-semibold whitespace-nowrap"
+          >
+            📤 Copia / Condividi
+          </button>
+        </div>
+
         {/* Program Info */}
-<div 
+<div
   className="rounded-2xl p-6 mb-6 text-white"
   style={{ backgroundColor: program.primary_color }}
 >
