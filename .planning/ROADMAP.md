@@ -30,11 +30,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Merchant apre la pagina "Nuovo Programma" e non vede il tipo "Missioni" selezionabile
   4. Merchant con account nuovo ha le colonne Stripe nella tabella merchants senza errori SQL
   5. Chiamata a /api/wallet o /api/wallet-update senza contesto valido riceve risposta 401
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Fix idempotency key + create notification_logs table + disable Missioni type
-- [ ] 01-02: SQL migration colonne Stripe + auth check API wallet routes
+- [ ] 01-01-PLAN.md — Fix idempotency key in stamp scanner + remove Missioni type from program creation
+- [ ] 01-02-PLAN.md — SQL migrations: notification_logs table + Stripe columns on merchants (requires human to run in Supabase)
+- [ ] 01-03-PLAN.md — Auth check on /api/wallet and /api/wallet-update routes
 
 ### Phase 2: Merchant UX
 **Goal**: Merchant può gestire il proprio programma fedeltà da smartphone in modo fluido e professionale
@@ -108,7 +109,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stability | 0/2 | Not started | - |
+| 1. Stability | 0/3 | Not started | - |
 | 2. Merchant UX | 0/2 | Not started | - |
 | 3. Customer Pages | 0/2 | Not started | - |
 | 4. Retention Tools | 0/3 | Not started | - |
