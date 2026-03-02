@@ -9,6 +9,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const cardId = searchParams.get('cardId')
+  const colorParam = searchParams.get('color') // automatically decoded by searchParams API
 
   if (!cardId) {
     return new Response('Missing cardId', { status: 400 })
@@ -28,7 +29,9 @@ export async function GET(request: Request) {
 
   const program = card.programs
   const programType = program.program_type || 'stamps'
-  const primaryColor = program.primary_color || '#6366f1'
+  const primaryColor = (colorParam && colorParam.startsWith('#'))
+    ? colorParam
+    : (program.primary_color || '#6366f1')
 
   // Hero image generata solo per stamps e points
   if (programType !== 'stamps' && programType !== 'points') {

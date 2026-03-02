@@ -95,8 +95,9 @@ export type WalletCardData = {
 // HERO IMAGE URL
 // ============================================================================
 
-function getHeroImageUrl(cardId: string): string {
-  return `${APP_URL}/api/wallet-image?cardId=${cardId}&t=${Date.now()}`
+function getHeroImageUrl(cardId: string, backgroundColor?: string): string {
+  const colorPart = backgroundColor ? `&color=${encodeURIComponent(backgroundColor)}` : ''
+  return `${APP_URL}/api/wallet-image?cardId=${cardId}&t=${Date.now()}${colorPart}`
 }
 
 // ============================================================================
@@ -425,7 +426,7 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
   const objectId = `${ISSUER_ID}.${cleanCardId}`
 
   const hasHeroImage = data.programType === 'stamps' || data.programType === 'points'
-  const heroImageUrl = hasHeroImage ? getHeroImageUrl(data.cardId) : null
+  const heroImageUrl = hasHeroImage ? getHeroImageUrl(data.cardId, data.backgroundColor) : null
 
   // ========== LOYALTY CLASS ==========
   const loyaltyClass: any = {
@@ -599,7 +600,7 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
   }
 
   if (hasHeroImage) {
-    updateData.heroImage = { sourceUri: { uri: getHeroImageUrl(data.cardId) } }
+    updateData.heroImage = { sourceUri: { uri: getHeroImageUrl(data.cardId, data.backgroundColor) } }
   }
 
   try {
