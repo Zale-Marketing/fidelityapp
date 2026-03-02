@@ -68,8 +68,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Redesign /join/[programId] — BenefitPreview section, rewards query, auto-redirect
-- [ ] 03-02-PLAN.md — Redesign /c/[token] — Wallet CTA to top, progress message row, fix stamps grid + subscription badge
+- [x] 03-01-PLAN.md — Redesign /join/[programId] — BenefitPreview section, rewards query, auto-redirect
+- [x] 03-02-PLAN.md — Redesign /c/[token] — Wallet CTA to top, progress message row, fix stamps grid + subscription badge
 
 ### Phase 4: Retention Tools
 **Goal**: Merchant può segmentare i clienti e comunicare con loro in modo mirato
@@ -111,6 +111,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Stability | 3/3 | Complete | 2026-03-02 |
 | 2. Merchant UX | 2/2 | Complete   | 2026-03-02 |
-| 3. Customer Pages | 0/2 | Not started | - |
+| 3. Customer Pages | 2/2 | Complete | 2026-03-02 |
 | 4. Retention Tools | 0/3 | Not started | - |
 | 5. Landing Page | 0/1 | Not started | - |

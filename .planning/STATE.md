@@ -35,19 +35,19 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 
 ## Current Position
 
-Phase: 2 of 5 (Merchant UX)
-Plan: 3 of 3 in current phase
+Phase: 3 of 5 (Customer Pages)
+Plan: 2 of 2 in current phase
 Status: In Progress
-Last activity: 2026-03-02 — Plan 02-01 complete (Mobile-first dashboard responsive fixes)
+Last activity: 2026-03-02 — Plan 03-01 complete (Join page BenefitPreview + auto-redirect)
 
-Progress: [######░░░░] 60%
+Progress: [#######░░░] 70%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 2 min
-- Total execution time: 14 min
+- Total execution time: 16 min
 
 **By Phase:**
 
@@ -55,10 +55,11 @@ Progress: [######░░░░] 60%
 |-------|-------|-------|----------|
 | 01-stability | 3 | 9 min | 3 min |
 | 02-merchant-ux | 3 | 5 min | 2 min |
+| 03-customer-pages | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (3 min), 02-02 (1 min), 01-02 (5 min), 01-03 (2 min), 01-01 (4 min)
-- Trend: Faster
+- Last 5 plans: 03-01 (2 min), 02-01 (3 min), 02-02 (1 min), 01-02 (5 min), 01-03 (2 min)
+- Trend: Consistent
 
 *Updated after each plan completion*
 
@@ -82,6 +83,9 @@ Recent decisions affecting current work:
 - [02-02] Auto-reset calls startScanner() after resetScanner() so camera restarts immediately for next customer
 - [02-02] Subscription error keeps white card UI (not full-screen red) — cashier must interact with activation options
 - [02-02] SVG icons used for check/X marks in full-screen overlays to avoid emoji Unicode rendering issues
+- [03-01] Auto-redirect uses newCard.scan_token local variable (not cardLink state) to avoid React async state staleness
+- [03-01] Rewards query uses separate .from('rewards').select() for stamps programs — nested query prohibited per CLAUDE.md
+- [03-01] benefitText() function deleted; header badge now shows TYPE_LABELS (Bollini/Punti/Cashback etc.) for brevity
 
 ### Pending Todos
 
@@ -96,5 +100,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 02-01-PLAN.md (Mobile-first dashboard responsive fixes)
+Stopped at: Completed 03-01-PLAN.md (Join page BenefitPreview + auto-redirect)
 Resume file: None
