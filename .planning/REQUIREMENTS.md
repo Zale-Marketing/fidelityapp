@@ -7,9 +7,9 @@
 
 ### UI — Design System Mobile-First
 
-- [ ] **UI-01**: Merchant vede una dashboard con layout coerente su mobile (nav, spacing, typography uniformi in tutte le pagine)
-- [ ] **UI-02**: Merchant vede pulsanti, card e form con stile visivo consistente e professionale (livello Stamp.me / Loopy)
-- [ ] **UI-03**: Merchant può navigare la dashboard da smartphone senza zoom o scroll orizzontale
+- [x] **UI-01**: Merchant vede una dashboard con layout coerente su mobile (nav, spacing, typography uniformi in tutte le pagine)
+- [x] **UI-02**: Merchant vede pulsanti, card e form con stile visivo consistente e professionale (livello Stamp.me / Loopy)
+- [x] **UI-03**: Merchant può navigare la dashboard da smartphone senza zoom o scroll orizzontale
 
 ### JOIN — Pagina Iscrizione Cliente
 
@@ -108,9 +108,9 @@
 | BUG-03 | Phase 1 | Complete |
 | BUG-04 | Phase 1 | Complete |
 | BUG-05 | Phase 1 | Complete |
-| UI-01 | Phase 2 | Pending |
-| UI-02 | Phase 2 | Pending |
-| UI-03 | Phase 2 | Pending |
+| UI-01 | Phase 2 | Complete |
+| UI-02 | Phase 2 | Complete |
+| UI-03 | Phase 2 | Complete |
 | STAMP-01 | Phase 2 | Complete |
 | STAMP-02 | Phase 2 | Complete |
 | STAMP-03 | Phase 2 | Pending |

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-03-02T11:40:50Z"
+last_updated: "2026-03-02T11:43:25Z"
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 5
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -23,28 +23,28 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 ## Current Position
 
 Phase: 2 of 5 (Merchant UX)
-Plan: 2 of 3 in current phase
+Plan: 3 of 3 in current phase
 Status: In Progress
-Last activity: 2026-03-02 — Plan 02-02 complete (Scanner UX: auto-start + full-screen feedback + auto-reset)
+Last activity: 2026-03-02 — Plan 02-01 complete (Mobile-first dashboard responsive fixes)
 
 Progress: [######░░░░] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: 2 min
-- Total execution time: 11 min
+- Total execution time: 14 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-stability | 3 | 9 min | 3 min |
-| 02-merchant-ux | 2 | 2 min | 1 min |
+| 02-merchant-ux | 3 | 5 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (1 min), 02-01 (1 min), 01-02 (5 min), 01-03 (2 min), 01-01 (4 min)
+- Last 5 plans: 02-01 (3 min), 02-02 (1 min), 01-02 (5 min), 01-03 (2 min), 01-01 (4 min)
 - Trend: Faster
 
 *Updated after each plan completion*
@@ -64,6 +64,8 @@ Recent decisions affecting current work:
 - [01-01] Missioni guards: simplified selectedType !== 'missions' to selectedType truthy check rather than full structural unwrap
 - [01-02] DB migrations: plain .sql files in supabase/migrations/ — no Supabase CLI configured; all columns use ADD COLUMN IF NOT EXISTS for idempotency
 - [01-02] notification_logs RLS: scoped via profiles subquery matching existing codebase pattern
+- [02-01] Mobile design tokens: rounded-2xl cards, rounded-xl buttons/inputs, px-4 py-6 main containers — applied uniformly across all four dashboard pages
+- [02-01] Modal internal inputs kept rounded-lg (modal UX explicitly out of scope); modal footer buttons upgraded to rounded-xl
 - [02-02] Auto-reset calls startScanner() after resetScanner() so camera restarts immediately for next customer
 - [02-02] Subscription error keeps white card UI (not full-screen red) — cashier must interact with activation options
 - [02-02] SVG icons used for check/X marks in full-screen overlays to avoid emoji Unicode rendering issues
@@ -81,5 +83,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 02-merchant-ux-02-PLAN.md (Scanner UX: auto-start + full-screen feedback + auto-reset)
+Stopped at: Completed 02-01-PLAN.md (Mobile-first dashboard responsive fixes)
 Resume file: None

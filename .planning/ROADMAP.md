@@ -13,7 +13,7 @@ Five phases that take FidelityApp from a working prototype with known bugs to a 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Stability** - Fix all critical bugs and missing DB schema before any UI work
-- [ ] **Phase 2: Merchant UX** - Polish dashboard + scanner so the daily merchant workflow is fast and reliable
+- [x] **Phase 2: Merchant UX** - Polish dashboard + scanner so the daily merchant workflow is fast and reliable (completed 2026-03-02)
 - [ ] **Phase 3: Customer Pages** - Redesign /join and /c/[token] so customers convert and understand their card
 - [ ] **Phase 4: Retention Tools** - Tag customers, send segmented notifications, export CSV data
 - [ ] **Phase 5: Landing Page** - Self-service acquisition page so merchants register without Alessandro
@@ -110,7 +110,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stability | 3/3 | Complete | 2026-03-02 |
-| 2. Merchant UX | 1/2 | In Progress | - |
+| 2. Merchant UX | 2/2 | Complete   | 2026-03-02 |
 | 3. Customer Pages | 0/2 | Not started | - |
 | 4. Retention Tools | 0/3 | Not started | - |
 | 5. Landing Page | 0/1 | Not started | - |
