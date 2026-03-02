@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-type ProgramType = 'stamps' | 'points' | 'cashback' | 'tiers' | 'subscription' | 'missions'
+type ProgramType = 'stamps' | 'points' | 'cashback' | 'tiers' | 'subscription'
 
 const PROGRAM_TYPES = [
   {
@@ -53,15 +53,6 @@ const PROGRAM_TYPES = [
     color: '#ec4899',
     ideal: 'Bar, Palestre'
   },
-  {
-    id: 'missions' as ProgramType,
-    name: 'Missioni',
-    icon: '🎮',
-    description: 'Sfide temporanee con bonus extra',
-    example: '3 visite questa settimana = +5 punti',
-    color: '#06b6d4',
-    ideal: 'Add-on per altri tipi'
-  }
 ]
 
 export default function NewProgramPage() {
@@ -281,10 +272,6 @@ const [newRewardStamps, setNewRewardStamps] = useState(5)
         programData.reward_description = subscriptionBenefits
         break
         
-      case 'missions':
-        programData.stamps_required = 0
-        programData.reward_description = 'Sistema missioni'
-        break
     }
 
     const { data, error } = await supabase
@@ -1065,28 +1052,10 @@ if (selectedType === 'stamps' && data && intermediateRewards.length > 0) {
                   </div>
                 )}
 
-                {/* MISSIONS */}
-                {selectedType === 'missions' && (
-                  <div className="bg-cyan-50 rounded-xl p-6 text-center">
-                    <p className="text-5xl mb-4">🎮</p>
-                    <h4 className="font-bold text-lg text-cyan-800 mb-2">Sistema Missioni</h4>
-                    <p className="text-cyan-700">
-                      Le missioni sono un add-on che si aggiunge agli altri programmi.<br/>
-                      Crea prima un programma base (Bollini, Punti, ecc.) e poi potrai<br/>
-                      aggiungere missioni per aumentare l&apos;engagement!
-                    </p>
-                    <button
-                      onClick={() => setStep(1)}
-                      className="mt-4 bg-cyan-600 text-white px-6 py-2 rounded-lg hover:bg-cyan-700"
-                    >
-                      ← Scegli un altro tipo
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Logo Upload */}
-              {selectedType !== 'missions' && (
+              {selectedType && (
                 <div className="bg-white rounded-2xl shadow-sm p-6">
                   <h3 className="font-bold text-lg mb-2">🖼️ Logo Aziendale <span className="text-amber-600 text-xs font-normal">(non modificabile dopo)</span></h3>
                   <p className="text-sm text-gray-500 mb-4">Scegli con cura: non potrai cambiarlo dopo la creazione</p>
@@ -1138,7 +1107,7 @@ if (selectedType === 'stamps' && data && intermediateRewards.length > 0) {
               )}
 
               {/* Color Picker */}
-              {selectedType !== 'missions' && (
+              {selectedType && (
                 <div className="bg-white rounded-2xl shadow-sm p-6">
                   <h3 className="font-bold text-lg mb-2">🎨 Colore del Programma <span className="text-amber-600 text-xs font-normal">(non modificabile dopo)</span></h3>
                   <p className="text-sm text-gray-500 mb-4">Scegli con cura: non potrai cambiarlo dopo la creazione</p>
@@ -1165,7 +1134,7 @@ if (selectedType === 'stamps' && data && intermediateRewards.length > 0) {
               )}
 
               {/* 🔗 LINK E GOOGLE WALLET - SEZIONE UNIFICATA */}
-              {selectedType !== 'missions' && (
+              {selectedType && (
                 <div className="bg-white rounded-2xl shadow-sm p-6">
                   <h3 className="font-bold text-lg mb-2">🔗 Link e Google Wallet</h3>
                   <p className="text-sm text-gray-500 mb-4">
@@ -1251,7 +1220,7 @@ if (selectedType === 'stamps' && data && intermediateRewards.length > 0) {
               )}
 
               {/* Actions */}
-              {selectedType !== 'missions' && (
+              {selectedType && (
                 <div className="flex gap-4">
                   <button
                     onClick={() => setStep(1)}
