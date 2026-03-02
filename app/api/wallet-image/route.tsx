@@ -1,6 +1,5 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@supabase/supabase-js'
-import { getNextRewardText } from '@/lib/wallet-helpers'
 
 export const runtime = 'edge'
 
@@ -55,22 +54,22 @@ export async function GET(request: Request) {
   let imageContent
   switch (programType) {
     case 'stamps':
-      imageContent = generateStampsLayout(card, program, primaryColor, rewards)
+      imageContent = generateStampsLayout(card, program)
       break
     case 'points':
-      imageContent = generatePointsLayout(card, program, primaryColor, rewards)
+      imageContent = generatePointsLayout(card, program)
       break
     case 'cashback':
-      imageContent = generateCashbackLayout(card, program, primaryColor)
+      imageContent = generateCashbackLayout()
       break
     case 'tiers':
-      imageContent = generateTiersLayout(card, program, primaryColor, tiers)
+      imageContent = generateTiersLayout(card, tiers)
       break
     case 'subscription':
-      imageContent = generateSubscriptionLayout(card, program, primaryColor)
+      imageContent = generateSubscriptionLayout(card)
       break
     default:
-      imageContent = generateStampsLayout(card, program, primaryColor, rewards)
+      imageContent = generateStampsLayout(card, program)
   }
 
   const imageResponse = new ImageResponse(
@@ -80,31 +79,13 @@ export async function GET(request: Request) {
           width: WIDTH,
           height: HEIGHT,
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: primaryColor,
           fontFamily: 'system-ui, sans-serif',
-          position: 'relative',
         }}
       >
         {imageContent}
-
-        {/* Footer */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 8,
-            left: 0,
-            right: 0,
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-        >
-          <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)' }}>
-            Powered by Zale Marketing
-          </span>
-        </div>
       </div>
     ),
     { width: WIDTH, height: HEIGHT }
@@ -121,27 +102,18 @@ export async function GET(request: Request) {
 }
 
 // ============================================
-// STAMPS / BOLLINI
-// Cerchi adattivi: 1 riga se <=10, 2 righe se >10
+// STAMPS — solo cerchi bollini, niente testo
 // ============================================
-function generateStampsLayout(card: any, program: any, color: string, rewards: any[]) {
+function generateStampsLayout(card: any, program: any) {
   const stamps = card.current_stamps || card.stamp_count || 0
   const total = program.stamps_required || 10
 
-  const { header: prizeHeader, body: prizeBody } = getNextRewardText(
-    stamps,
-    total,
-    program.reward_description || '',
-    rewards
-  )
-
-  // Calcolo dimensioni cerchi adattive
   const useTwoRows = total > 10
   const circlesPerRow = useTwoRows ? Math.ceil(total / 2) : total
-  const gap = useTwoRows ? 10 : 12
+  const gap = useTwoRows ? 10 : 14
   const diameter = useTwoRows
-    ? Math.min(44, Math.floor((1032 - 80) / circlesPerRow) - 10)
-    : Math.min(56, Math.floor((1032 - 80) / total) - 12)
+    ? Math.min(48, Math.floor(952 / circlesPerRow) - 12)
+    : Math.min(64, Math.floor(952 / total) - 14)
 
   const allIndices = Array.from({ length: total }, (_, i) => i)
   const row1 = useTwoRows ? allIndices.slice(0, circlesPerRow) : allIndices
@@ -153,329 +125,152 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 12,
+      gap,
       width: '100%',
       height: '100%',
-      paddingBottom: 28,
     }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap }}>
+      <div style={{ display: 'flex', flexDirection: 'row', gap, alignItems: 'center' }}>
+        {row1.map((i) => (
+          <div
+            key={i}
+            style={{
+              width: diameter,
+              height: diameter,
+              borderRadius: '50%',
+              backgroundColor: i < stamps ? 'rgba(255,255,255,1)' : 'transparent',
+              border: i < stamps ? 'none' : '3px solid rgba(255,255,255,0.6)',
+            }}
+          />
+        ))}
+      </div>
+      {useTwoRows && (
         <div style={{ display: 'flex', flexDirection: 'row', gap, alignItems: 'center' }}>
-          {row1.map((i) => (
+          {row2.map((i) => (
             <div
               key={i}
               style={{
                 width: diameter,
                 height: diameter,
                 borderRadius: '50%',
-                backgroundColor: i < stamps ? 'white' : 'transparent',
-                border: '3px solid white',
+                backgroundColor: i < stamps ? 'rgba(255,255,255,1)' : 'transparent',
+                border: i < stamps ? 'none' : '3px solid rgba(255,255,255,0.6)',
               }}
             />
           ))}
         </div>
-        {useTwoRows && (
-          <div style={{ display: 'flex', flexDirection: 'row', gap, alignItems: 'center' }}>
-            {row2.map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: diameter,
-                  height: diameter,
-                  borderRadius: '50%',
-                  backgroundColor: i < stamps ? 'white' : 'transparent',
-                  border: '3px solid white',
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 2,
-      }}>
-        <div style={{
-          display: 'flex',
-          fontSize: 18,
-          color: 'rgba(255,255,255,0.7)',
-          fontWeight: 600,
-          letterSpacing: 2,
-          lineHeight: 1,
-        }}>
-          {prizeHeader}
-        </div>
-        <div style={{
-          display: 'flex',
-          fontSize: 22,
-          color: 'white',
-          fontWeight: 700,
-          lineHeight: 1,
-        }}>
-          {prizeBody}
-        </div>
-      </div>
+      )}
     </div>
   )
 }
 
 // ============================================
-// POINTS / PUNTI
-// Titolo 32px + punti 80px + sub 26px
+// POINTS — barra progresso orizzontale, niente testo
 // ============================================
-function generatePointsLayout(card: any, program: any, color: string, rewards: any[]) {
+function generatePointsLayout(card: any, program: any) {
   const points = Math.round(card.points_balance || 0)
   const pointsRequired = program.stamps_required || 100
-  const rewardDesc = program.reward_description || 'Premio'
-
-  const nextReward = rewards.find((r: any) => r.stamps_required > points)
-  const isComplete = points >= pointsRequired
-
-  const subText = isComplete
-    ? `PREMIO PRONTO: ${rewardDesc}`
-    : nextReward
-    ? `Prossimo a ${nextReward.stamps_required}: ${nextReward.name}`
-    : `Premio a ${pointsRequired}: ${rewardDesc}`
+  const fillWidth = Math.min(Math.round((points / pointsRequired) * 800), 800)
 
   return (
     <div style={{
       display: 'flex',
-      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
       width: '100%',
       height: '100%',
-      paddingBottom: 28,
     }}>
       <div style={{
         display: 'flex',
-        fontSize: 32,
-        color: 'rgba(255,255,255,0.85)',
-        fontWeight: 600,
-        letterSpacing: 3,
-        lineHeight: 1,
+        width: 800,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        overflow: 'hidden',
       }}>
-        I TUOI PUNTI
-      </div>
-
-      <div style={{
-        display: 'flex',
-        fontSize: 80,
-        fontWeight: 800,
-        color: 'white',
-        lineHeight: 1,
-      }}>
-        {points}
-      </div>
-
-      <div style={{
-        display: 'flex',
-        fontSize: 26,
-        color: 'rgba(255,255,255,0.85)',
-        lineHeight: 1,
-      }}>
-        {`/ ${pointsRequired} punti`}
-      </div>
-
-      <div style={{
-        display: 'flex',
-        fontSize: 26,
-        color: 'rgba(255,255,255,0.8)',
-        fontWeight: isComplete ? 700 : 500,
-        lineHeight: 1,
-      }}>
-        {subText}
+        <div style={{
+          display: 'flex',
+          width: fillWidth,
+          height: 24,
+          backgroundColor: 'white',
+        }} />
       </div>
     </div>
   )
 }
 
 // ============================================
-// CASHBACK
-// Titolo 32px + saldo 80px + sub 26px
+// CASHBACK — simbolo € decorativo watermark
 // ============================================
-function generateCashbackLayout(card: any, program: any, color: string) {
-  const cashback = card.cashback_balance || 0
-  const percent = program.cashback_percent || 5
-  const minRedeem = program.min_cashback_redeem || 5
-  const canRedeem = cashback >= minRedeem
-
-  const subText = canRedeem
-    ? `CREDITO DISPONIBILE`
-    : `+${percent}%  \u00B7  Min. \u20AC${minRedeem} per riscattare`
-
+function generateCashbackLayout() {
   return (
     <div style={{
       display: 'flex',
-      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
       width: '100%',
       height: '100%',
-      paddingBottom: 28,
     }}>
       <div style={{
         display: 'flex',
-        fontSize: 32,
-        color: 'rgba(255,255,255,0.85)',
-        fontWeight: 600,
-        letterSpacing: 3,
+        fontSize: 220,
+        fontWeight: 900,
+        color: 'rgba(255,255,255,0.12)',
         lineHeight: 1,
       }}>
-        IL TUO CREDITO
-      </div>
-
-      <div style={{
-        display: 'flex',
-        fontSize: 80,
-        fontWeight: 800,
-        color: 'white',
-        lineHeight: 1,
-      }}>
-        {`\u20AC${cashback.toFixed(2)}`}
-      </div>
-
-      <div style={{
-        display: 'flex',
-        fontSize: 26,
-        color: 'white',
-        fontWeight: canRedeem ? 700 : 500,
-        lineHeight: 1,
-      }}>
-        {subText}
+        {'\u20AC'}
       </div>
     </div>
   )
 }
 
 // ============================================
-// TIERS / LIVELLI VIP
-// Titolo 32px + livello 80px + sub 26px
+// TIERS — nome livello corrente come watermark
 // ============================================
-function generateTiersLayout(card: any, program: any, color: string, tiers: any[]) {
-  const currentTierName = card.current_tier || 'Bronze'
-  const totalSpent = card.total_spent || 0
-
-  const currentTierData = tiers.find((t: any) => t.name === currentTierName)
-  const discount = currentTierData?.discount_percent || 0
-  const nextTierData = tiers.find((t: any) => t.min_spend > totalSpent)
-  const remaining = nextTierData ? Math.ceil(nextTierData.min_spend - totalSpent) : 0
-
-  const subText = discount > 0
-    ? `-${discount}% sconto  \u00B7  Spesa: \u20AC${totalSpent.toFixed(0)}${nextTierData ? `  \u00B7  Prossimo: ${nextTierData.name} (\u20AC${remaining})` : ''}`
-    : `Spesa totale: \u20AC${totalSpent.toFixed(0)}${nextTierData ? `  \u00B7  Prossimo: ${nextTierData.name}` : ' \u00B7 Livello max'}`
+function generateTiersLayout(card: any, tiers: any[]) {
+  const currentTierName = (card.current_tier || 'Bronze').toUpperCase()
 
   return (
     <div style={{
       display: 'flex',
-      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
       width: '100%',
       height: '100%',
-      paddingBottom: 28,
     }}>
       <div style={{
         display: 'flex',
-        fontSize: 32,
-        color: 'rgba(255,255,255,0.85)',
-        fontWeight: 600,
-        letterSpacing: 3,
+        fontSize: 160,
+        fontWeight: 900,
+        color: 'rgba(255,255,255,0.12)',
         lineHeight: 1,
-      }}>
-        IL TUO LIVELLO
-      </div>
-
-      <div style={{
-        display: 'flex',
-        fontSize: 80,
-        fontWeight: 800,
-        color: 'white',
-        lineHeight: 1,
-        textTransform: 'uppercase',
       }}>
         {currentTierName}
       </div>
-
-      <div style={{
-        display: 'flex',
-        fontSize: 26,
-        color: 'rgba(255,255,255,0.85)',
-        lineHeight: 1,
-      }}>
-        {subText}
-      </div>
     </div>
   )
 }
 
 // ============================================
-// SUBSCRIPTION / ABBONAMENTO
-// Titolo 32px + stato 80px + sub 26px
+// SUBSCRIPTION — banda colorata di stato, niente testo
 // ============================================
-function generateSubscriptionLayout(card: any, program: any, color: string) {
-  const status = card.subscription_status || 'active'
-  const isActive = status === 'active'
-  const usesToday = card.daily_uses || 0
-  const dailyLimit = program.daily_limit || 1
-  const price = program.subscription_price || 19.99
-  const period = program.subscription_period || 'monthly'
-
-  const periodLabels: Record<string, string> = {
-    'weekly': 'sett',
-    'monthly': 'mese',
-    'yearly': 'anno',
-  }
-  const periodLabel = periodLabels[period] || 'mese'
+function generateSubscriptionLayout(card: any) {
+  const isActive = (card.subscription_status || 'active') === 'active'
+  const bandColor = isActive ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'
 
   return (
     <div style={{
       display: 'flex',
-      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8,
       width: '100%',
       height: '100%',
-      paddingBottom: 28,
     }}>
       <div style={{
         display: 'flex',
-        fontSize: 32,
-        color: 'rgba(255,255,255,0.85)',
-        fontWeight: 600,
-        letterSpacing: 3,
-        lineHeight: 1,
-      }}>
-        ABBONAMENTO
-      </div>
-
-      <div style={{
-        display: 'flex',
-        fontSize: 80,
-        fontWeight: 800,
-        color: 'white',
-        lineHeight: 1,
-        backgroundColor: isActive ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)',
-        padding: '0 24px',
-        borderRadius: 12,
-      }}>
-        {isActive ? 'ATTIVO' : 'SCADUTO'}
-      </div>
-
-      <div style={{
-        display: 'flex',
-        fontSize: 26,
-        color: 'rgba(255,255,255,0.85)',
-        lineHeight: 1,
-      }}>
-        {`\u20AC${price}/${periodLabel}  \u00B7  Utilizzi oggi: ${usesToday}/${dailyLimit}`}
-      </div>
+        width: '100%',
+        height: 80,
+        backgroundColor: bandColor,
+      }} />
     </div>
   )
 }
