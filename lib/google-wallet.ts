@@ -33,135 +33,370 @@ export type WalletCardData = {
   programId: string
   cardId: string
   scanToken: string
-  
+
   programName: string
   issuerName: string
   programType: ProgramType
-  
+
   backgroundColor: string
   logoUrl?: string
-  
+
   // Link esterni (dal form)
-  externalRewardsUrl?: string  // Link Catalogo Premi
-  rulesUrl?: string            // Link Regolamento (vecchio campo)
-  termsUrl?: string            // Link Regolamento (Google Wallet)
-  websiteUrl?: string          // Sito Web
-  walletMessage?: string       // Messaggio personalizzato
-  rewardDescription?: string   // Premio
-  
+  externalRewardsUrl?: string
+  rulesUrl?: string
+  termsUrl?: string
+  websiteUrl?: string
+  walletMessage?: string
+  rewardDescription?: string
+
   // STAMPS
   stampCount?: number
   stampsRequired?: number
-  stampRewards?: Array<{ stamps: number, reward: string }>
-  
+  stampRewards?: Array<{ stamps: number; reward: string }>
+
   // POINTS
   pointsBalance?: number
   pointsForReward?: number
-  pointsRewards?: Array<{ points: number, reward: string }>
-  
+  pointsRewards?: Array<{ points: number; reward: string }>
+  pointsPerEuro?: number   // €X per 1 punto
+
   // CASHBACK
   cashbackBalance?: number
   cashbackPercent?: number
-  
+  minCashbackRedeem?: number  // minimo € per riscattare
+
   // TIERS
   currentTier?: string
   tierDiscount?: number
   totalSpent?: number
   nextTierName?: string
   nextTierMinSpend?: number
-  
+
   // SUBSCRIPTION
   subscriptionStatus?: string
   subscriptionEnd?: string
   dailyUses?: number
   dailyLimit?: number
-  
+  subscriptionPrice?: number
+  subscriptionPeriod?: string
+
   // MISSIONS
   activeMissions?: number
   completedMissions?: number
-  
+
   // Customer
   customerName?: string
   customerEmail?: string
 }
 
 // ============================================================================
-// HERO IMAGE URL - SEMPLIFICATO con cardId
-// I dati vengono caricati dal database nel route.tsx
-// Il timestamp forza il refresh ad ogni chiamata
+// HERO IMAGE URL
 // ============================================================================
 
 function getHeroImageUrl(cardId: string): string {
-  // SEMPLICE: passa solo cardId + timestamp per forzare refresh ISTANTANEO
   return `${APP_URL}/api/wallet-image?cardId=${cardId}&t=${Date.now()}`
 }
 
 // ============================================================================
-// TEXT MODULES — dati leggibili nella vista espansa della carta Google Wallet
+// LOYALTY POINTS — campo nativo Google Wallet (grande, visibile sulla carta)
+// ============================================================================
+
+function buildLoyaltyPoints(data: WalletCardData): any {
+  switch (data.programType) {
+    case 'stamps':
+      return {
+        label: 'BOLLINI',
+        balance: { string: `${data.stampCount || 0} / ${data.stampsRequired || 10}` },
+      }
+    case 'points':
+      return {
+        label: 'PUNTI',
+        balance: { int: Math.round(data.pointsBalance || 0) },
+      }
+    case 'cashback':
+      return {
+        label: 'CREDITO',
+        balance: { string: `\u20AC${(data.cashbackBalance || 0).toFixed(2)}` },
+      }
+    case 'tiers':
+      return {
+        label: 'LIVELLO',
+        balance: { string: (data.currentTier || 'Base').toUpperCase() },
+      }
+    case 'subscription':
+      return {
+        label: 'STATO',
+        balance: { string: data.subscriptionStatus === 'active' ? 'ATTIVO' : 'SCADUTO' },
+      }
+    default:
+      return { label: 'PUNTI', balance: { int: 0 } }
+  }
+}
+
+// ============================================================================
+// CLASS TEMPLATE INFO — layout nativo delle righe sulla carta Google Wallet
+// ============================================================================
+
+function buildClassTemplateInfo(programType: ProgramType): any {
+  const barcodeBranding = {
+    firstBottomDetail: {
+      fieldSelector: { fields: [{ fieldPath: "object.textModulesData['branding']" }] },
+    },
+  }
+
+  let cardRowTemplateInfos: any[]
+
+  switch (programType) {
+    case 'stamps':
+      cardRowTemplateInfos = [
+        {
+          twoItems: {
+            startItem: {
+              firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] },
+            },
+            endItem: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['premio']" }] },
+            },
+          },
+        },
+      ]
+      break
+
+    case 'points':
+      cardRowTemplateInfos = [
+        {
+          threeItems: {
+            startItem: {
+              firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] },
+            },
+            middleItem: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['premio']" }] },
+            },
+            endItem: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['conversione']" }] },
+            },
+          },
+        },
+      ]
+      break
+
+    case 'cashback':
+      cardRowTemplateInfos = [
+        {
+          twoItems: {
+            startItem: {
+              firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] },
+            },
+            endItem: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['info']" }] },
+            },
+          },
+        },
+        {
+          oneItem: {
+            item: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['stato']" }] },
+            },
+          },
+        },
+      ]
+      break
+
+    case 'tiers':
+      cardRowTemplateInfos = [
+        {
+          twoItems: {
+            startItem: {
+              firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] },
+            },
+            endItem: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['sconto']" }] },
+            },
+          },
+        },
+        {
+          twoItems: {
+            startItem: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['spesa']" }] },
+            },
+            endItem: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['prossimo_tier']" }] },
+            },
+          },
+        },
+      ]
+      break
+
+    case 'subscription':
+      cardRowTemplateInfos = [
+        {
+          twoItems: {
+            startItem: {
+              firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] },
+            },
+            endItem: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['scadenza']" }] },
+            },
+          },
+        },
+        {
+          twoItems: {
+            startItem: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['utilizzi']" }] },
+            },
+            endItem: {
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['prezzo']" }] },
+            },
+          },
+        },
+      ]
+      break
+
+    default:
+      cardRowTemplateInfos = [
+        {
+          oneItem: {
+            item: {
+              firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] },
+            },
+          },
+        },
+      ]
+  }
+
+  return {
+    cardTemplateOverride: { cardRowTemplateInfos },
+    cardBarcodeSectionDetails: barcodeBranding,
+  }
+}
+
+// ============================================================================
+// TEXT MODULES — dati nella vista espansa e nei campi cardTemplateOverride
 // ============================================================================
 
 function buildTextModulesData(data: WalletCardData): any[] {
+  const modules: any[] = []
+
   switch (data.programType) {
     case 'stamps': {
       const stamps = data.stampCount || 0
       const total = data.stampsRequired || 10
       const isComplete = stamps >= total
-      const nextReward = data.stampRewards?.find(r => r.stamps > stamps)
-      return [{
-        id: 'status',
-        header: isComplete ? `${stamps}/${total} - PREMIO PRONTO!` : `${stamps}/${total} bollini`,
+      const nextReward = data.stampRewards?.find((r) => r.stamps > stamps)
+      modules.push({
+        id: 'premio',
+        header: 'PROSSIMO PREMIO',
         body: isComplete
-          ? `Premio: ${data.rewardDescription || ''}`
+          ? `PRONTO: ${data.rewardDescription || ''}`
           : nextReward
-          ? `Prossimo a ${nextReward.stamps}: ${nextReward.reward}`
-          : `Premio a ${total}: ${data.rewardDescription || ''}`,
-      }]
+          ? `${nextReward.reward} a ${nextReward.stamps}`
+          : `${data.rewardDescription || ''} a ${total}`,
+      })
+      break
     }
+
     case 'points': {
       const points = Math.round(data.pointsBalance || 0)
       const total = data.pointsForReward || 100
       const isComplete = points >= total
-      const nextReward = data.pointsRewards?.find(r => r.points > points)
-      return [{
-        id: 'status',
-        header: isComplete ? `${points} punti - PREMIO PRONTO!` : `${points}/${total} punti`,
+      const nextReward = data.pointsRewards?.find((r) => r.points > points)
+      modules.push({
+        id: 'premio',
+        header: 'PROSSIMO PREMIO',
         body: isComplete
-          ? `Premio: ${data.rewardDescription || ''}`
+          ? `PRONTO: ${data.rewardDescription || ''}`
           : nextReward
-          ? `Prossimo a ${nextReward.points}: ${nextReward.reward}`
-          : `Premio a ${total}: ${data.rewardDescription || ''}`,
-      }]
+          ? `${nextReward.reward} a ${nextReward.points}pt`
+          : `${data.rewardDescription || ''} a ${total}pt`,
+      })
+      modules.push({
+        id: 'conversione',
+        header: 'GUADAGNI',
+        body: `1 pt ogni \u20AC${data.pointsPerEuro || 1}`,
+      })
+      break
     }
+
     case 'cashback': {
       const cashback = data.cashbackBalance || 0
-      return [{
-        id: 'status',
-        header: `Credito: \u20AC${cashback.toFixed(2)}`,
+      const minRedeem = data.minCashbackRedeem || 5
+      const canRedeem = cashback >= minRedeem
+      modules.push({
+        id: 'info',
+        header: 'GUADAGNI',
         body: `+${data.cashbackPercent || 5}% su ogni acquisto`,
-      }]
+      })
+      modules.push({
+        id: 'stato',
+        header: 'STATO',
+        body: canRedeem ? 'Disponibile ora!' : `Min. \u20AC${minRedeem} per riscattare`,
+      })
+      break
     }
+
     case 'tiers': {
-      const parts: string[] = []
-      if (data.tierDiscount) parts.push(`-${data.tierDiscount}% sconto`)
-      if (data.totalSpent !== undefined) parts.push(`Spesa: \u20AC${data.totalSpent.toFixed(0)}`)
-      if (data.nextTierName) parts.push(`Prossimo: ${data.nextTierName} a \u20AC${data.nextTierMinSpend || 0}`)
-      return [{
-        id: 'status',
-        header: `Livello: ${data.currentTier || 'Bronze'}`,
-        body: parts.join(' \u00B7 ') || 'Livello attuale',
-      }]
+      const discount = data.tierDiscount || 0
+      const totalSpent = data.totalSpent || 0
+      const nextSpend = data.nextTierMinSpend || 0
+      const remaining = nextSpend > totalSpent ? Math.ceil(nextSpend - totalSpent) : 0
+      modules.push({
+        id: 'sconto',
+        header: 'TUO SCONTO',
+        body: discount > 0 ? `-${discount}% su ogni acquisto` : 'Nessuno sconto attivo',
+      })
+      modules.push({
+        id: 'spesa',
+        header: 'SPESA TOTALE',
+        body: `\u20AC${totalSpent.toFixed(0)}`,
+      })
+      modules.push({
+        id: 'prossimo_tier',
+        header: 'PROSSIMO LIVELLO',
+        body: data.nextTierName
+          ? `${data.nextTierName} a \u20AC${nextSpend} (+\u20AC${remaining})`
+          : 'Livello massimo!',
+      })
+      break
     }
+
     case 'subscription': {
       const isActive = data.subscriptionStatus === 'active'
-      return [{
-        id: 'status',
-        header: `Abbonamento: ${isActive ? 'ATTIVO' : 'SCADUTO'}`,
-        body: `Utilizzi oggi: ${data.dailyUses || 0}/${data.dailyLimit || 1}`,
-      }]
+      const endDate = data.subscriptionEnd
+        ? new Date(data.subscriptionEnd).toLocaleDateString('it-IT', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })
+        : 'N/D'
+      const periodLabels: Record<string, string> = {
+        weekly: 'sett',
+        monthly: 'mese',
+        yearly: 'anno',
+      }
+      const periodLabel = periodLabels[data.subscriptionPeriod || 'monthly'] || 'mese'
+      modules.push({
+        id: 'scadenza',
+        header: isActive ? 'SCADE IL' : 'SCADUTO IL',
+        body: endDate,
+      })
+      modules.push({
+        id: 'utilizzi',
+        header: 'UTILIZZI OGGI',
+        body: `${data.dailyUses || 0} / ${data.dailyLimit || 1}`,
+      })
+      modules.push({
+        id: 'prezzo',
+        header: 'PIANO',
+        body: `\u20AC${data.subscriptionPrice || 0}/${periodLabel}`,
+      })
+      break
     }
-    default:
-      return []
   }
+
+  // Branding — referenziato da cardBarcodeSectionDetails.firstBottomDetail
+  modules.push({ id: 'branding', header: '', body: 'Powered by Zale Marketing' })
+
+  return modules
 }
 
 // ============================================================================
@@ -170,142 +405,129 @@ function buildTextModulesData(data: WalletCardData): any[] {
 
 export async function generateWalletLink(data: WalletCardData): Promise<string> {
   const PRIVATE_KEY = getPrivateKey()
-  
+
   if (!ISSUER_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
     throw new Error('Google Wallet non configurato')
   }
 
   const cleanProgramId = sanitizeId(data.programId)
   const cleanCardId = sanitizeId(data.cardId)
-  
+
   const classId = `${ISSUER_ID}.${cleanProgramId}`
   const objectId = `${ISSUER_ID}.${cleanCardId}`
-  
-  // Hero image URL con cardId (i dati vengono caricati dal DB)
+
   const heroImageUrl = getHeroImageUrl(data.cardId)
-  
+
   // ========== LOYALTY CLASS ==========
   const loyaltyClass: any = {
     id: classId,
     issuerName: data.issuerName,
     programName: data.programName,
-    
+
     programLogo: {
       sourceUri: {
-        uri: data.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.programName)}&background=${data.backgroundColor.replace('#', '')}&color=fff&size=256&bold=true`
+        uri: data.logoUrl ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(data.programName)}&background=${data.backgroundColor.replace('#', '')}&color=fff&size=256&bold=true`,
       },
       contentDescription: {
-        defaultValue: { language: 'it-IT', value: data.issuerName }
-      }
+        defaultValue: { language: 'it-IT', value: data.issuerName },
+      },
     },
-    
+
     hexBackgroundColor: data.backgroundColor || '#6366f1',
-    
+
     heroImage: {
       sourceUri: { uri: heroImageUrl },
       contentDescription: {
-        defaultValue: { language: 'it-IT', value: data.programName }
-      }
+        defaultValue: { language: 'it-IT', value: data.programName },
+      },
     },
-    
-    // ⭐ EFFETTO ARCOBALENO SUL QR CODE
-    securityAnimation: {
-      animationType: 'FOIL_SHIMMER'
-    },
-    
+
+    // ⭐ Effetto arcobaleno sul QR code
+    securityAnimation: { animationType: 'FOIL_SHIMMER' },
+
+    // Layout nativo righe per ogni tipo di programma
+    classTemplateInfo: buildClassTemplateInfo(data.programType),
+
     reviewStatus: 'UNDER_REVIEW',
   }
-  
+
   // ========== LINKS NEL RETRO DELLA CARTA ==========
-  // IMPORTANTE: description è quello che appare come label (max 20 caratteri consigliati)
   const links: any[] = []
-  
-  // Link Catalogo Premi
+
   if (data.externalRewardsUrl) {
     links.push({
-      uri: data.externalRewardsUrl.startsWith('http') ? data.externalRewardsUrl : `https://${data.externalRewardsUrl}`,
+      uri: data.externalRewardsUrl.startsWith('http')
+        ? data.externalRewardsUrl
+        : `https://${data.externalRewardsUrl}`,
       description: 'Catalogo Premi',
-      id: 'rewards_link'
+      id: 'rewards_link',
     })
   }
-  
-  // Link Regolamento (usa termsUrl se presente, altrimenti rulesUrl)
+
   const regolamentoUrl = data.termsUrl || data.rulesUrl
   if (regolamentoUrl) {
     links.push({
       uri: regolamentoUrl.startsWith('http') ? regolamentoUrl : `https://${regolamentoUrl}`,
       description: 'Regolamento',
-      id: 'terms_link'
+      id: 'terms_link',
     })
   }
-  
-  // Sito Web
+
   if (data.websiteUrl) {
     links.push({
       uri: data.websiteUrl.startsWith('http') ? data.websiteUrl : `https://${data.websiteUrl}`,
       description: 'Sito Web',
-      id: 'website_link'
+      id: 'website_link',
     })
   }
-  
-  // Powered by Zale Marketing - SEMPRE in fondo
+
   links.push({
     uri: 'https://zalemarketing.it',
     description: 'Zale Marketing',
-    id: 'powered_by'
+    id: 'powered_by',
   })
-  
+
   loyaltyClass.linksModuleData = { uris: links }
-  
+
   // ========== MESSAGGI (opzionali) ==========
   const messages: any[] = []
-  
+
   if (data.walletMessage) {
-    messages.push({
-      header: 'Info',
-      body: data.walletMessage,
-      id: 'custom_message'
-    })
+    messages.push({ header: 'Info', body: data.walletMessage, id: 'custom_message' })
   }
-  
+
   if (data.rewardDescription) {
-    messages.push({
-      header: 'Premio',
-      body: data.rewardDescription,
-      id: 'reward_message'
-    })
+    messages.push({ header: 'Premio', body: data.rewardDescription, id: 'reward_message' })
   }
-  
+
   if (messages.length > 0) {
     loyaltyClass.messages = messages
   }
 
   // ========== LOYALTY OBJECT ==========
-  // SOLO nome cliente sopra il QR, NIENTE dati duplicati!
   const loyaltyObject: any = {
     id: objectId,
     classId: classId,
     state: 'ACTIVE',
-    
-    // ID univoco
+
     accountId: data.customerEmail || data.scanToken.substring(0, 12),
-    
-    // ⭐ SOLO IL NOME del cliente - niente altro sopra il QR!
     accountName: data.customerName || 'Cliente',
-    
-    // QR Code
+
     barcode: {
       type: 'QR_CODE',
       value: data.scanToken,
-      alternateText: data.scanToken.substring(0, 8).toUpperCase()
-    },
-    
-    // Hero image con tutti i dati visivi
-    heroImage: {
-      sourceUri: { uri: heroImageUrl }
+      alternateText: data.scanToken.substring(0, 8).toUpperCase(),
     },
 
-    // Dati testuali visibili nella vista espansa della carta
+    heroImage: {
+      sourceUri: { uri: heroImageUrl },
+    },
+
+    // Campo nativo per il bilancio (bollini, punti, credito, livello, stato)
+    loyaltyPoints: buildLoyaltyPoints(data),
+
+    // Moduli testo per cardTemplateOverride e vista espansa
     textModulesData: buildTextModulesData(data),
   }
 
@@ -331,14 +553,13 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
 
 export async function updateWalletCard(data: WalletCardData): Promise<void> {
   const { GoogleAuth } = await import('google-auth-library')
-  
+
   const PRIVATE_KEY = getPrivateKey()
   if (!PRIVATE_KEY || !ISSUER_ID) return
-  
+
   const cleanCardId = sanitizeId(data.cardId)
   const objectId = `${ISSUER_ID}.${cleanCardId}`
-  
-  // Hero image URL con cardId e timestamp per refresh istantaneo
+
   const heroImageUrl = getHeroImageUrl(data.cardId)
 
   const auth = new GoogleAuth({
@@ -346,7 +567,7 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
       client_email: CLIENT_EMAIL,
       private_key: PRIVATE_KEY,
     },
-    scopes: ['https://www.googleapis.com/auth/wallet_object.issuer']
+    scopes: ['https://www.googleapis.com/auth/wallet_object.issuer'],
   })
 
   const client = await auth.getClient()
@@ -354,9 +575,11 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
   const updateData: any = {
     accountName: data.customerName || 'Cliente',
     heroImage: {
-      sourceUri: { uri: heroImageUrl }
+      sourceUri: { uri: heroImageUrl },
     },
+    loyaltyPoints: buildLoyaltyPoints(data),
     textModulesData: buildTextModulesData(data),
+    notifyPreference: 'NOTIFY_ON_UPDATE',
   }
 
   try {
@@ -378,12 +601,12 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
 // ============================================================================
 // NOTA IMPORTANTE SUGLI UPDATE
 // ============================================================================
-// 
+//
 // Le modifiche alla CLASSE (logo, nome programma, colori) NON si applicano
 // alle carte già salvate nel wallet degli utenti.
-// 
+//
 // Solo le modifiche all'OGGETTO (bollini, punti, saldo, hero image) si
 // aggiornano in tempo reale tramite PATCH API.
-// 
+//
 // Questo è un limite tecnico di Google Wallet, non del nostro sistema.
 //

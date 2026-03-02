@@ -107,6 +107,11 @@ export async function POST(request: NextRequest) {
       websiteUrl: program.website_url,
       walletMessage: program.wallet_message,
       rewardDescription: program.reward_description || program.reward_text,
+
+      pointsPerEuro: program.points_per_euro,
+      minCashbackRedeem: program.min_cashback_redeem,
+      subscriptionPrice: program.subscription_price,
+      subscriptionPeriod: program.subscription_period,
       
       stampCount: card.current_stamps || card.stamp_count || 0,
       stampsRequired: program.stamps_required || 10,

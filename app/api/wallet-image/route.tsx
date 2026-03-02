@@ -126,18 +126,8 @@ export async function GET(request: Request) {
 function generateStampsLayout(card: any, program: any, color: string, rewards: any[]) {
   const stamps = card.current_stamps || card.stamp_count || 0
   const total = program.stamps_required || 10
-  const rewardDesc = program.reward_description || 'Premio'
 
-  const nextReward = rewards.find((r: any) => r.stamps_required > stamps)
-  const isComplete = stamps >= total
-
-  const subText = isComplete
-    ? `PREMIO PRONTO: ${rewardDesc}`
-    : nextReward
-    ? `Prossimo a ${nextReward.stamps_required}: ${nextReward.name}`
-    : `Premio a ${total}: ${rewardDesc}`
-
-  // Calcolo dimensioni cerchi
+  // Calcolo dimensioni cerchi adattive
   const useTwoRows = total > 10
   const circlesPerRow = useTwoRows ? Math.ceil(total / 2) : total
   const gap = useTwoRows ? 10 : 12
@@ -149,30 +139,18 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
   const row1 = useTwoRows ? allIndices.slice(0, circlesPerRow) : allIndices
   const row2 = useTwoRows ? allIndices.slice(circlesPerRow) : []
 
+  // Solo cerchi — i dati testuali sono nelle righe native (cardTemplateOverride)
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 10,
+      gap,
       width: '100%',
       height: '100%',
       paddingBottom: 28,
     }}>
-      {/* Riga 1: titolo */}
-      <div style={{
-        display: 'flex',
-        fontSize: 32,
-        color: 'rgba(255,255,255,0.85)',
-        fontWeight: 600,
-        letterSpacing: 3,
-        lineHeight: 1,
-      }}>
-        I TUOI BOLLINI
-      </div>
-
-      {/* Riga 2: cerchi */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap }}>
         <div style={{ display: 'flex', flexDirection: 'row', gap, alignItems: 'center' }}>
           {row1.map((i) => (
@@ -204,28 +182,6 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
             ))}
           </div>
         )}
-      </div>
-
-      {/* Riga 3: contatore X / Y */}
-      <div style={{
-        display: 'flex',
-        fontSize: 48,
-        fontWeight: 800,
-        color: 'white',
-        lineHeight: 1,
-      }}>
-        {stamps} / {total}
-      </div>
-
-      {/* Riga 4: prossimo premio */}
-      <div style={{
-        display: 'flex',
-        fontSize: 24,
-        color: 'rgba(255,255,255,0.8)',
-        fontWeight: isComplete ? 700 : 500,
-        lineHeight: 1,
-      }}>
-        {subText}
       </div>
     </div>
   )
