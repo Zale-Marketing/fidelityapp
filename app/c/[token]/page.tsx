@@ -309,51 +309,81 @@ export default function CustomerCardPage() {
       {/* Card Body */}
       <div className="max-w-md mx-auto px-4 -mt-12">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+
+          {/* 1. Wallet CTA — FIRST element, sopra il fold */}
+          <div className="p-4 border-b">
+            <button
+              onClick={addToGoogleWallet}
+              disabled={walletLoading}
+              className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+            >
+              {walletLoading ? (
+                <span>Caricamento...</span>
+              ) : (
+                <>
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                  </svg>
+                  <span>Aggiungi a Google Wallet</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* 2. Progress message */}
+          {getProgressMessage() && (
+            <div className="px-6 py-4 border-b bg-gray-50">
+              <p className="text-center text-sm font-semibold" style={{ color: program.primary_color }}>
+                {getProgressMessage()}
+              </p>
+            </div>
+          )}
+
+          {/* 3. Per-type KPI content */}
           <div className="p-6">
-            
+
             {/* ============ BOLLINI ============ */}
             {programType === 'stamps' && (
               <>
-                {card.status === 'reward_ready' ? (
+                {card.status === 'reward_ready' && (
                   <div className="bg-orange-100 text-orange-700 rounded-xl p-4 text-center mb-6">
                     <div className="text-4xl mb-2">🎉</div>
                     <p className="font-bold text-lg">Premio Disponibile!</p>
                     <p className="text-sm">Mostra questa schermata in cassa</p>
                   </div>
-                ) : (
-                  <div className="mb-6">
-                    <div className="flex justify-between text-sm text-gray-500 mb-2">
-                      <span>Progressi</span>
-                      <span>{currentStamps} / {program.stamps_required}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="h-3 rounded-full transition-all duration-500"
-                        style={{ 
-                          width: `${Math.min(stampsProgress, 100)}%`,
-                          backgroundColor: program.primary_color
-                        }}
-                      />
-                    </div>
-                  </div>
                 )}
 
-                {/* Bollini Grid */}
-                <div className="grid grid-cols-5 gap-3 mb-6">
-                  {[...Array(program.stamps_required)].map((_, i) => (
-                    <div 
-                      key={i}
-                      className={`aspect-square rounded-full flex items-center justify-center text-lg ${
-                        i < currentStamps 
-                          ? 'text-white' 
-                          : 'bg-gray-100 text-gray-300'
-                      }`}
-                      style={i < currentStamps ? { backgroundColor: program.primary_color } : {}}
-                    >
-                      {i < currentStamps ? '✓' : (i + 1)}
-                    </div>
-                  ))}
-                </div>
+                {/* Bollini Grid — capped at 10, overflow shown as text */}
+                {(() => {
+                  const displayCount = Math.min(program.stamps_required, 10)
+                  const overflowCount = program.stamps_required > 10 ? program.stamps_required - 10 : 0
+                  return (
+                    <>
+                      <div className="grid grid-cols-5 gap-3 mb-3">
+                        {[...Array(displayCount)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`aspect-square rounded-full flex items-center justify-center text-sm font-bold ${
+                              i < currentStamps ? 'text-white' : 'bg-gray-100 text-gray-400'
+                            }`}
+                            style={i < currentStamps ? { backgroundColor: program.primary_color } : {}}
+                          >
+                            {i < currentStamps ? (
+                              <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            ) : (i + 1)}
+                          </div>
+                        ))}
+                      </div>
+                      {overflowCount > 0 && (
+                        <p className="text-center text-sm text-gray-400 mb-4">
+                          + altri {overflowCount} bollini
+                        </p>
+                      )}
+                    </>
+                  )
+                })()}
 
                 {/* Premio */}
                 <div className="bg-gray-50 rounded-xl p-4 text-center">
@@ -541,29 +571,19 @@ export default function CustomerCardPage() {
             {/* ============ ABBONAMENTO ============ */}
             {programType === 'subscription' && (
               <>
-                <div className="text-center mb-6">
-                  {isSubscriptionActive ? (
-                    <>
-                      <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-4xl">✅</span>
-                      </div>
-                      <p className="text-2xl font-bold text-green-600">Abbonamento Attivo</p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Scade il {new Date(subscriptionEnd).toLocaleDateString('it')}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-4xl">❌</span>
-                      </div>
-                      <p className="text-2xl font-bold text-red-600">Abbonamento Non Attivo</p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Contatta il negozio per attivarlo
-                      </p>
-                    </>
-                  )}
-                </div>
+                {isSubscriptionActive ? (
+                  <div className="bg-green-100 rounded-2xl px-6 py-5 text-center mb-4">
+                    <p className="text-3xl font-black text-green-700 tracking-wide">ATTIVO</p>
+                    <p className="text-sm text-green-600 mt-1">
+                      Scade il {new Date(subscriptionEnd).toLocaleDateString('it-IT')}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-red-100 rounded-2xl px-6 py-5 text-center mb-4">
+                    <p className="text-3xl font-black text-red-700 tracking-wide">SCADUTO</p>
+                    <p className="text-sm text-red-500 mt-1">Contatta il negozio per rinnovare</p>
+                  </div>
+                )}
 
                 {isSubscriptionActive && (
                   <>
@@ -603,27 +623,7 @@ export default function CustomerCardPage() {
 
           </div>
 
-          {/* Google Wallet Button */}
-          <div className="px-6 pb-4">
-            <button
-              onClick={addToGoogleWallet}
-              disabled={walletLoading}
-              className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center space-x-2"
-            >
-              {walletLoading ? (
-                <span>Caricamento...</span>
-              ) : (
-                <>
-                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                  </svg>
-                  <span>Aggiungi a Google Wallet</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* QR Code */}
+          {/* 4. QR Code — UNCHANGED, still last */}
           <div className="border-t border-dashed p-6">
             <p className="text-center text-sm text-gray-500 mb-4">
               Mostra questo QR in cassa
