@@ -224,6 +224,9 @@ export default function JoinPage() {
       const link = `${window.location.origin}/c/${newCard.scan_token}`
       setCardLink(link)
       setDone(true)
+      setTimeout(() => {
+        router.push(`/c/${newCard.scan_token}`)
+      }, 2500)
     } catch {
       setError('Errore inatteso. Riprova.')
     }
@@ -276,25 +279,31 @@ export default function JoinPage() {
 
             <a
               href={cardLink}
-              className="block w-full text-white py-4 rounded-xl font-bold text-lg mb-4 hover:opacity-90 transition-opacity"
+              className="block w-full text-white py-4 rounded-xl font-bold text-lg mb-2 hover:opacity-90 transition-opacity"
               style={{ backgroundColor: primaryColor }}
             >
               Vai alla tua Carta →
             </a>
 
-            <button
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({ title: 'La mia carta fedeltà', url: cardLink })
-                } else {
-                  navigator.clipboard.writeText(cardLink)
-                  alert('Link copiato!')
-                }
-              }}
-              className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200"
-            >
-              📤 Condividi / Copia link
-            </button>
+            <p className="text-sm text-gray-400 mt-2 text-center">
+              Reindirizzamento automatico in pochi secondi...
+            </p>
+
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ title: 'La mia carta fedeltà', url: cardLink })
+                  } else {
+                    navigator.clipboard.writeText(cardLink)
+                    alert('Link copiato!')
+                  }
+                }}
+                className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200"
+              >
+                📤 Condividi / Copia link
+              </button>
+            </div>
           </div>
 
           <p className="text-center text-gray-400 text-sm mt-6 mb-8">
@@ -306,15 +315,6 @@ export default function JoinPage() {
   }
 
   // ========== FORM STATE ==========
-  const benefitText = () => {
-    if (programType === 'stamps') return `Raccogli ${program?.stamps_required} bollini e vinci: ${program?.reward_description || 'Premio speciale'}`
-    if (programType === 'points') return `Guadagna punti ad ogni acquisto. ${program?.points_per_euro ? `€${program.points_per_euro} = 1 punto` : ''}`
-    if (programType === 'cashback') return `${program?.cashback_percent || 5}% di cashback su ogni acquisto`
-    if (programType === 'tiers') return 'Sali di livello e sblocca vantaggi esclusivi'
-    if (programType === 'subscription') return `Abbonamento ${program?.subscription_price ? `€${program.subscription_price}/${program.subscription_period === 'monthly' ? 'mese' : program.subscription_period === 'yearly' ? 'anno' : 'settimana'}` : ''}`
-    return 'Accumula premi fedeltà'
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header colorato */}
@@ -332,7 +332,7 @@ export default function JoinPage() {
           <h1 className="text-2xl font-bold">{merchant?.name}</h1>
           <p className="text-white/80 text-lg">{program?.name}</p>
           <div className="mt-3 bg-white/20 rounded-xl px-4 py-2 inline-block">
-            <p className="text-sm font-medium">{benefitText()}</p>
+            <p className="text-sm font-medium">{TYPE_LABELS[programType] || 'Fedeltà'}</p>
           </div>
         </div>
       </div>
@@ -341,6 +341,87 @@ export default function JoinPage() {
       <div className="max-w-md mx-auto px-4 -mt-12">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="p-6">
+            {/* BenefitPreview — Come funziona */}
+            <div className="border-b pb-5 mb-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+                Come funziona
+              </h3>
+
+              {programType === 'stamps' && (
+                <div className="space-y-2">
+                  {rewards.length > 0 ? (
+                    rewards.map(reward => (
+                      <div key={reward.id} className="flex items-center gap-3">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                          style={{ backgroundColor: primaryColor }}
+                        >
+                          {reward.stamps_required}
+                        </div>
+                        <span className="text-gray-800 font-medium text-sm">{reward.name}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        {program?.stamps_required}
+                      </div>
+                      <span className="text-gray-800 font-medium text-sm">
+                        {program?.reward_description || 'Premio speciale'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {programType === 'points' && (
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-700 font-medium">
+                    €{program?.points_per_euro ?? 1} spesi = 1 punto
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {program?.stamps_required} punti → {program?.reward_description || 'Premio speciale'}
+                  </p>
+                </div>
+              )}
+
+              {programType === 'cashback' && (
+                <div className="space-y-1">
+                  <p className="text-lg font-bold" style={{ color: primaryColor }}>
+                    {program?.cashback_percent ?? 5}% cashback
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Riscatti da €{program?.min_cashback_redeem ?? 5}
+                  </p>
+                </div>
+              )}
+
+              {programType === 'tiers' && (
+                <p className="text-sm text-gray-700">
+                  Sali di livello in base alla spesa e sblocca sconti crescenti
+                </p>
+              )}
+
+              {programType === 'subscription' && (
+                <div className="space-y-1">
+                  <p className="text-lg font-bold" style={{ color: primaryColor }}>
+                    €{program?.subscription_price ?? 0}/
+                    {program?.subscription_period === 'monthly' ? 'mese'
+                      : program?.subscription_period === 'yearly' ? 'anno'
+                      : 'settimana'}
+                  </p>
+                  {program?.daily_limit != null && (
+                    <p className="text-sm text-gray-500">
+                      {program.daily_limit} utilizz{program.daily_limit === 1 ? 'o' : 'i'} al giorno inclus{program.daily_limit === 1 ? 'o' : 'i'}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
             <h2 className="text-xl font-bold text-gray-900 mb-1">Iscriviti al programma</h2>
             <p className="text-gray-500 text-sm mb-6">
               Inserisci i tuoi dati per ricevere la tua carta fedeltà digitale
@@ -407,16 +488,6 @@ export default function JoinPage() {
             </form>
           </div>
 
-          {/* Benefit badge */}
-          <div className="border-t px-6 py-4" style={{ backgroundColor: primaryColor + '10' }}>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{TYPE_ICONS[programType] || '🎫'}</span>
-              <div>
-                <p className="font-semibold text-gray-800 text-sm">{TYPE_LABELS[programType] || 'Fedeltà'}</p>
-                <p className="text-gray-500 text-xs">{benefitText()}</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         <p className="text-center text-gray-400 text-sm mt-6 mb-8">
