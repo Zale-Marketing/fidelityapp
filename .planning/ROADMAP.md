@@ -48,11 +48,11 @@ Plans:
   4. Cassiere riceve feedback visivo verde o rosso entro 1 secondo dalla scansione del QR
   5. Per un programma a punti, cassiere inserisce l'importo speso direttamente nella schermata di scansione senza navigare altrove
   6. Cassiere può fare 3 scansioni consecutive: dopo ogni conferma la pagina si resetta automaticamente per la prossima
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Design system mobile-first (componenti UI coerenti, spacing, typography)
-- [ ] 02-02: Scanner /stamp ottimizzato (avvio automatico fotocamera, feedback immediato, importo inline, reset automatico)
+- [ ] 02-01-PLAN.md — Mobile-first dashboard design system (responsive layout, consistent rounded-2xl/rounded-xl tokens across all dashboard pages)
+- [ ] 02-02-PLAN.md — Scanner UX optimization (auto-start camera, full-screen feedback, auto-reset after 3s)
 
 ### Phase 3: Customer Pages
 **Goal**: Clienti si iscrivono al programma e capiscono lo stato della loro carta senza spiegazioni
