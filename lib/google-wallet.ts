@@ -579,7 +579,7 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
     },
     loyaltyPoints: buildLoyaltyPoints(data),
     textModulesData: buildTextModulesData(data),
-    notifyPreference: 'NOTIFY_ON_UPDATE',
+    notifyPreference: 'notifyOnUpdate',
   }
 
   try {
