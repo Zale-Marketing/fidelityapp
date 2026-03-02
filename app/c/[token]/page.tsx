@@ -112,7 +112,10 @@ export default function CustomerCardPage() {
     try {
       const response = await fetch('/api/wallet', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_INTERNAL_API_SECRET || ''}`
+        },
         body: JSON.stringify({ cardId: card.id })
       })
 

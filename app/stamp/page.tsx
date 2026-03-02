@@ -22,6 +22,8 @@ export default function StampPage() {
   const [amount, setAmount] = useState('')
   const [processing, setProcessing] = useState(false)
   const [showActivateSubscription, setShowActivateSubscription] = useState(false)
+  const [idempotencyKey, setIdempotencyKey] = useState('')
+  const idempotencyKeyRef = useRef('')
   const scannerRef = useRef<Html5Qrcode | null>(null)
   
   const router = useRouter()
@@ -91,12 +93,15 @@ export default function StampPage() {
     try {
       await fetch('/api/wallet-update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_INTERNAL_API_SECRET || ''}`
+        },
         body: JSON.stringify({ cardId })
       })
-      console.log('✅ Wallet aggiornato')
+      console.log('Wallet aggiornato')
     } catch (e) {
-      console.log('⚠️ Errore aggiornamento wallet')
+      console.log('Errore aggiornamento wallet')
     }
   }
 
@@ -140,6 +145,10 @@ export default function StampPage() {
       const customer = card.card_holders
 
       setCardData({ card, program, customer })
+
+      const scanKey = `${card.id}-${crypto.randomUUID()}`
+      setIdempotencyKey(scanKey)
+      idempotencyKeyRef.current = scanKey
 
       const programType = program.program_type || 'stamps'
 
@@ -190,7 +199,7 @@ export default function StampPage() {
       delta: 1,
       type: 'add',
       transaction_type: 'stamp',
-      idempotency_key: `${card.id}-${Date.now()}`
+      idempotency_key: idempotencyKeyRef.current || idempotencyKey || `${card.id}-${Date.now()}`
     })
 
     if (txError) {
@@ -262,7 +271,7 @@ export default function StampPage() {
       transaction_type: 'points',
       amount_spent: amountSpent,
       points_earned: pointsEarned,
-      idempotency_key: `${card.id}-${Date.now()}`
+      idempotency_key: idempotencyKeyRef.current || idempotencyKey || `${card.id}-${Date.now()}`
     })
 
     // 🆕 AGGIORNA WALLET
@@ -306,7 +315,7 @@ export default function StampPage() {
       transaction_type: 'cashback',
       amount_spent: amountSpent,
       cashback_earned: cashbackEarned,
-      idempotency_key: `${card.id}-${Date.now()}`
+      idempotency_key: idempotencyKeyRef.current || idempotencyKey || `${card.id}-${Date.now()}`
     })
 
     // 🆕 AGGIORNA WALLET
@@ -362,7 +371,7 @@ export default function StampPage() {
       type: 'add',
       transaction_type: 'tier_spend',
       amount_spent: amountSpent,
-      idempotency_key: `${card.id}-${Date.now()}`
+      idempotency_key: idempotencyKeyRef.current || idempotencyKey || `${card.id}-${Date.now()}`
     })
 
     // 🆕 AGGIORNA WALLET
@@ -433,7 +442,7 @@ export default function StampPage() {
       delta: 0,
       type: 'add',
       transaction_type: 'subscription_use',
-      idempotency_key: `${card.id}-${Date.now()}`
+      idempotency_key: idempotencyKeyRef.current || idempotencyKey || `${card.id}-${Date.now()}`
     })
 
     // 🆕 AGGIORNA WALLET
@@ -478,7 +487,7 @@ export default function StampPage() {
       delta: months,
       type: 'add',
       transaction_type: 'subscription_activated',
-      idempotency_key: `${card.id}-${Date.now()}`
+      idempotency_key: idempotencyKeyRef.current || idempotencyKey || `${card.id}-${Date.now()}`
     })
 
     // 🆕 AGGIORNA WALLET
@@ -527,7 +536,7 @@ export default function StampPage() {
       type: 'redeem',
       transaction_type: 'cashback_redeem',
       cashback_spent: balance,
-      idempotency_key: `${card.id}-${Date.now()}`
+      idempotency_key: idempotencyKeyRef.current || idempotencyKey || `${card.id}-${Date.now()}`
     })
 
     // 🆕 AGGIORNA WALLET
@@ -634,6 +643,8 @@ export default function StampPage() {
     setCardData(null)
     setAmount('')
     setShowActivateSubscription(false)
+    setIdempotencyKey('')
+    idempotencyKeyRef.current = ''
   }
 
   function getTypeInfo(type: string) {
