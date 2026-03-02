@@ -44,10 +44,10 @@ completed: 2026-03-02
 
 ## Performance
 
-- **Duration:** 2 min
+- **Duration:** 3 min
 - **Started:** 2026-03-02T12:51:43Z
-- **Completed:** 2026-03-02T12:53:00Z
-- **Tasks:** 1 of 1 auto tasks
+- **Completed:** 2026-03-02T12:54:00Z
+- **Tasks:** 2 of 2 (1 auto + 1 human-action checkpoint)
 - **Files modified:** 1
 
 ## Accomplishments
@@ -63,7 +63,9 @@ Each task was committed atomically:
 
 1. **Task 1: Write SQL migration for retention schema** - `503ee48` (chore)
 
-**Plan metadata:** (see final docs commit)
+2. **Task 2 (checkpoint): Run SQL migration in Supabase Dashboard** - confirmed by user ("migration done")
+
+**Plan metadata:** `06baefb` (docs: complete retention schema plan)
 
 ## Files Created/Modified
 - `supabase/migrations/03_retention_schema.sql` - Idempotent DDL for customer tagging retention schema
@@ -79,24 +81,16 @@ None - plan executed exactly as written.
 None.
 
 ## User Setup Required
-**Manual SQL execution required in Supabase Dashboard.**
+**COMPLETE.** Migration executed in Supabase Dashboard — confirmed by user.
 
-Steps:
-1. Open https://supabase.com/dashboard — select the FidelityApp project
-2. Go to SQL Editor (left sidebar) -> New query
-3. Copy and paste the full content of `supabase/migrations/03_retention_schema.sql`
-4. Click "Run" — verify no errors in output panel
-5. Go to Table Editor and confirm: `customer_tags`, `card_holder_tags` tables visible
-6. Click `card_holders` table and confirm columns: contact_email, birth_date, notes, marketing_consent, acquisition_source, last_visit, total_stamps
-7. Visit https://fidelityapp-six.vercel.app/dashboard/customers — page should load without 500 errors
-
-Signal completion by typing "migration done".
+- customer_tags table: created
+- card_holder_tags table: created
+- card_holders extended columns: contact_email, birth_date, notes, marketing_consent, acquisition_source, last_visit, total_stamps — added
 
 ## Next Phase Readiness
-- Once migration runs: /dashboard/customers and /dashboard/customers/[id] will function without 500 errors
-- Tag add/remove on customer detail page (PROF-01, PROF-02) will be unblocked
-- Tag filter in customer list (PROF-03) will be unblocked
-- Ready to proceed to 04-02 plan once human confirms migration executed
+- /dashboard/customers and /dashboard/customers/[id] are now unblocked
+- PROF-01 (add tags to customers), PROF-02 (remove tags), PROF-03 (filter by tag) all unblocked
+- Ready to proceed to 04-02
 
 ---
 *Phase: 04-retention-tools*

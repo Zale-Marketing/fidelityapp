@@ -44,16 +44,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** Un cassiere italiano inquadra il QR del cliente e in 3 secondi il Google Wallet si aggiorna — senza app, senza attrito, senza spiegazioni.
-**Current focus:** Phase 3 — Customer Pages (complete)
+**Current focus:** Phase 4 — Retention Tools (in progress)
 
 ## Current Position
 
-Phase: 3 of 5 (Customer Pages)
-Plan: 2 of 2 in current phase (phase complete)
+Phase: 4 of 5 (Retention Tools)
+Plan: 1 of 3 in current phase (plan 04-01 complete)
 Status: In Progress
-Last activity: 2026-03-02 — Plan 03-02 complete (Customer card page — Wallet CTA top, progress message, SVG stamps grid, subscription badge)
+Last activity: 2026-03-02 — Plan 04-01 complete (Retention schema migration — customer_tags, card_holder_tags, card_holders extended columns)
 
-Progress: [########░░] 80%
+Progress: [########░░] 83%
 
 ## Performance Metrics
 
@@ -121,5 +121,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 03-02-PLAN.md (Customer card page redesign)
+Stopped at: Completed 04-01-PLAN.md (Retention schema migration — customer_tags, card_holder_tags, card_holders extended columns confirmed in Supabase)
 Resume file: None
