@@ -22,7 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Milestone v2.0 — Redesign Completo (in corso)
 
-- [x] **Phase 6: Critical Fixes v2** - Fix lead capture, cascade delete, and hero image color before any redesign work (completed 2026-03-02)
+- [x] **Phase 6: Critical Fixes v2** - Fix lead capture, cascade delete, and hero image color before any redesign work (completed 2026-03-02)
 - [ ] **Phase 7: Design System v2** - Replace all emoji with Lucide icons and apply unified professional design tokens across every dashboard page
 - [ ] **Phase 8: Engagement Automation** - Segment dormant customers and automate birthday notifications
 - [ ] **Phase 9: Business Tools** - Collect Google reviews post-redemption and gate features behind Free/Pro/Business plans
@@ -143,7 +143,13 @@ Plans:
   3. L'area contenuto ha sfondo #F5F5F5, le card metriche sono bianche con bordo #E8E8E8 e shadow sottile, le tabelle hanno header #F9F9F9 senza zebra stripes
   4. Bottoni primari sono #111111 con testo bianco, secondari con bordo #E0E0E0 — coerenti in ogni pagina
   5. Ogni pagina con lista vuota mostra un'icona Lucide da 48px grigia con testo descrittivo (nessun emoji, nessuna pagina bianca)
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Foundation: install lucide-react, dashboard layout con sidebar #111111, font Inter, componenti MetricCard/StatusBadge/EmptyState
+- [ ] 07-02-PLAN.md — Dashboard home + programs list + notifications + settings (4 pagine semplici)
+- [ ] 07-03-PLAN.md — Analytics + billing + customers list (3 pagine medie)
+- [ ] 07-04-PLAN.md — Programs new + programs detail + programs edit + customer detail (4 pagine complesse)
 
 ### Phase 8: Engagement Automation
 **Goal**: Merchant può identificare clienti a rischio abbandono e il sistema invia auguri di compleanno in automatico
@@ -224,7 +230,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 6. Critical Fixes v2 | 2/2 | Complete   | 2026-03-02 |
-| 7. Design System v2 | 0/? | Not started | - |
+| 7. Design System v2 | 0/4 | Planned | - |
 | 8. Engagement Automation | 0/? | Not started | - |
 | 9. Business Tools | 0/? | Not started | - |
 | 10. WhatsApp Marketing | 0/? | Not started | - |
