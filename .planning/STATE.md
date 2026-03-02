@@ -16,12 +16,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-03-02T11:43:25Z"
+last_updated: "2026-03-02T12:21:00Z"
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 6
+  completed_phases: 3
+  total_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -31,23 +31,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** Un cassiere italiano inquadra il QR del cliente e in 3 secondi il Google Wallet si aggiorna — senza app, senza attrito, senza spiegazioni.
-**Current focus:** Phase 2 — Merchant UX
+**Current focus:** Phase 3 — Customer Pages (complete)
 
 ## Current Position
 
 Phase: 3 of 5 (Customer Pages)
-Plan: 2 of 2 in current phase
+Plan: 2 of 2 in current phase (phase complete)
 Status: In Progress
-Last activity: 2026-03-02 — Plan 03-01 complete (Join page BenefitPreview + auto-redirect)
+Last activity: 2026-03-02 — Plan 03-02 complete (Customer card page — Wallet CTA top, progress message, SVG stamps grid, subscription badge)
 
-Progress: [#######░░░] 70%
+Progress: [########░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 2 min
-- Total execution time: 16 min
+- Total execution time: 18 min
 
 **By Phase:**
 
@@ -55,10 +55,10 @@ Progress: [#######░░░] 70%
 |-------|-------|-------|----------|
 | 01-stability | 3 | 9 min | 3 min |
 | 02-merchant-ux | 3 | 5 min | 2 min |
-| 03-customer-pages | 1 | 2 min | 2 min |
+| 03-customer-pages | 2 | 4 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (2 min), 02-01 (3 min), 02-02 (1 min), 01-02 (5 min), 01-03 (2 min)
+- Last 5 plans: 03-02 (2 min), 03-01 (2 min), 02-01 (3 min), 02-02 (1 min), 01-02 (5 min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -86,6 +86,10 @@ Recent decisions affecting current work:
 - [03-01] Auto-redirect uses newCard.scan_token local variable (not cardLink state) to avoid React async state staleness
 - [03-01] Rewards query uses separate .from('rewards').select() for stamps programs — nested query prohibited per CLAUDE.md
 - [03-01] benefitText() function deleted; header badge now shows TYPE_LABELS (Bollini/Punti/Cashback etc.) for brevity
+- [03-02] Stamps grid capped at 10 circles with overflow text counter — avoids layout overflow on large stamp requirements
+- [03-02] getProgressMessage() re-derives variables locally (not outer scope) for purity and safe invocation
+- [03-02] Old stamps progress bar removed — replaced by unified progress message row serving all 5 program types
+- [03-02] Bold text badges (ATTIVO/SCADUTO) replace emoji circles for subscription status — avoids unicode rendering issues
 
 ### Pending Todos
 
@@ -93,12 +97,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- Tech debt noto (current_stamps vs stamp_count, 84 `any` cast) è v2 scope — non blocca v1
+- Tech debt noto (current_stamps vs stamp_count, 84 `any` cast) e v2 scope — non blocca v1
 - BUG-02 RISOLTO: notification_logs table creata in Supabase (01-02 complete)
 - BUG-04 RISOLTO: stripe_* columns aggiunte a merchants (01-02 complete)
+- Pre-existing TS error in app/join/[programId]/page.tsx (unclosed JSX div) — out of scope, tracked as tech debt
 
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 03-01-PLAN.md (Join page BenefitPreview + auto-redirect)
+Stopped at: Completed 03-02-PLAN.md (Customer card page redesign)
 Resume file: None
