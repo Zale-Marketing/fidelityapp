@@ -74,8 +74,8 @@ export default function ProgramsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b px-6 py-4">
-        <div className="flex justify-between items-center max-w-6xl mx-auto">
+      <header className="bg-white border-b px-4 py-4">
+        <div className="flex justify-between items-center flex-wrap gap-2 max-w-6xl mx-auto">
           <div>
             <Link href="/dashboard" className="text-indigo-600 hover:underline text-sm">
               ← Dashboard
@@ -84,14 +84,14 @@ export default function ProgramsPage() {
           </div>
           <Link
             href="/dashboard/programs/new"
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+            className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-indigo-700"
           >
             + Nuovo Programma
           </Link>
         </div>
       </header>
 
-      <main className="p-6 max-w-6xl mx-auto">
+      <main className="px-4 py-6 max-w-6xl mx-auto">
         {programs.length === 0 ? (
           // Empty State
           <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
@@ -100,22 +100,22 @@ export default function ProgramsPage() {
             <p className="text-gray-500 mb-6">Crea il tuo primo programma fedeltà in pochi minuti!</p>
             <Link
               href="/dashboard/programs/new"
-              className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 font-medium"
+              className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 font-medium"
             >
               Crea il Primo Programma →
             </Link>
           </div>
         ) : (
           // Programs Grid
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {programs.map(program => {
               const typeInfo = PROGRAM_TYPE_INFO[program.program_type || 'stamps'] || PROGRAM_TYPE_INFO.stamps
-              
+
               return (
                 <Link
                   key={program.id}
                   href={`/dashboard/programs/${program.id}`}
-                  className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all group"
+                  className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition-all group"
                 >
                   {/* Card Header */}
                   <div 
@@ -208,7 +208,7 @@ export default function ProgramsPage() {
             {/* Add New Card */}
             <Link
               href="/dashboard/programs/new"
-              className="bg-white rounded-xl shadow-sm border-2 border-dashed border-gray-300 p-6 flex flex-col items-center justify-center min-h-[200px] hover:border-indigo-400 hover:bg-indigo-50 transition-all group"
+              className="bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-300 p-6 flex flex-col items-center justify-center min-h-[200px] hover:border-indigo-400 hover:bg-indigo-50 transition-all group"
             >
               <div className="w-16 h-16 rounded-full bg-gray-100 group-hover:bg-indigo-100 flex items-center justify-center mb-3">
                 <span className="text-3xl text-gray-400 group-hover:text-indigo-600">+</span>

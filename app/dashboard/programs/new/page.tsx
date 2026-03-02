@@ -328,7 +328,7 @@ if (selectedType === 'stamps' && data && intermediateRewards.length > 0) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b px-6 py-4">
+      <header className="bg-white border-b px-4 py-4">
         <div className="max-w-5xl mx-auto">
           <Link href="/dashboard/programs" className="text-indigo-600 hover:underline text-sm">
             ← Tutti i Programmi
@@ -337,7 +337,7 @@ if (selectedType === 'stamps' && data && intermediateRewards.length > 0) {
         </div>
       </header>
 
-      <main className="p-6 max-w-5xl mx-auto">
+      <main className="px-4 py-6 max-w-5xl mx-auto">
 
         {/* Blocco piano FREE */}
         {planBlocked && (

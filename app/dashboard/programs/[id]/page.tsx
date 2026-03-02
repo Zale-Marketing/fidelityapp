@@ -351,15 +351,15 @@ if (programData.program_type === 'tiers') {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b px-6 py-4">
-        <div className="flex justify-between items-center max-w-6xl mx-auto">
+      <header className="bg-white border-b px-4 py-4">
+        <div className="flex justify-between items-center flex-wrap gap-2 max-w-6xl mx-auto">
           <div>
             <Link href="/dashboard/programs" className="text-indigo-600 hover:underline text-sm">
               ← Tutti i Programmi
             </Link>
             <h1 className="text-2xl font-bold text-gray-900 mt-1">{program.name}</h1>
           </div>
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-3 flex-wrap flex-shrink-0">
             <button
               onClick={() => {
                 const joinUrl = `${window.location.origin}/join/${program.id}`
@@ -369,19 +369,19 @@ if (programData.program_type === 'tiers') {
                   navigator.clipboard.writeText(joinUrl).then(() => alert('Link iscrizione copiato!'))
                 }
               }}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+              className="bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-green-700 flex items-center gap-2"
             >
               🔗 Link Iscrizione
             </button>
             <Link
               href={`/dashboard/programs/${program.id}/edit`}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-200"
             >
               ✏️ Modifica
             </Link>
             <button
               onClick={() => setShowCreateCard(true)}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+              className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700"
             >
               + Nuova Card
             </button>
@@ -389,9 +389,9 @@ if (programData.program_type === 'tiers') {
         </div>
       </header>
 
-      <main className="p-6 max-w-6xl mx-auto">
+      <main className="px-4 py-6 max-w-6xl mx-auto">
         {/* Link Iscrizione Clienti */}
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="font-semibold text-green-800">Link iscrizione clienti</p>
             <p className="text-green-700 text-sm font-mono truncate max-w-xs">
@@ -407,7 +407,7 @@ if (programData.program_type === 'tiers') {
                 navigator.clipboard.writeText(joinUrl).then(() => alert('Link copiato!'))
               }
             }}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-semibold whitespace-nowrap"
+            className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 text-sm font-semibold whitespace-nowrap"
           >
             📤 Copia / Condividi
           </button>
@@ -525,7 +525,7 @@ if (programData.program_type === 'tiers') {
 </div>
 
         {/* Cards List */}
-        <div className="bg-white rounded-xl shadow-sm">
+        <div className="bg-white rounded-2xl shadow-sm">
           <div className="p-4 border-b">
             <h3 className="font-bold">💳 Card Generate ({cards.length})</h3>
           </div>
@@ -636,7 +636,7 @@ if (programData.program_type === 'tiers') {
                           // Card SENZA cliente O con cliente vuoto - mostra Associa
                           <button
                             onClick={() => openAssignModal(card)}
-                            className="bg-orange-100 text-orange-700 hover:bg-orange-200 px-3 py-1.5 rounded-lg text-sm font-medium"
+                            className="bg-orange-100 text-orange-700 hover:bg-orange-200 px-3 py-1.5 rounded-xl text-sm font-medium"
                           >
                             👤 Associa Cliente
                           </button>
@@ -644,7 +644,7 @@ if (programData.program_type === 'tiers') {
                           // Card CON cliente (con nome) ma SENZA contatti - apre stesso modal
                           <button
                             onClick={() => openAssignModal(card)}
-                            className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 px-3 py-1.5 rounded-lg text-sm font-medium"
+                            className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 px-3 py-1.5 rounded-xl text-sm font-medium"
                           >
                             ✏️ Cambia/Aggiungi Contatti
                           </button>
@@ -659,16 +659,16 @@ if (programData.program_type === 'tiers') {
                               })
                               setShowSuccessModal(true)
                             }}
-                            className="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-lg text-sm font-medium"
+                            className="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-xl text-sm font-medium"
                           >
                             📤 Invia
                           </button>
                         )}
-                        
+
                         <Link
                           href={`/c/${card.scan_token}`}
                           target="_blank"
-                          className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-lg text-sm font-medium"
+                          className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-xl text-sm font-medium"
                         >
                           Apri →
                         </Link>
@@ -930,7 +930,7 @@ if (programData.program_type === 'tiers') {
                   setShowCreateCard(false)
                   resetForm()
                 }}
-                className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border rounded-xl hover:bg-gray-50"
               >
                 Annulla
               </button>
@@ -938,7 +938,7 @@ if (programData.program_type === 'tiers') {
                 type="button"
                 onClick={createCard}
                 disabled={createNewCustomer && !newCustomer.full_name}
-                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 disabled:opacity-50"
               >
                 Crea Card
               </button>
@@ -1199,7 +1199,7 @@ if (programData.program_type === 'tiers') {
                   setCardToAssign(null)
                   resetForm()
                 }}
-                className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border rounded-xl hover:bg-gray-50"
               >
                 Annulla
               </button>
@@ -1207,7 +1207,7 @@ if (programData.program_type === 'tiers') {
                 type="button"
                 onClick={assignCustomerToCard}
                 disabled={!selectedCustomer && (!createNewCustomer || !newCustomer.full_name)}
-                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 disabled:opacity-50"
               >
                 Associa Cliente
               </button>
@@ -1289,7 +1289,7 @@ if (programData.program_type === 'tiers') {
                   setShowSuccessModal(false)
                   setCreatedCard(null)
                 }}
-                className="w-full px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg"
+                className="w-full px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-xl"
               >
                 Chiudi
               </button>
