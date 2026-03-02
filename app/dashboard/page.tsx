@@ -72,7 +72,7 @@ export default function DashboardPage() {
       { count: activeCardsCount },
       { data: transactionsData }
     ] = await Promise.all([
-      supabase.from('programs').select('*', { count: 'exact', head: true }).eq('merchant_id', merchantId),
+      supabase.from('programs').select('*', { count: 'exact', head: true }).eq('merchant_id', merchantId).is('deleted_at', null),
       supabase.from('cards').select('*', { count: 'exact', head: true }).eq('merchant_id', merchantId),
       supabase.from('card_holders').select('*', { count: 'exact', head: true }).eq('merchant_id', merchantId),
       supabase.from('cards').select('*', { count: 'exact', head: true }).eq('merchant_id', merchantId).eq('status', 'active'),

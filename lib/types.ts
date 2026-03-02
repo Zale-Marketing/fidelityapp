@@ -51,6 +51,7 @@ export type Program = {
   referral_bonus_stamps?: number
   created_at: string
   updated_at?: string
+  deleted_at?: string | null
 }
 
 export type Reward = {
