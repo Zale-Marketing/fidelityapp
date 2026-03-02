@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -10,6 +10,14 @@ type Program = {
   name: string
   program_type: string
   primary_color: string
+}
+
+type CustomerTag = {
+  id: string
+  merchant_id: string
+  name: string
+  color: string
+  created_at: string
 }
 
 type NotificationLog = {
@@ -35,7 +43,16 @@ export default function NotificationsPage() {
   const [message, setMessage] = useState('')
   const [sentCount, setSentCount] = useState<number | null>(null)
 
-  // Log notifiche (ultime inviate - dalla tabella programs come wallet_message)
+  // Tag filtering
+  const [tags, setTags] = useState<CustomerTag[]>([])
+  const [selectedTag, setSelectedTag] = useState<string>('all')
+  const [recipientCount, setRecipientCount] = useState<number>(0)
+  const [countLoading, setCountLoading] = useState(false)
+
+  // Debounce ref for count computation
+  const countTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Log notifiche
   const [notifHistory, setNotifHistory] = useState<NotificationLog[]>([])
 
   useEffect(() => {
@@ -61,8 +78,15 @@ export default function NotificationsPage() {
 
       if (progs) setPrograms(progs)
 
-      // Carica storia notifiche dalla tabella notification_logs se esiste,
-      // altrimenti mostra cronologia da wallet_message dei programmi
+      // Load tags
+      const { data: tagsData } = await supabase
+        .from('customer_tags')
+        .select('*')
+        .eq('merchant_id', profile.merchant_id)
+        .order('name')
+      if (tagsData) setTags(tagsData)
+
+      // Carica storia notifiche
       const { data: logs } = await supabase
         .from('notification_logs')
         .select('*')
@@ -87,6 +111,77 @@ export default function NotificationsPage() {
 
     load()
   }, [])
+
+  async function computeRecipientCount(
+    currentMerchantId: string,
+    currentPrograms: Program[],
+    currentSelectedProgram: string,
+    currentSelectedTag: string
+  ) {
+    if (!currentMerchantId) return
+    setCountLoading(true)
+
+    const programIds = currentSelectedProgram === 'all'
+      ? currentPrograms.map(p => p.id)
+      : [currentSelectedProgram]
+
+    if (programIds.length === 0) {
+      setRecipientCount(0)
+      setCountLoading(false)
+      return
+    }
+
+    if (currentSelectedTag === 'all') {
+      // Count distinct card_holder_ids on active cards in target programs
+      const { data: cards } = await supabase
+        .from('cards')
+        .select('card_holder_id')
+        .in('program_id', programIds)
+        .eq('status', 'active')
+        .not('card_holder_id', 'is', null)
+      const uniqueHolders = new Set((cards || []).map((c: any) => c.card_holder_id))
+      setRecipientCount(uniqueHolders.size)
+    } else {
+      // Get card_holder_ids that have the selected tag
+      const { data: holderTags } = await supabase
+        .from('card_holder_tags')
+        .select('card_holder_id')
+        .eq('tag_id', currentSelectedTag)
+
+      const taggedHolderIds = (holderTags || []).map((ht: any) => ht.card_holder_id)
+
+      if (taggedHolderIds.length === 0) {
+        setRecipientCount(0)
+        setCountLoading(false)
+        return
+      }
+
+      // Count cards for tagged holders in target programs
+      const { data: cards } = await supabase
+        .from('cards')
+        .select('card_holder_id')
+        .in('program_id', programIds)
+        .in('card_holder_id', taggedHolderIds)
+        .eq('status', 'active')
+
+      const uniqueHolders = new Set((cards || []).map((c: any) => c.card_holder_id))
+      setRecipientCount(uniqueHolders.size)
+    }
+
+    setCountLoading(false)
+  }
+
+  // Recompute count when filters change (debounced 300ms)
+  useEffect(() => {
+    if (!merchantId) return
+    if (countTimer.current) clearTimeout(countTimer.current)
+    countTimer.current = setTimeout(() => {
+      computeRecipientCount(merchantId, programs, selectedProgram, selectedTag)
+    }, 300)
+    return () => {
+      if (countTimer.current) clearTimeout(countTimer.current)
+    }
+  }, [merchantId, selectedProgram, selectedTag, programs])
 
   const handleSend = async () => {
     if (!message.trim()) {
@@ -113,6 +208,20 @@ export default function NotificationsPage() {
         return
       }
 
+      // If a specific tag is selected, get the tagged card_holder_ids first
+      let taggedHolderIds: string[] | null = null
+      if (selectedTag !== 'all') {
+        const { data: holderTags } = await supabase
+          .from('card_holder_tags')
+          .select('card_holder_id')
+          .eq('tag_id', selectedTag)
+        taggedHolderIds = (holderTags || []).map((ht: any) => ht.card_holder_id)
+        if (taggedHolderIds.length === 0) {
+          setSending(false)
+          return
+        }
+      }
+
       let totalCards = 0
       let errorCount = 0
 
@@ -123,12 +232,18 @@ export default function NotificationsPage() {
           .update({ wallet_message: message.trim() })
           .eq('id', prog.id)
 
-        // 2. Prendi tutte le card attive del programma
-        const { data: cards } = await supabase
+        // 2. Prendi le card attive del programma (filtrate per tag se selezionato)
+        let query = supabase
           .from('cards')
           .select('id')
           .eq('program_id', prog.id)
           .eq('status', 'active')
+
+        if (taggedHolderIds !== null) {
+          query = query.in('card_holder_id', taggedHolderIds)
+        }
+
+        const { data: cards } = await query
 
         if (!cards || cards.length === 0) continue
 
@@ -151,12 +266,6 @@ export default function NotificationsPage() {
 
       // 4. Salva log notifica
       for (const prog of targetPrograms) {
-        const { data: cardCount } = await supabase
-          .from('cards')
-          .select('*', { count: 'exact', head: true })
-          .eq('program_id', prog.id)
-          .eq('status', 'active')
-
         await supabase
           .from('notification_logs')
           .insert({
@@ -164,13 +273,14 @@ export default function NotificationsPage() {
             program_id: selectedProgram === 'all' ? null : prog.id,
             message: message.trim(),
             sent_at: new Date().toISOString(),
-            recipients_count: totalCards,
+            recipients_count: recipientCount,
           })
           .select()
       }
 
-      setSentCount(totalCards)
+      setSentCount(recipientCount)
       setMessage('')
+      setSelectedTag('all')
 
       // Ricarica history
       const { data: newLogs } = await supabase
@@ -213,9 +323,9 @@ export default function NotificationsPage() {
       <header className="bg-white border-b px-6 py-4">
         <div className="flex items-center gap-4 max-w-4xl mx-auto">
           <Link href="/dashboard" className="text-indigo-600 hover:underline text-sm">
-            ← Dashboard
+            &larr; Dashboard
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">📢 Notifiche</h1>
+          <h1 className="text-xl font-bold text-gray-900">Notifiche</h1>
         </div>
       </header>
 
@@ -247,6 +357,24 @@ export default function NotificationsPage() {
                   </select>
                 </div>
 
+                {tags.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Filtra per tag
+                    </label>
+                    <select
+                      value={selectedTag}
+                      onChange={e => setSelectedTag(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    >
+                      <option value="all">Tutti i tag</option>
+                      {tags.map(tag => (
+                        <option key={tag.id} value={tag.id}>{tag.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
                     Messaggio
@@ -262,23 +390,36 @@ export default function NotificationsPage() {
                   <p className="text-xs text-gray-400 text-right mt-1">{message.length}/200</p>
                 </div>
 
+                {/* Recipient count preview */}
+                <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 flex items-center justify-between">
+                  <span className="text-sm text-indigo-700">
+                    {countLoading
+                      ? 'Calcolo destinatari...'
+                      : `${recipientCount} client${recipientCount === 1 ? 'e' : 'i'} ricever${recipientCount === 1 ? 'a' : 'anno'} questa notifica`
+                    }
+                  </span>
+                  {countLoading && (
+                    <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  )}
+                </div>
+
                 {sentCount !== null && (
                   <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                     <p className="text-green-700 font-semibold">
-                      Messaggio inviato a {sentCount} carte!
+                      Notifica inviata a {sentCount} clienti!
                     </p>
                     <p className="text-green-600 text-sm mt-1">
-                      I clienti lo vedranno nella loro carta Wallet nei prossimi minuti.
+                      I clienti la vedranno nella loro carta Wallet nei prossimi minuti.
                     </p>
                   </div>
                 )}
 
                 <button
                   onClick={handleSend}
-                  disabled={sending || !message.trim()}
+                  disabled={sending || !message.trim() || recipientCount === 0 || countLoading}
                   className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  {sending ? 'Invio in corso...' : '📤 Invia Notifica'}
+                  {sending ? 'Invio in corso...' : 'Invia Notifica'}
                 </button>
               </div>
             </div>
@@ -302,7 +443,7 @@ export default function NotificationsPage() {
 
               {notifHistory.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">
-                  <div className="text-4xl mb-3">📭</div>
+                  <div className="text-4xl mb-3">&#128237;</div>
                   <p>Nessuna notifica inviata ancora</p>
                   <p className="text-sm mt-1">Invia il primo messaggio ai tuoi clienti!</p>
                 </div>
@@ -322,7 +463,7 @@ export default function NotificationsPage() {
                       </div>
                       <p className="text-gray-800 text-sm">{log.message}</p>
                       <p className="text-xs text-gray-400 mt-2">
-                        Inviata a {log.recipients} carte
+                        Inviata a {log.recipients} clienti
                       </p>
                     </div>
                   ))}
@@ -350,7 +491,7 @@ export default function NotificationsPage() {
                         href={`/dashboard/programs/${p.id}`}
                         className="text-xs text-indigo-600 hover:underline whitespace-nowrap"
                       >
-                        Vedi →
+                        Vedi &rarr;
                       </Link>
                     </div>
                   ))}
