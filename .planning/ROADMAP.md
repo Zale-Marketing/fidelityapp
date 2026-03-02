@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Stability** - Fix all critical bugs and missing DB schema before any UI work
 - [x] **Phase 2: Merchant UX** - Polish dashboard + scanner so the daily merchant workflow is fast and reliable (completed 2026-03-02)
 - [ ] **Phase 3: Customer Pages** - Redesign /join and /c/[token] so customers convert and understand their card
-- [x] **Phase 4: Retention Tools** - Tag customers, send segmented notifications, export CSV data (completed 2026-03-02)
+- [x] **Phase 4: Retention Tools** - Tag customers, send segmented notifications, export CSV data (completed 2026-03-02)
 - [ ] **Phase 5: Landing Page** - Self-service acquisition page so merchants register without Alessandro
 
 ## Phase Details
@@ -97,10 +97,10 @@ Plans:
   2. Visitatore vede illustrato il flusso in 3 step: merchant crea il programma, cliente scansiona il QR, Google Wallet si aggiorna
   3. Visitatore clicca sulla CTA e completa la registrazione senza uscire dal sito
   4. Merchant appena registrato viene reindirizzato all'onboarding wizard esistente
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: Landing page self-service (above-fold value prop, 3-step flow, CTA → register → onboarding)
+- [ ] 05-01-PLAN.md — Landing page self-service (above-fold value prop + phone mockup CSS, social proof bar, 3-step flow, CTA → /register → /onboarding)
 
 ## Progress
 
