@@ -39,9 +39,9 @@
 
 ### NOTIFY — Notifiche Segmentate
 
-- [ ] **NOTIFY-01**: Merchant può selezionare un tag specifico come destinatari prima di inviare una notifica
-- [ ] **NOTIFY-02**: Merchant vede il numero di clienti che riceveranno la notifica prima di inviarla
-- [ ] **NOTIFY-03**: Merchant può inviare notifica a tutti i clienti di un programma specifico (filtro per programma)
+- [x] **NOTIFY-01**: Merchant può selezionare un tag specifico come destinatari prima di inviare una notifica
+- [x] **NOTIFY-02**: Merchant vede il numero di clienti che riceveranno la notifica prima di inviarla
+- [x] **NOTIFY-03**: Merchant può inviare notifica a tutti i clienti di un programma specifico (filtro per programma)
 
 ### EXPORT — Export Dati Clienti
 
@@ -125,9 +125,9 @@
 | PROF-01 | Phase 4 | Complete |
 | PROF-02 | Phase 4 | Complete |
 | PROF-03 | Phase 4 | Complete |
-| NOTIFY-01 | Phase 4 | Pending |
-| NOTIFY-02 | Phase 4 | Pending |
-| NOTIFY-03 | Phase 4 | Pending |
+| NOTIFY-01 | Phase 4 | Complete |
+| NOTIFY-02 | Phase 4 | Complete |
+| NOTIFY-03 | Phase 4 | Complete |
 | EXPORT-01 | Phase 4 | Complete |
 | LAND-01 | Phase 5 | Pending |
 | LAND-02 | Phase 5 | Pending |
