@@ -13,6 +13,10 @@ function BillingContent() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [openingPortal, setOpeningPortal] = useState(false)
   const [stripeAvailable, setStripeAvailable] = useState(true)
+  const [promoCode, setPromoCode] = useState('')
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [promoSuccess, setPromoSuccess] = useState('')
+  const [promoError, setPromoError] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -89,6 +93,43 @@ function BillingContent() {
     }
 
     setCheckingOut(false)
+  }
+
+  const handlePromoCode = async () => {
+    if (!merchant?.id || !promoCode.trim()) return
+    setPromoLoading(true)
+    setPromoError('')
+    setPromoSuccess('')
+
+    try {
+      const res = await fetch('/api/promo-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ merchantId: merchant.id, code: promoCode.trim() }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        setPromoError(data.error)
+      } else {
+        const expires = new Date(data.expiresAt).toLocaleDateString('it-IT')
+        setPromoSuccess(`Piano PRO attivato! Accesso gratuito fino al ${expires}.`)
+        setPromoCode('')
+        // Ricarica dati merchant
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: profile } = await supabase.from('profiles').select('merchant_id').eq('id', user.id).single()
+          if (profile) {
+            const { data: merchantData } = await supabase.from('merchants').select('*').eq('id', profile.merchant_id).single()
+            if (merchantData) setMerchant(merchantData)
+          }
+        }
+      }
+    } catch {
+      setPromoError('Errore di connessione. Riprova.')
+    }
+
+    setPromoLoading(false)
   }
 
   const handleManageSubscription = async () => {
@@ -287,6 +328,33 @@ function BillingContent() {
             )}
           </div>
         </div>
+
+        {/* Codice Promo */}
+        {!isPro && (
+          <div className="bg-white rounded-xl shadow p-6 mb-8">
+            <h3 className="font-bold text-gray-900 mb-1">Hai un codice promo?</h3>
+            <p className="text-sm text-gray-500 mb-4">Inserisci il codice per attivare il piano PRO gratuitamente.</p>
+            <div className="flex gap-3 flex-wrap">
+              <input
+                type="text"
+                value={promoCode}
+                onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); setPromoSuccess('') }}
+                onKeyDown={e => e.key === 'Enter' && handlePromoCode()}
+                placeholder="Es. BETA2026"
+                className="flex-1 min-w-0 border border-gray-300 rounded-lg px-4 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                onClick={handlePromoCode}
+                disabled={promoLoading || !promoCode.trim()}
+                className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {promoLoading ? 'Verifica...' : 'Applica'}
+              </button>
+            </div>
+            {promoError && <p className="mt-3 text-sm text-red-600">{promoError}</p>}
+            {promoSuccess && <p className="mt-3 text-sm text-green-700 font-medium">{promoSuccess}</p>}
+          </div>
+        )}
 
         {/* FAQ */}
         <div className="bg-white rounded-xl shadow p-6">
