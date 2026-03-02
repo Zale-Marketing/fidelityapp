@@ -13,7 +13,7 @@ Five phases that take FidelityApp from a working prototype with known bugs to a 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Stability** - Fix all critical bugs and missing DB schema before any UI work
-- [x] **Phase 2: Merchant UX** - Polish dashboard + scanner so the daily merchant workflow is fast and reliable (completed 2026-03-02)
+- [x] **Phase 2: Merchant UX** - Polish dashboard + scanner so the daily merchant workflow is fast and reliable (completed 2026-03-02)
 - [ ] **Phase 3: Customer Pages** - Redesign /join and /c/[token] so customers convert and understand their card
 - [ ] **Phase 4: Retention Tools** - Tag customers, send segmented notifications, export CSV data
 - [ ] **Phase 5: Landing Page** - Self-service acquisition page so merchants register without Alessandro
@@ -65,11 +65,11 @@ Plans:
   4. Cliente vede la sua carta con gerarchia visiva diversa per ogni tipo programma (bollini, punti, cashback, livello VIP, abbonamento)
   5. Cliente legge "ancora X bollini al prossimo premio" (o equivalente per il suo tipo di programma)
   6. Cliente che non ha ancora salvato la carta vede un pulsante "Aggiungi a Google Wallet" prominente sopra il fold
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Redesign /join/[programId] — branded, conversion-optimized
-- [ ] 03-02: Redesign /c/[token] — gerarchia visiva per tipo programma, CTA wallet prominente
+- [ ] 03-01-PLAN.md — Redesign /join/[programId] — BenefitPreview section, rewards query, auto-redirect
+- [ ] 03-02-PLAN.md — Redesign /c/[token] — Wallet CTA to top, progress message row, fix stamps grid + subscription badge
 
 ### Phase 4: Retention Tools
 **Goal**: Merchant può segmentare i clienti e comunicare con loro in modo mirato
