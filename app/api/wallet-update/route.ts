@@ -8,6 +8,13 @@ const supabase = createClient(
 )
 
 export async function POST(request: NextRequest) {
+  // Basic auth check — reject external callers
+  const authHeader = request.headers.get('authorization')
+  const expectedSecret = process.env.INTERNAL_API_SECRET
+  if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
+    return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  }
+
   try {
     const { cardId } = await request.json()
 
