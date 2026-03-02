@@ -577,7 +577,7 @@ export default function StampPage() {
       delta: -currentStamps,
       type: 'redeem',
       transaction_type: 'reward_redeemed',
-      idempotency_key: `${card.id}-${Date.now()}`
+      idempotency_key: idempotencyKeyRef.current || idempotencyKey || `${card.id}-${Date.now()}`
     })
 
     // 🆕 AGGIORNA WALLET
@@ -625,7 +625,7 @@ export default function StampPage() {
       type: 'redeem',
       transaction_type: 'points_redeemed',
       points_spent: pointsForReward,
-      idempotency_key: `${card.id}-${Date.now()}`
+      idempotency_key: idempotencyKeyRef.current || idempotencyKey || `${card.id}-${Date.now()}`
     })
 
     // 🆕 AGGIORNA WALLET
