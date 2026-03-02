@@ -272,21 +272,21 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b px-6 py-4">
-        <div className="flex justify-between items-center max-w-7xl mx-auto">
+        <div className="flex justify-between items-center flex-wrap gap-y-2 max-w-6xl mx-auto">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">👋 Ciao, {merchantName}!</h1>
             <p className="text-gray-500">Ecco come sta andando la tua attività</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-shrink-0">
             <Link
               href="/stamp"
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+              className="bg-indigo-600 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 flex items-center gap-2"
             >
               📷 Scanner
             </Link>
             <Link
               href="/dashboard/settings"
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+              className="bg-gray-100 text-gray-700 p-2 rounded-xl hover:bg-gray-200"
             >
               ⚙️
             </Link>
@@ -294,67 +294,67 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="p-6 max-w-7xl mx-auto">
+      <main className="px-4 py-6 max-w-6xl mx-auto">
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-xl shadow-sm">
+          <div className="bg-white p-4 rounded-2xl shadow-sm">
             <p className="text-gray-500 text-xs uppercase">Programmi</p>
             <p className="text-3xl font-bold text-gray-900">{stats.totalPrograms}</p>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
+          <div className="bg-white p-4 rounded-2xl shadow-sm">
             <p className="text-gray-500 text-xs uppercase">Card Attive</p>
             <p className="text-3xl font-bold text-indigo-600">{stats.activeCards}</p>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
+          <div className="bg-white p-4 rounded-2xl shadow-sm">
             <p className="text-gray-500 text-xs uppercase">Clienti</p>
             <p className="text-3xl font-bold text-blue-600">{stats.totalCustomers}</p>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
+          <div className="bg-white p-4 rounded-2xl shadow-sm">
             <p className="text-gray-500 text-xs uppercase">Timbri Mese</p>
             <p className="text-3xl font-bold text-green-600">{stats.stampsThisMonth}</p>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
+          <div className="bg-white p-4 rounded-2xl shadow-sm">
             <p className="text-gray-500 text-xs uppercase">Premi Mese</p>
             <p className="text-3xl font-bold text-purple-600">{stats.rewardsThisMonth}</p>
           </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
+          <div className="bg-white p-4 rounded-2xl shadow-sm">
             <p className="text-gray-500 text-xs uppercase">Card Totali</p>
             <p className="text-3xl font-bold text-gray-600">{stats.totalCards}</p>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Link
             href="/dashboard/programs"
-            className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-6 rounded-xl hover:shadow-lg transition-all"
+            className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-6 rounded-2xl hover:shadow-lg transition-all"
           >
             <span className="text-3xl">🎯</span>
             <h3 className="font-bold mt-2">Programmi</h3>
             <p className="text-indigo-100 text-sm">Gestisci le tue carte fedeltà</p>
           </Link>
-          
+
           <Link
             href="/dashboard/customers"
-            className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl hover:shadow-lg transition-all"
+            className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-2xl hover:shadow-lg transition-all"
           >
             <span className="text-3xl">👥</span>
             <h3 className="font-bold mt-2">Clienti CRM</h3>
             <p className="text-blue-100 text-sm">Gestisci i tuoi clienti</p>
           </Link>
-          
+
           <Link
             href="/dashboard/notifications"
-            className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl hover:shadow-lg transition-all"
+            className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-2xl hover:shadow-lg transition-all"
           >
             <span className="text-3xl">📢</span>
             <h3 className="font-bold mt-2">Notifiche</h3>
             <p className="text-purple-100 text-sm">Invia messaggi ai clienti</p>
           </Link>
-          
+
           <Link
             href="/dashboard/analytics"
-            className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-xl hover:shadow-lg transition-all"
+            className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-2xl hover:shadow-lg transition-all"
           >
             <span className="text-3xl">📊</span>
             <h3 className="font-bold mt-2">Analytics</h3>
@@ -364,7 +364,7 @@ export default function DashboardPage() {
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Recent Activity */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="font-bold text-lg mb-4">⚡ Attività Recente</h2>
             {recentActivity.length === 0 ? (
               <p className="text-gray-400 text-center py-8">Nessuna attività ancora</p>
@@ -393,7 +393,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Top Customers */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-white rounded-2xl shadow-sm p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-bold text-lg">🏆 Top Clienti</h2>
               <Link href="/dashboard/customers" className="text-indigo-600 text-sm hover:underline">
@@ -447,13 +447,13 @@ export default function DashboardPage() {
 
         {/* Alert se non ci sono programmi */}
         {stats.totalPrograms === 0 && (
-          <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+          <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-center">
             <span className="text-4xl">🚀</span>
             <h3 className="font-bold text-lg mt-2">Inizia Subito!</h3>
             <p className="text-gray-600 mb-4">Crea il tuo primo programma fedeltà in 2 minuti</p>
             <Link
               href="/dashboard/programs/new"
-              className="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+              className="inline-block bg-indigo-600 text-white px-6 py-2 rounded-xl hover:bg-indigo-700"
             >
               Crea Programma →
             </Link>
