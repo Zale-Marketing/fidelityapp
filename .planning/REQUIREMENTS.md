@@ -60,7 +60,7 @@
 - [ ] **BUG-02**: Tabella `notification_logs` creata in Supabase — lo storico notifiche funziona
 - [ ] **BUG-03**: Tipo "Missioni" rimosso dal selettore di creazione programma (o disabled con tooltip) — previene crash wallet API
 - [ ] **BUG-04**: Colonne Stripe (`stripe_customer_id`, `stripe_subscription_id`, `stripe_subscription_status`, `plan_expires_at`) aggiunte alla tabella `merchants` via SQL migration
-- [ ] **BUG-05**: API routes `/api/wallet` e `/api/wallet-update` verificano che la richiesta provenga da un contesto valido (auth check di base)
+- [x] **BUG-05**: API routes `/api/wallet` e `/api/wallet-update` verificano che la richiesta provenga da un contesto valido (auth check di base)
 
 ## v2 Requirements
 
@@ -107,7 +107,7 @@
 | BUG-02 | Phase 1 | Pending |
 | BUG-03 | Phase 1 | Pending |
 | BUG-04 | Phase 1 | Pending |
-| BUG-05 | Phase 1 | Pending |
+| BUG-05 | Phase 1 | Complete |
 | UI-01 | Phase 2 | Pending |
 | UI-02 | Phase 2 | Pending |
 | UI-03 | Phase 2 | Pending |

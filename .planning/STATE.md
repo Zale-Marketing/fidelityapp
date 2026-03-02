@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 ## Current Position
 
 Phase: 1 of 5 (Stability)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-03-02 — Roadmap created, 30 v1 requirements mapped to 5 phases
+Plan: 3 of 3 in current phase
+Status: In progress
+Last activity: 2026-03-02 — Plan 01-03 complete (wallet API auth guard)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [##░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: -
+- Total plans completed: 1
+- Average duration: 2 min
+- Total execution time: 2 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-stability | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: -
+- Last 5 plans: 01-03 (2 min)
 - Trend: -
 
 *Updated after each plan completion*
@@ -45,6 +45,7 @@ Recent decisions affecting current work:
 - Stripe non si attiva fino a feedback da primo merchant reale — colonne DB necessarie (BUG-04) ma billing non prioritario
 - Tipo "Missioni" disabilitare subito — selezionabile ma non implementato, causa crash wallet API (BUG-03)
 - NON toccare lib/google-wallet.ts — funziona, critico
+- [01-03] Wallet API auth: NEXT_PUBLIC_ prefix for client secret (anti-abuse, not full auth); guard skipped when env var unset for dev safety; Vercel env vars required for production enforcement
 
 ### Pending Todos
 
@@ -59,5 +60,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Roadmap created — Phase 1 ready to plan
+Stopped at: Completed 01-stability-03-PLAN.md (wallet API auth guard)
 Resume file: None
