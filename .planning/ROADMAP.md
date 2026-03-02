@@ -81,12 +81,12 @@ Plans:
   3. Merchant seleziona un tag come destinatari di una notifica e vede il numero di clienti che la riceveranno prima di inviare
   4. Merchant invia una notifica a tutti i clienti di un programma specifico usando il filtro per programma
   5. Merchant scarica un CSV da /dashboard/customers con nome, email, telefono, programma e saldo corrente di ogni cliente
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Profilazione clienti — tag su card_holders, filtro in dashboard
-- [ ] 04-02: Notifiche segmentate — filtro per tag e per programma, preview conteggio
-- [ ] 04-03: Export CSV clienti
+- [ ] 04-01-PLAN.md — SQL migration: customer_tags, card_holder_tags, card_holders extended columns + human checkpoint to run in Supabase
+- [ ] 04-02-PLAN.md — Notifiche segmentate: tag dropdown, recipient count preview, tag+program intersection send
+- [ ] 04-03-PLAN.md — Export CSV clienti da /dashboard/customers (browser-side, rispetta filtri attivi)
 
 ### Phase 5: Landing Page
 **Goal**: Un visitatore esterno capisce il valore di FidelityApp e si registra senza contattare Alessandro
