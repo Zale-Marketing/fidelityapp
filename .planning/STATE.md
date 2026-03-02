@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: redesign-completo
 status: in_progress
-last_updated: "2026-03-03T00:00:00.000Z"
+last_updated: "2026-03-02T23:31:25Z"
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 ## Current Position
 
 Phase: 6 — Critical Fixes v2
-Plan: 02 (next)
-Status: In progress — Plan 01 complete
-Last activity: 2026-03-03 — Completed 06-01-PLAN.md (FIX-04 + FIX-01)
+Plan: — (all plans complete)
+Status: Phase 6 complete — all 4 fixes done (FIX-01, FIX-02, FIX-03, FIX-04)
+Last activity: 2026-03-02 — Completed 06-02-PLAN.md (FIX-02 soft delete + FIX-03 hard delete)
 
 ## Progress Bar
 
@@ -38,7 +38,7 @@ v2.0: [ ] Phase 6  [ ] Phase 7  [ ] Phase 8  [ ] Phase 9  [ ] Phase 10  [ ] Phas
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 6 | Critical Fixes v2 | FIX-01..04 | In progress (1/2 plans done) |
+| 6 | Critical Fixes v2 | FIX-01..04 | Complete (2/2 plans done) |
 | 7 | Design System v2 | DESIGN-01..11 | Not started |
 | 8 | Engagement Automation | SEG-01..03, BDAY-01..04 | Not started |
 | 9 | Business Tools | REVIEW-01..02, PLAN-01..05 | Not started |
@@ -51,6 +51,9 @@ v2.0: [ ] Phase 6  [ ] Phase 7  [ ] Phase 8  [ ] Phase 9  [ ] Phase 10  [ ] Phas
 ### Decisions
 
 - NON toccare lib/google-wallet.ts — funziona, critico (additive changes only — optional params OK)
+- Soft delete pattern: .update({ deleted_at: new Date().toISOString() }) + .is('deleted_at', null) filter in all program queries
+- Hard delete requires exact name confirmation — prevents accidental deletion, no active-cards block
+- Cascade delete order: stamp_transactions -> rewards -> tiers -> cards -> programs (FK constraint order)
 - searchParams API auto-decodes percent-encoding — no manual decodeURIComponent needed
 - startsWith('#') guard on colorParam prevents malformed values in wallet-image route
 - submit-lead API uses SUPABASE_SERVICE_ROLE_KEY server-side to bypass RLS on leads insert
@@ -66,7 +69,7 @@ v2.0: [ ] Phase 6  [ ] Phase 7  [ ] Phase 8  [ ] Phase 9  [ ] Phase 10  [ ] Phas
 
 ### Pending Todos
 
-- Phase 6: FIX-01 (lead capture) DONE, FIX-04 (hero image color) DONE — remaining: FIX-02 (soft delete), FIX-03 (hard delete con cascade)
+- Phase 6: ALL COMPLETE — FIX-01 (lead capture), FIX-02 (soft delete), FIX-03 (hard delete cascade), FIX-04 (hero image color)
 - Phase 8: SQL migration birth_date su card_holders
 - Phase 9: SQL migration google_reviews_url su programs; colonna plan su merchants
 - Phase 10: SQL migration maytapi_* su merchants; configurare MAYTAPI_PRODUCT_ID + MAYTAPI_API_TOKEN in Vercel
@@ -82,7 +85,8 @@ v2.0: [ ] Phase 6  [ ] Phase 7  [ ] Phase 8  [ ] Phase 9  [ ] Phase 10  [ ] Phas
 
 ## Session Continuity
 
-Next action: Execute 06-02-PLAN.md — Soft delete (archive) + hard delete with name confirmation for programs
+Next action: Run `/gsd:plan-phase 7` to generate execution plans for Phase 7: Design System v2
 
 Plan 06-01 complete (2026-03-03): FIX-04 hero image color + FIX-01 lead capture
-Plan 06-02 remaining: FIX-02 soft delete + FIX-03 hard delete with cascade
+Plan 06-02 complete (2026-03-02): FIX-02 soft delete + FIX-03 hard delete with cascade
+Phase 6 fully complete — all 4 critical fixes shipped

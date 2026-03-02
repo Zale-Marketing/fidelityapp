@@ -71,8 +71,8 @@
 ### FIX — Bug Critici v2.0
 
 - [ ] **FIX-01**: Form landing app/page.tsx salva i lead nel DB (tabella leads o contact_requests)
-- [ ] **FIX-02**: Programmi con carte attive supportano soft delete (colonna deleted_at) — merchant può eliminare programma attivo
-- [ ] **FIX-03**: Hard delete programma con modal di conferma (digita nome programma) — elimina in cascata rewards/tiers/cards/stamp_transactions
+- [x] **FIX-02**: Programmi con carte attive supportano soft delete (colonna deleted_at) — merchant può eliminare programma attivo
+- [x] **FIX-03**: Hard delete programma con modal di conferma (digita nome programma) — elimina in cascata rewards/tiers/cards/stamp_transactions
 - [ ] **FIX-04**: Hero image /api/wallet-image applica background-color corretto da query param ?color= (decodifica URL-encoded, applica al div radice)
 
 ### DESIGN — Design System v2.0
@@ -178,8 +178,8 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FIX-01 | Phase 6 — Critical Fixes v2 | Pending |
-| FIX-02 | Phase 6 — Critical Fixes v2 | Pending |
-| FIX-03 | Phase 6 — Critical Fixes v2 | Pending |
+| FIX-02 | Phase 6 — Critical Fixes v2 | Complete |
+| FIX-03 | Phase 6 — Critical Fixes v2 | Complete |
 | FIX-04 | Phase 6 — Critical Fixes v2 | Pending |
 | DESIGN-01 | Phase 7 — Design System v2 | Pending |
 | DESIGN-02 | Phase 7 — Design System v2 | Pending |

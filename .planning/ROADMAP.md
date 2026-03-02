@@ -22,7 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Milestone v2.0 — Redesign Completo (in corso)
 
-- [ ] **Phase 6: Critical Fixes v2** - Fix lead capture, cascade delete, and hero image color before any redesign work
+- [x] **Phase 6: Critical Fixes v2** - Fix lead capture, cascade delete, and hero image color before any redesign work (completed 2026-03-02)
 - [ ] **Phase 7: Design System v2** - Replace all emoji with Lucide icons and apply unified professional design tokens across every dashboard page
 - [ ] **Phase 8: Engagement Automation** - Segment dormant customers and automate birthday notifications
 - [ ] **Phase 9: Business Tools** - Collect Google reviews post-redemption and gate features behind Free/Pro/Business plans
@@ -223,7 +223,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Critical Fixes v2 | 1/2 | In progress | - |
+| 6. Critical Fixes v2 | 2/2 | Complete   | 2026-03-02 |
 | 7. Design System v2 | 0/? | Not started | - |
 | 8. Engagement Automation | 0/? | Not started | - |
 | 9. Business Tools | 0/? | Not started | - |
