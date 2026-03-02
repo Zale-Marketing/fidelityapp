@@ -69,6 +69,8 @@ export default function NewProgramPage() {
   const [selectedType, setSelectedType] = useState<ProgramType | null>(null)
   const [merchantId, setMerchantId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [planBlocked, setPlanBlocked] = useState(false)
+  const [currentProgramCount, setCurrentProgramCount] = useState(0)
   
   // Form base
   const [name, setName] = useState('')
@@ -136,6 +138,25 @@ const [newRewardStamps, setNewRewardStamps] = useState(5)
 
     if (profile) {
       setMerchantId(profile.merchant_id)
+
+      // Controlla limite piano FREE
+      const { data: merchantData } = await supabase
+        .from('merchants')
+        .select('plan')
+        .eq('id', profile.merchant_id)
+        .single()
+
+      const { count: progCount } = await supabase
+        .from('programs')
+        .select('*', { count: 'exact', head: true })
+        .eq('merchant_id', profile.merchant_id)
+
+      const count = progCount || 0
+      setCurrentProgramCount(count)
+
+      if (merchantData?.plan !== 'PRO' && count >= 5) {
+        setPlanBlocked(true)
+      }
     }
   }
 
@@ -330,7 +351,38 @@ if (selectedType === 'stamps' && data && intermediateRewards.length > 0) {
       </header>
 
       <main className="p-6 max-w-5xl mx-auto">
-        
+
+        {/* Blocco piano FREE */}
+        {planBlocked && (
+          <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-8 text-center mb-6">
+            <div className="text-5xl mb-4">🔒</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Limite Piano FREE raggiunto</h2>
+            <p className="text-gray-600 mb-2">
+              Hai già {currentProgramCount} programmi attivi. Il piano FREE include fino a 5 programmi.
+            </p>
+            <p className="text-gray-500 mb-6">
+              Passa a <strong>PRO</strong> per creare programmi illimitati a soli €19/mese.
+            </p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Link
+                href="/dashboard/billing"
+                className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700"
+              >
+                Passa a PRO — €19/mese
+              </Link>
+              <Link
+                href="/dashboard/programs"
+                className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-200"
+              >
+                Torna ai Programmi
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Form visibile solo se non bloccato */}
+        {!planBlocked && <>
+
         {/* Progress */}
         <div className="flex items-center justify-center gap-4 mb-8">
           <div className={`flex items-center gap-2 ${step >= 1 ? 'text-indigo-600' : 'text-gray-400'}`}>
@@ -1360,6 +1412,7 @@ if (selectedType === 'stamps' && data && intermediateRewards.length > 0) {
             </div>
           </div>
         )}
+        </> /* end !planBlocked */}
       </main>
     </div>
   )

@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Stripe non configurato' }, { status: 503 })
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-01-27.acacia' })
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-02-25.clover' })
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,9 +43,9 @@ export async function POST(req: NextRequest) {
         .from('merchants')
         .update({
           plan: 'PRO',
-          stripe_subscription_id: session.subscription as string,
+          stripe_subscription_id: (session as any).subscription as string,
           stripe_subscription_status: 'active',
-          plan_expires_at: null, // attivo, no scadenza
+          plan_expires_at: null,
         })
         .eq('id', merchantId)
 
@@ -55,7 +55,9 @@ export async function POST(req: NextRequest) {
 
     case 'invoice.payment_succeeded': {
       const invoice = event.data.object as Stripe.Invoice
-      const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+      const subId = (invoice as any).subscription as string
+      if (!subId) break
+      const subscription = await stripe.subscriptions.retrieve(subId)
       const merchantId = subscription.metadata?.merchant_id
       if (!merchantId) break
 
@@ -73,7 +75,9 @@ export async function POST(req: NextRequest) {
 
     case 'invoice.payment_failed': {
       const invoice = event.data.object as Stripe.Invoice
-      const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+      const subId = (invoice as any).subscription as string
+      if (!subId) break
+      const subscription = await stripe.subscriptions.retrieve(subId)
       const merchantId = subscription.metadata?.merchant_id
       if (!merchantId) break
 
@@ -92,13 +96,14 @@ export async function POST(req: NextRequest) {
 
       const status = sub.status
       const planActive = ['active', 'trialing'].includes(status)
+      const periodEnd = (sub as any).current_period_end
 
       await supabase
         .from('merchants')
         .update({
           plan: planActive ? 'PRO' : 'FREE',
           stripe_subscription_status: status,
-          plan_expires_at: planActive ? null : new Date(sub.current_period_end * 1000).toISOString(),
+          plan_expires_at: planActive ? null : (periodEnd ? new Date(periodEnd * 1000).toISOString() : null),
         })
         .eq('id', merchantId)
 
@@ -110,13 +115,15 @@ export async function POST(req: NextRequest) {
       const merchantId = sub.metadata?.merchant_id
       if (!merchantId) break
 
+      const periodEnd = (sub as any).current_period_end
+
       await supabase
         .from('merchants')
         .update({
           plan: 'FREE',
           stripe_subscription_id: null,
           stripe_subscription_status: 'canceled',
-          plan_expires_at: new Date(sub.current_period_end * 1000).toISOString(),
+          plan_expires_at: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
         })
         .eq('id', merchantId)
 

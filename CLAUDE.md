@@ -524,3 +524,25 @@ Response: image/png 1032x336
 ---
 
 *Ultimo aggiornamento: Gennaio 2026*
+## 📋 WORKFLOW OBBLIGATORIO PER OGNI FEATURE
+
+1. Prima di iniziare: leggi tutti i file coinvolti
+2. Scrivi il codice
+3. Aggiorna la sezione TODO sopra (metti ✅ su ciò che hai completato)
+4. Esegui: git add . && git commit -m "feat: nome-feature"
+5. Scrivi in PROGRESSO.md cosa hai fatto e cosa fai dopo
+6. Passa alla feature successiva SENZA aspettarmi
+
+## ⛔ SE TI BLOCCHI
+
+NON girare a vuoto. Se dopo 3 tentativi un errore non si risolve:
+1. Scrivi il problema in BLOCCO.md (feature, errore, cosa hai provato)
+2. Passa SUBITO alla feature successiva
+3. Torna al blocco solo se hai un'idea nuova
+
+## 🔄 INIZIO DI OGNI NUOVA SESSIONE
+
+Se la conversazione si interrompe e riprende, PRIMA di tutto:
+1. Leggi PROGRESSO.md per sapere dove eri arrivato
+2. Leggi BLOCCO.md per sapere cosa era bloccato
+3. Riprendi dal punto esatto dove ti eri fermato
