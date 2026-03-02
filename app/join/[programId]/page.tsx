@@ -16,6 +16,15 @@ type ProgramInfo = {
   cashback_percent: number | null
   subscription_price: number | null
   subscription_period: string | null
+  min_cashback_redeem: number | null
+  daily_limit: number | null
+}
+
+type RewardItem = {
+  id: string
+  name: string
+  stamps_required: number
+  sort_order: number
 }
 
 type MerchantInfo = {
@@ -48,6 +57,7 @@ export default function JoinPage() {
 
   const [program, setProgram] = useState<ProgramInfo | null>(null)
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null)
+  const [rewards, setRewards] = useState<RewardItem[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,7 +72,7 @@ export default function JoinPage() {
     async function load() {
       const { data: prog, error: progErr } = await supabase
         .from('programs')
-        .select('id, name, program_type, primary_color, logo_url, stamps_required, reward_description, points_per_euro, cashback_percent, subscription_price, subscription_period, merchant_id')
+        .select('id, name, program_type, primary_color, logo_url, stamps_required, reward_description, points_per_euro, cashback_percent, subscription_price, subscription_period, merchant_id, min_cashback_redeem, daily_limit')
         .eq('id', programId)
         .single()
 
@@ -73,6 +83,16 @@ export default function JoinPage() {
       }
 
       setProgram(prog as ProgramInfo)
+
+      if (prog.program_type === 'stamps') {
+        const { data: rewardsData } = await supabase
+          .from('rewards')
+          .select('id, name, stamps_required, sort_order')
+          .eq('program_id', prog.id)
+          .eq('is_active', true)
+          .order('stamps_required', { ascending: true })
+        if (rewardsData) setRewards(rewardsData)
+      }
 
       const { data: merch } = await supabase
         .from('merchants')
