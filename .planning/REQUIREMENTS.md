@@ -56,9 +56,9 @@
 
 ### BUG — Fix Critici
 
-- [ ] **BUG-01**: Idempotency key generata una volta al momento della scansione (non con Date.now() dentro ogni handler) — previene doppi stamp
+- [x] **BUG-01**: Idempotency key generata una volta al momento della scansione (non con Date.now() dentro ogni handler) — previene doppi stamp
 - [ ] **BUG-02**: Tabella `notification_logs` creata in Supabase — lo storico notifiche funziona
-- [ ] **BUG-03**: Tipo "Missioni" rimosso dal selettore di creazione programma (o disabled con tooltip) — previene crash wallet API
+- [x] **BUG-03**: Tipo "Missioni" rimosso dal selettore di creazione programma (o disabled con tooltip) — previene crash wallet API
 - [ ] **BUG-04**: Colonne Stripe (`stripe_customer_id`, `stripe_subscription_id`, `stripe_subscription_status`, `plan_expires_at`) aggiunte alla tabella `merchants` via SQL migration
 - [x] **BUG-05**: API routes `/api/wallet` e `/api/wallet-update` verificano che la richiesta provenga da un contesto valido (auth check di base)
 

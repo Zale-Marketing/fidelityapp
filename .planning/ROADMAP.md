@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Fix idempotency key in stamp scanner + remove Missioni type from program creation
+- [x] 01-01-PLAN.md — Fix idempotency key in stamp scanner + remove Missioni type from program creation
 - [ ] 01-02-PLAN.md — SQL migrations: notification_logs table + Stripe columns on merchants (requires human to run in Supabase)
 - [ ] 01-03-PLAN.md — Auth check on /api/wallet and /api/wallet-update routes
 
@@ -109,7 +109,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stability | 1/3 | In Progress|  |
+| 1. Stability | 2/3 | In Progress|  |
 | 2. Merchant UX | 0/2 | Not started | - |
 | 3. Customer Pages | 0/2 | Not started | - |
 | 4. Retention Tools | 0/3 | Not started | - |

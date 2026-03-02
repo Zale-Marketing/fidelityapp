@@ -12,25 +12,25 @@ See: .planning/PROJECT.md (updated 2026-03-02)
 Phase: 1 of 5 (Stability)
 Plan: 3 of 3 in current phase
 Status: In progress
-Last activity: 2026-03-02 — Plan 01-03 complete (wallet API auth guard)
+Last activity: 2026-03-02 — Plan 01-01 complete (idempotency fix + Missioni removal)
 
-Progress: [##░░░░░░░░] 20%
+Progress: [###░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 2 min
-- Total execution time: 2 min
+- Total plans completed: 2
+- Average duration: 3 min
+- Total execution time: 6 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-stability | 1 | 2 min | 2 min |
+| 01-stability | 2 | 6 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (2 min)
+- Last 5 plans: 01-03 (2 min), 01-01 (4 min)
 - Trend: -
 
 *Updated after each plan completion*
@@ -46,6 +46,8 @@ Recent decisions affecting current work:
 - Tipo "Missioni" disabilitare subito — selezionabile ma non implementato, causa crash wallet API (BUG-03)
 - NON toccare lib/google-wallet.ts — funziona, critico
 - [01-03] Wallet API auth: NEXT_PUBLIC_ prefix for client secret (anti-abuse, not full auth); guard skipped when env var unset for dev safety; Vercel env vars required for production enforcement
+- [01-01] Idempotency key: use useRef alongside useState for sync access in immediate transaction calls (React state async); Date.now() kept as last-resort fallback only
+- [01-01] Missioni guards: simplified selectedType !== 'missions' to selectedType truthy check rather than full structural unwrap
 
 ### Pending Todos
 
@@ -60,5 +62,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Completed 01-stability-03-PLAN.md (wallet API auth guard)
+Stopped at: Completed 01-stability-01-PLAN.md (idempotency + Missioni fixes)
 Resume file: None
