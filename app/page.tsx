@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import LeadForm from '@/components/LeadForm'
 
 export default function Home() {
   return (
@@ -156,6 +157,17 @@ export default function Home() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Contattaci / Lead Capture */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">Vuoi saperne di più?</h2>
+          <p className="text-gray-600 mb-10 max-w-xl mx-auto">
+            Lascia i tuoi contatti e ti spieghiamo come FidelityApp può funzionare per la tua attività.
+          </p>
+          <LeadForm />
         </div>
       </section>
 
