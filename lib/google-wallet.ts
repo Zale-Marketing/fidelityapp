@@ -97,6 +97,74 @@ function getHeroImageUrl(cardId: string): string {
 }
 
 // ============================================================================
+// TEXT MODULES — dati leggibili nella vista espansa della carta Google Wallet
+// ============================================================================
+
+function buildTextModulesData(data: WalletCardData): any[] {
+  switch (data.programType) {
+    case 'stamps': {
+      const stamps = data.stampCount || 0
+      const total = data.stampsRequired || 10
+      const isComplete = stamps >= total
+      const nextReward = data.stampRewards?.find(r => r.stamps > stamps)
+      return [{
+        id: 'status',
+        header: isComplete ? `${stamps}/${total} - PREMIO PRONTO!` : `${stamps}/${total} bollini`,
+        body: isComplete
+          ? `Premio: ${data.rewardDescription || ''}`
+          : nextReward
+          ? `Prossimo a ${nextReward.stamps}: ${nextReward.reward}`
+          : `Premio a ${total}: ${data.rewardDescription || ''}`,
+      }]
+    }
+    case 'points': {
+      const points = Math.round(data.pointsBalance || 0)
+      const total = data.pointsForReward || 100
+      const isComplete = points >= total
+      const nextReward = data.pointsRewards?.find(r => r.points > points)
+      return [{
+        id: 'status',
+        header: isComplete ? `${points} punti - PREMIO PRONTO!` : `${points}/${total} punti`,
+        body: isComplete
+          ? `Premio: ${data.rewardDescription || ''}`
+          : nextReward
+          ? `Prossimo a ${nextReward.points}: ${nextReward.reward}`
+          : `Premio a ${total}: ${data.rewardDescription || ''}`,
+      }]
+    }
+    case 'cashback': {
+      const cashback = data.cashbackBalance || 0
+      return [{
+        id: 'status',
+        header: `Credito: \u20AC${cashback.toFixed(2)}`,
+        body: `+${data.cashbackPercent || 5}% su ogni acquisto`,
+      }]
+    }
+    case 'tiers': {
+      const parts: string[] = []
+      if (data.tierDiscount) parts.push(`-${data.tierDiscount}% sconto`)
+      if (data.totalSpent !== undefined) parts.push(`Spesa: \u20AC${data.totalSpent.toFixed(0)}`)
+      if (data.nextTierName) parts.push(`Prossimo: ${data.nextTierName} a \u20AC${data.nextTierMinSpend || 0}`)
+      return [{
+        id: 'status',
+        header: `Livello: ${data.currentTier || 'Bronze'}`,
+        body: parts.join(' \u00B7 ') || 'Livello attuale',
+      }]
+    }
+    case 'subscription': {
+      const isActive = data.subscriptionStatus === 'active'
+      return [{
+        id: 'status',
+        header: `Abbonamento: ${isActive ? 'ATTIVO' : 'SCADUTO'}`,
+        body: `Utilizzi oggi: ${data.dailyUses || 0}/${data.dailyLimit || 1}`,
+      }]
+    }
+    default:
+      return []
+  }
+}
+
+// ============================================================================
 // GENERA LINK WALLET
 // ============================================================================
 
@@ -236,6 +304,9 @@ export async function generateWalletLink(data: WalletCardData): Promise<string> 
     heroImage: {
       sourceUri: { uri: heroImageUrl }
     },
+
+    // Dati testuali visibili nella vista espansa della carta
+    textModulesData: buildTextModulesData(data),
   }
 
   // ========== GENERA JWT ==========
@@ -285,6 +356,7 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
     heroImage: {
       sourceUri: { uri: heroImageUrl }
     },
+    textModulesData: buildTextModulesData(data),
   }
 
   try {

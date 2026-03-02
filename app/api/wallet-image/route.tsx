@@ -19,15 +19,11 @@ export async function GET(request: Request) {
   // 1. Fetch card with program
   const { data: card, error } = await supabase
     .from('cards')
-    .select(`
-      *,
-      programs (*)
-    `)
+    .select('*, programs (*)')
     .eq('id', cardId)
     .single()
 
   if (error || !card) {
-    console.error('Card not found:', error)
     return new Response('Card not found', { status: 404 })
   }
 
@@ -35,41 +31,48 @@ export async function GET(request: Request) {
   const programType = program.program_type || 'stamps'
   const primaryColor = program.primary_color || '#6366f1'
 
-  // 2. Fetch rewards SEPARATAMENTE
-  const { data: rewards } = await supabase
+  // 2. Fetch rewards (query separata — edge runtime)
+  const { data: rewardsData } = await supabase
     .from('rewards')
     .select('*')
     .eq('program_id', program.id)
     .eq('is_active', true)
     .order('stamps_required', { ascending: true })
+  const rewards = rewardsData || []
 
-  const intermediateRewards = rewards || []
+  // 3. Fetch tiers solo per programmi tiers
+  let tiers: any[] = []
+  if (programType === 'tiers') {
+    const { data: tiersData } = await supabase
+      .from('tiers')
+      .select('*')
+      .eq('program_id', program.id)
+      .order('min_spend', { ascending: true })
+    tiers = tiersData || []
+  }
 
-  // Dimensioni Google Wallet hero image
   const WIDTH = 1032
   const HEIGHT = 336
 
-  // Genera l'immagine in base al tipo di programma
   let imageContent
-
   switch (programType) {
     case 'stamps':
-      imageContent = generateStampsLayout(card, program, primaryColor, intermediateRewards)
+      imageContent = generateStampsLayout(card, program, primaryColor, rewards)
       break
     case 'points':
-      imageContent = generatePointsLayout(card, program, primaryColor)
+      imageContent = generatePointsLayout(card, program, primaryColor, rewards)
       break
     case 'cashback':
       imageContent = generateCashbackLayout(card, program, primaryColor)
       break
     case 'tiers':
-      imageContent = generateTiersLayout(card, program, primaryColor)
+      imageContent = generateTiersLayout(card, program, primaryColor, tiers)
       break
     case 'subscription':
       imageContent = generateSubscriptionLayout(card, program, primaryColor)
       break
     default:
-      imageContent = generateStampsLayout(card, program, primaryColor, intermediateRewards)
+      imageContent = generateStampsLayout(card, program, primaryColor, rewards)
   }
 
   const imageResponse = new ImageResponse(
@@ -88,8 +91,8 @@ export async function GET(request: Request) {
         }}
       >
         {imageContent}
-        
-        {/* Powered by Zale Marketing - CENTRATO */}
+
+        {/* Footer centrato — absolute per non influenzare il layout centrale */}
         <div
           style={{
             position: 'absolute',
@@ -98,22 +101,15 @@ export async function GET(request: Request) {
             right: 0,
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'center',
           }}
         >
-          <span style={{ 
-            fontSize: 18, 
-            color: 'rgba(255,255,255,0.4)',
-          }}>
+          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
             Powered by Zale Marketing
           </span>
         </div>
       </div>
     ),
-    {
-      width: WIDTH,
-      height: HEIGHT,
-    }
+    { width: WIDTH, height: HEIGHT }
   )
 
   return new Response(imageResponse.body, {
@@ -127,165 +123,95 @@ export async function GET(request: Request) {
 }
 
 // ============================================
-// 🎫 STAMPS / BOLLINI LAYOUT
+// STAMPS / BOLLINI
 // ============================================
 function generateStampsLayout(card: any, program: any, color: string, rewards: any[]) {
-  const stamps = card.current_stamps || card.stamp_count || card.stamps || 0
+  const stamps = card.current_stamps || card.stamp_count || 0
   const total = program.stamps_required || 10
-  const rewardDesc = program.reward_description || program.reward_text || 'Premio'
-  
-  // Prossimo premio intermedio (non il finale)
-  const nextReward = rewards.find((r: any) => r.stamps_required > stamps && r.stamps_required < total)
-  
-  // Max 10 bollini per riga
-  const stampsPerRow = Math.min(total, 10)
-  const rows = Math.ceil(total / stampsPerRow)
-  const stampSize = total <= 10 ? 28 : 22
+  const rewardDesc = program.reward_description || 'Premio'
 
-  // Genera le righe di bollini
-  const stampRows = []
-  for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
-    const startIdx = rowIndex * stampsPerRow
-    const endIdx = Math.min(startIdx + stampsPerRow, total)
-    const rowStamps = []
-    
-    for (let i = startIdx; i < endIdx; i++) {
-      const isFilled = i < stamps
-      rowStamps.push(
-        <div
-          key={i}
-          style={{
-            width: stampSize,
-            height: stampSize,
-            borderRadius: '50%',
-            backgroundColor: isFilled ? 'white' : 'rgba(255,255,255,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {isFilled && (
-            <div style={{
-              width: stampSize * 0.5,
-              height: stampSize * 0.5,
-              borderRadius: '50%',
-              backgroundColor: color,
-            }} />
-          )}
-        </div>
-      )
-    }
-    
-    stampRows.push(
-      <div key={rowIndex} style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-        {rowStamps}
-      </div>
+  // Prossimo reward con stamps_required > bollini attuali
+  const nextReward = rewards.find((r: any) => r.stamps_required > stamps)
+  const isComplete = stamps >= total
+
+  // Cerchi: max 10 visibili
+  const circleCount = Math.min(total, 10)
+  const filledCount = total <= 10
+    ? Math.min(stamps, circleCount)
+    : Math.min(Math.round((stamps / total) * circleCount), circleCount)
+
+  const circles = []
+  for (let i = 0; i < circleCount; i++) {
+    circles.push(
+      <div
+        key={i}
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          backgroundColor: i < filledCount ? 'white' : 'rgba(255,255,255,0.3)',
+          display: 'flex',
+        }}
+      />
     )
   }
 
+  const row4 = isComplete
+    ? `PREMIO PRONTO: ${rewardDesc}`
+    : nextReward
+    ? `Prossimo a ${nextReward.stamps_required}: ${nextReward.name}`
+    : `Premio a ${total}: ${rewardDesc}`
+
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '12px 30px',
+      gap: 10,
       width: '100%',
       height: '100%',
     }}>
-      {/* Titolo */}
-      <div style={{ 
-        display: 'flex',
-        fontSize: 42, 
-        color: 'rgba(255,255,255,0.9)', 
-        fontWeight: 700,
-        marginBottom: 2,
-        letterSpacing: 2,
-      }}>
+      {/* Riga 1: titolo */}
+      <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.8)', fontWeight: 600, letterSpacing: 2 }}>
         I TUOI BOLLINI
       </div>
-      
-      {/* Contatore */}
-      <div style={{ 
-        display: 'flex',
-        alignItems: 'baseline',
-        marginBottom: 10,
-      }}>
-        <span style={{ 
-          fontSize: 100, 
-          fontWeight: 800, 
-          color: 'white',
-          lineHeight: 1,
-        }}>{stamps}</span>
-        <span style={{ 
-          fontSize: 50, 
-          color: 'rgba(255,255,255,0.6)', 
-          marginLeft: 8,
-          fontWeight: 600,
-        }}>/ {total}</span>
+
+      {/* Riga 2: contatore grande */}
+      <div style={{ display: 'flex', fontSize: 80, fontWeight: 800, color: 'white', lineHeight: 1 }}>
+        {stamps} / {total}
       </div>
-      
-      {/* Griglia bollini */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 4,
-        marginBottom: 10,
-      }}>
-        {stampRows}
+
+      {/* Riga 3: cerchi bollini */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        {circles}
       </div>
-      
-      {/* Premio */}
-      {stamps >= total ? (
-        <div style={{
-          display: 'flex',
-          backgroundColor: 'rgba(255,255,255,0.25)',
-          padding: '8px 24px',
-          borderRadius: 12,
-          alignItems: 'center',
-          gap: 8,
-        }}>
-          <span style={{ fontSize: 28, color: 'white', fontWeight: 700 }}>
-            PREMIO PRONTO: {rewardDesc}
-          </span>
-        </div>
-      ) : nextReward ? (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 0,
-        }}>
-          <span style={{ fontSize: 22, color: 'rgba(255,255,255,0.7)' }}>
-            Prossimo a {nextReward.stamps_required}:
-          </span>
-          <span style={{ fontSize: 28, color: 'white', fontWeight: 700 }}>
-            {nextReward.name}
-          </span>
-        </div>
-      ) : (
-        <div style={{
-          display: 'flex',
-          fontSize: 26,
-          color: 'white',
-          fontWeight: 600,
-        }}>
-          Premio: {rewardDesc}
-        </div>
-      )}
+
+      {/* Riga 4: prossimo premio */}
+      <div style={{ display: 'flex', fontSize: 22, color: 'white', fontWeight: isComplete ? 700 : 500 }}>
+        {row4}
+      </div>
     </div>
   )
 }
 
 // ============================================
-// ⭐ POINTS / PUNTI LAYOUT
+// POINTS / PUNTI
 // ============================================
-function generatePointsLayout(card: any, program: any, color: string) {
-  const points = card.points_balance || card.points || 0
+function generatePointsLayout(card: any, program: any, color: string, rewards: any[]) {
+  const points = Math.round(card.points_balance || 0)
   const pointsRequired = program.stamps_required || 100
-  const eurosPerPoint = program.points_per_euro || 1
   const progress = Math.min((points / pointsRequired) * 100, 100)
+  const rewardDesc = program.reward_description || 'Premio'
+
+  const nextReward = rewards.find((r: any) => r.stamps_required > points)
+  const isComplete = points >= pointsRequired
+
+  const row4 = isComplete
+    ? `PREMIO PRONTO: ${rewardDesc}`
+    : nextReward
+    ? `Prossimo a ${nextReward.stamps_required}: ${nextReward.name}`
+    : `Premio a ${pointsRequired}: ${rewardDesc}`
 
   return (
     <div style={{
@@ -293,76 +219,53 @@ function generatePointsLayout(card: any, program: any, color: string) {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '12px 30px',
+      gap: 8,
       width: '100%',
       height: '100%',
     }}>
-      {/* Titolo */}
-      <div style={{ 
-        display: 'flex',
-        fontSize: 42, 
-        color: 'rgba(255,255,255,0.9)', 
-        fontWeight: 700,
-        marginBottom: 0,
-        letterSpacing: 2,
-      }}>
+      {/* Riga 1: titolo */}
+      <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.8)', fontWeight: 600, letterSpacing: 2 }}>
         I TUOI PUNTI
       </div>
-      
-      {/* Punti */}
-      <div style={{ 
-        display: 'flex',
-        fontSize: 120, 
-        fontWeight: 800, 
-        color: 'white',
-        lineHeight: 1,
-        marginBottom: 8,
-      }}>
+
+      {/* Riga 2: punti grandi */}
+      <div style={{ display: 'flex', fontSize: 80, fontWeight: 800, color: 'white', lineHeight: 1 }}>
         {points}
       </div>
-      
-      {/* Barra progresso */}
-      <div style={{
-        display: 'flex',
-        width: '85%',
-        height: 24,
-        backgroundColor: 'rgba(255,255,255,0.25)',
-        borderRadius: 12,
-        marginBottom: 8,
-        overflow: 'hidden',
-      }}>
+
+      {/* Riga 3: barra progresso + X/Y punti */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '80%' }}>
         <div style={{
-          width: `${progress}%`,
-          height: '100%',
-          backgroundColor: 'white',
-          borderRadius: 12,
-        }} />
+          display: 'flex',
+          width: '100%',
+          height: 16,
+          backgroundColor: 'rgba(255,255,255,0.25)',
+          borderRadius: 8,
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            display: 'flex',
+            width: `${progress}%`,
+            height: '100%',
+            backgroundColor: 'white',
+            borderRadius: 8,
+          }} />
+        </div>
+        <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.8)' }}>
+          {points} / {pointsRequired} punti
+        </div>
       </div>
-      
-      {/* Info */}
-      <div style={{
-        display: 'flex',
-        fontSize: 28,
-        color: 'rgba(255,255,255,0.9)',
-        marginBottom: 4,
-      }}>
-        {points} / {pointsRequired} punti
-      </div>
-      
-      {/* Conversione */}
-      <div style={{
-        display: 'flex',
-        fontSize: 20,
-        color: 'rgba(255,255,255,0.6)',
-      }}>
-        €{eurosPerPoint} = 1 punto
+
+      {/* Riga 4: prossimo premio */}
+      <div style={{ display: 'flex', fontSize: 22, color: 'white', fontWeight: isComplete ? 700 : 500 }}>
+        {row4}
       </div>
     </div>
   )
 }
 
 // ============================================
-// 💰 CASHBACK LAYOUT
+// CASHBACK
 // ============================================
 function generateCashbackLayout(card: any, program: any, color: string) {
   const cashback = card.cashback_balance || 0
@@ -376,64 +279,35 @@ function generateCashbackLayout(card: any, program: any, color: string) {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '12px 30px',
+      gap: 10,
       width: '100%',
       height: '100%',
     }}>
-      {/* Titolo */}
-      <div style={{ 
-        display: 'flex',
-        fontSize: 42, 
-        color: 'rgba(255,255,255,0.9)', 
-        fontWeight: 700,
-        marginBottom: 0,
-        letterSpacing: 2,
-      }}>
+      {/* Riga 1: titolo */}
+      <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.8)', fontWeight: 600, letterSpacing: 2 }}>
         IL TUO CREDITO
       </div>
-      
-      {/* Importo */}
-      <div style={{ 
-        display: 'flex',
-        alignItems: 'baseline',
-        marginBottom: 12,
-      }}>
-        <span style={{ fontSize: 70, color: 'white', fontWeight: 700 }}>€</span>
-        <span style={{ fontSize: 130, fontWeight: 800, color: 'white', lineHeight: 1 }}>
-          {cashback.toFixed(2)}
-        </span>
+
+      {/* Riga 2: saldo grande */}
+      <div style={{ display: 'flex', fontSize: 80, fontWeight: 800, color: 'white', lineHeight: 1 }}>
+        {`\u20AC${cashback.toFixed(2)}`}
       </div>
-      
-      {/* Percentuale */}
-      <div style={{
-        display: 'flex',
-        fontSize: 32,
-        color: 'rgba(255,255,255,0.9)',
-        marginBottom: 10,
-        fontWeight: 600,
-      }}>
+
+      {/* Riga 3: percentuale */}
+      <div style={{ display: 'flex', fontSize: 24, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
         +{percent}% su ogni acquisto
       </div>
-      
-      {/* Stato */}
+
+      {/* Riga 4: stato riscatto */}
       {canRedeem ? (
-        <div style={{
-          display: 'flex',
-          backgroundColor: 'rgba(255,255,255,0.25)',
-          padding: '10px 30px',
-          borderRadius: 16,
-        }}>
-          <span style={{ fontSize: 26, color: 'white', fontWeight: 700 }}>
+        <div style={{ display: 'flex', backgroundColor: 'rgba(255,255,255,0.25)', padding: '6px 20px', borderRadius: 10 }}>
+          <span style={{ display: 'flex', fontSize: 22, color: 'white', fontWeight: 700 }}>
             CREDITO DISPONIBILE
           </span>
         </div>
       ) : (
-        <div style={{
-          display: 'flex',
-          fontSize: 22,
-          color: 'rgba(255,255,255,0.6)',
-        }}>
-          Min. €{minRedeem} per riscattare
+        <div style={{ display: 'flex', fontSize: 22, color: 'rgba(255,255,255,0.75)' }}>
+          {`Min. \u20AC${minRedeem} per riscattare`}
         </div>
       )}
     </div>
@@ -441,21 +315,24 @@ function generateCashbackLayout(card: any, program: any, color: string) {
 }
 
 // ============================================
-// 👑 TIERS / LIVELLI VIP LAYOUT
+// TIERS / LIVELLI VIP
 // ============================================
-function generateTiersLayout(card: any, program: any, color: string) {
-  const currentTier = card.current_tier || 'Bronze'
-  const totalSpend = card.total_spent || 0
-  
-  const tierEmojis: Record<string, string> = {
-    'Bronze': '🥉',
-    'Silver': '🥈',
-    'Gold': '🥇',
-    'Platinum': '💎',
-    'Diamond': '👑',
-  }
-  
-  const tierEmoji = tierEmojis[currentTier] || ''
+function generateTiersLayout(card: any, program: any, color: string, tiers: any[]) {
+  const currentTierName = card.current_tier || 'Bronze'
+  const totalSpent = card.total_spent || 0
+
+  const currentTierData = tiers.find((t: any) => t.name === currentTierName)
+  const discount = currentTierData?.discount_percent || 0
+  const nextTierData = tiers.find((t: any) => t.min_spend > totalSpent)
+  const remaining = nextTierData ? Math.ceil(nextTierData.min_spend - totalSpent) : 0
+
+  const row3 = discount > 0
+    ? `-${discount}% sconto  \u00B7  Spesa: \u20AC${totalSpent.toFixed(0)}`
+    : `Spesa totale: \u20AC${totalSpent.toFixed(0)}`
+
+  const row4 = nextTierData
+    ? `Prossimo: ${nextTierData.name} a \u20AC${nextTierData.min_spend} (mancano \u20AC${remaining})`
+    : 'Livello massimo raggiunto'
 
   return (
     <div style={{
@@ -463,168 +340,96 @@ function generateTiersLayout(card: any, program: any, color: string) {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '12px 30px',
+      gap: 10,
       width: '100%',
       height: '100%',
     }}>
-      {/* Titolo */}
-      <div style={{ 
-        display: 'flex',
-        fontSize: 42, 
-        color: 'rgba(255,255,255,0.9)', 
-        fontWeight: 700,
-        marginBottom: 4,
-        letterSpacing: 2,
-      }}>
+      {/* Riga 1: titolo */}
+      <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.8)', fontWeight: 600, letterSpacing: 2 }}>
         IL TUO LIVELLO
       </div>
-      
-      {/* Nome livello */}
-      <div style={{ 
-        display: 'flex',
-        fontSize: 90, 
-        fontWeight: 800, 
-        color: 'white',
-        lineHeight: 1,
-        marginBottom: 12,
-        textTransform: 'uppercase',
-      }}>
-        {tierEmoji} {currentTier}
-      </div>
-      
-      {/* Spesa totale */}
+
+      {/* Riga 2: nome livello grande */}
       <div style={{
         display: 'flex',
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        padding: '10px 30px',
-        borderRadius: 16,
+        fontSize: 72,
+        fontWeight: 800,
+        color: 'white',
+        lineHeight: 1,
+        textTransform: 'uppercase',
       }}>
-        <span style={{ fontSize: 28, color: 'white' }}>
-          Spesa totale: €{totalSpend.toFixed(0)}
-        </span>
+        {currentTierName}
+      </div>
+
+      {/* Riga 3: sconto e spesa */}
+      <div style={{ display: 'flex', fontSize: 22, color: 'rgba(255,255,255,0.85)' }}>
+        {row3}
+      </div>
+
+      {/* Riga 4: prossimo livello */}
+      <div style={{ display: 'flex', fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>
+        {row4}
       </div>
     </div>
   )
 }
 
 // ============================================
-// 🔄 SUBSCRIPTION / ABBONAMENTO LAYOUT
+// SUBSCRIPTION / ABBONAMENTO
 // ============================================
 function generateSubscriptionLayout(card: any, program: any, color: string) {
   const status = card.subscription_status || 'active'
+  const isActive = status === 'active'
   const usesToday = card.daily_uses || 0
   const dailyLimit = program.daily_limit || 1
   const price = program.subscription_price || 19.99
   const period = program.subscription_period || 'monthly'
-  
+
   const periodLabels: Record<string, string> = {
     'weekly': 'sett',
     'monthly': 'mese',
     'yearly': 'anno',
   }
-  
   const periodLabel = periodLabels[period] || 'mese'
-  const isActive = status === 'active'
-  const usesRemaining = Math.max(0, dailyLimit - usesToday)
 
-  if (isActive) {
-    return (
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      width: '100%',
+      height: '100%',
+    }}>
+      {/* Riga 1: titolo */}
+      <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.8)', fontWeight: 600, letterSpacing: 2 }}>
+        ABBONAMENTO
+      </div>
+
+      {/* Riga 2: stato con badge colorato */}
       <div style={{
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '12px 30px',
-        width: '100%',
-        height: '100%',
+        fontSize: 72,
+        fontWeight: 800,
+        color: 'white',
+        lineHeight: 1,
+        backgroundColor: isActive ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
+        padding: '4px 24px',
+        borderRadius: 12,
       }}>
-        {/* Titolo */}
-        <div style={{ 
-          display: 'flex',
-          fontSize: 42, 
-          color: 'rgba(255,255,255,0.9)', 
-          fontWeight: 700,
-          marginBottom: 8,
-          letterSpacing: 2,
-        }}>
-          ABBONAMENTO
-        </div>
-        
-        {/* Badge attivo */}
-        <div style={{
-          display: 'flex',
-          backgroundColor: 'rgba(34,197,94,0.4)',
-          padding: '6px 24px',
-          borderRadius: 20,
-          marginBottom: 10,
-        }}>
-          <span style={{ fontSize: 28, color: 'white', fontWeight: 700 }}>ATTIVO</span>
-        </div>
-        
-        {/* Prezzo */}
-        <div style={{ 
-          display: 'flex',
-          alignItems: 'baseline',
-          marginBottom: 12,
-        }}>
-          <span style={{ fontSize: 80, fontWeight: 800, color: 'white' }}>€{price}</span>
-          <span style={{ fontSize: 30, color: 'rgba(255,255,255,0.7)', marginLeft: 8 }}>/{periodLabel}</span>
-        </div>
-        
-        {/* Utilizzi */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: 'rgba(255,255,255,0.2)',
-          padding: '10px 30px',
-          borderRadius: 16,
-          alignItems: 'center',
-        }}>
-          <span style={{ fontSize: 22, color: 'rgba(255,255,255,0.8)' }}>Utilizzi oggi</span>
-          <span style={{ fontSize: 50, fontWeight: 800, color: 'white', lineHeight: 1 }}>
-            {usesRemaining} / {dailyLimit}
-          </span>
-        </div>
+        {isActive ? 'ATTIVO' : 'SCADUTO'}
       </div>
-    )
-  } else {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '12px 30px',
-        width: '100%',
-        height: '100%',
-      }}>
-        {/* Titolo */}
-        <div style={{ 
-          display: 'flex',
-          fontSize: 42, 
-          color: 'rgba(255,255,255,0.9)', 
-          fontWeight: 700,
-          marginBottom: 8,
-          letterSpacing: 2,
-        }}>
-          ABBONAMENTO
-        </div>
-        
-        {/* Badge scaduto */}
-        <div style={{
-          display: 'flex',
-          backgroundColor: 'rgba(239,68,68,0.4)',
-          padding: '10px 30px',
-          borderRadius: 20,
-          marginBottom: 16,
-        }}>
-          <span style={{ fontSize: 32, color: 'white', fontWeight: 700 }}>SCADUTO</span>
-        </div>
-        
-        <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.8)' }}>
-          Rinnova per continuare
-        </div>
+
+      {/* Riga 3: prezzo */}
+      <div style={{ display: 'flex', fontSize: 30, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+        {`\u20AC${price}/${periodLabel}`}
       </div>
-    )
-  }
+
+      {/* Riga 4: utilizzi giornalieri */}
+      <div style={{ display: 'flex', fontSize: 22, color: 'rgba(255,255,255,0.8)' }}>
+        {`Utilizzi oggi: ${usesToday} / ${dailyLimit}`}
+      </div>
+    </div>
+  )
 }
