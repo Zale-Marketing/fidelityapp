@@ -3,142 +3,231 @@
 **Defined:** 2026-03-02
 **Core Value:** Un cassiere italiano inquadra il QR del cliente e in 3 secondi il Google Wallet si aggiorna — senza app, senza attrito, senza spiegazioni.
 
-## v1 Requirements
+---
+
+## v1 Requirements (Completed — Milestone v1.0)
 
 ### UI — Design System Mobile-First
 
-- [x] **UI-01**: Merchant vede una dashboard con layout coerente su mobile (nav, spacing, typography uniformi in tutte le pagine)
-- [x] **UI-02**: Merchant vede pulsanti, card e form con stile visivo consistente e professionale (livello Stamp.me / Loopy)
+- [x] **UI-01**: Merchant vede una dashboard con layout coerente su mobile
+- [x] **UI-02**: Merchant vede pulsanti, card e form con stile visivo consistente e professionale
 - [x] **UI-03**: Merchant può navigare la dashboard da smartphone senza zoom o scroll orizzontale
 
 ### JOIN — Pagina Iscrizione Cliente
 
-- [ ] **JOIN-01**: Cliente vede la pagina /join/[programId] con colore principale del merchant applicato a sfondo, pulsanti e accenti
-- [ ] **JOIN-02**: Cliente vede una descrizione chiara del programma (tipo, reward, come si guadagnano i punti/bollini)
-- [ ] **JOIN-03**: Cliente vede la soglia per il premio prima di iscriversi (es. "10 caffè = 1 gratis")
-- [ ] **JOIN-04**: Cliente completa l'iscrizione e viene reindirizzato alla sua carta senza errori
+- [x] **JOIN-01**: Cliente vede /join/[programId] con colore principale del merchant
+- [x] **JOIN-02**: Cliente vede descrizione chiara del programma
+- [x] **JOIN-03**: Cliente vede soglia per il premio prima di iscriversi
+- [x] **JOIN-04**: Cliente completa iscrizione e viene reindirizzato alla sua carta
 
 ### CARD — Pagina Carta Cliente
 
-- [ ] **CARD-01**: Cliente vede lo stato della sua carta con gerarchia visiva corretta per ogni tipo programma (bollini, punti, cashback, livello VIP, abbonamento)
-- [ ] **CARD-02**: Cliente vede chiaramente quanto manca al prossimo premio (es. "ancora 3 bollini")
-- [ ] **CARD-03**: Cliente vede il pulsante "Aggiungi a Google Wallet" prominente se la carta non è ancora nel wallet
+- [x] **CARD-01**: Cliente vede stato carta con gerarchia visiva corretta per ogni tipo
+- [x] **CARD-02**: Cliente vede quanto manca al prossimo premio
+- [x] **CARD-03**: Cliente vede pulsante "Aggiungi a Google Wallet" prominente
 
 ### STAMP — Scanner Cassiere
 
-- [x] **STAMP-01**: Cassiere apre /stamp e la fotocamera si attiva automaticamente senza step intermedi
-- [x] **STAMP-02**: Cassiere riceve feedback visivo immediato (verde/rosso) entro 1 secondo dalla scansione
-- [ ] **STAMP-03**: Cassiere può inserire l'importo speso inline per programmi points e cashback, senza navigare altrove
-- [x] **STAMP-04**: Cassiere può fare scansioni multiple consecutive senza ricaricare la pagina (reset automatico dopo conferma)
+- [x] **STAMP-01**: Cassiere apre /stamp e fotocamera si attiva automaticamente
+- [x] **STAMP-02**: Cassiere riceve feedback visivo immediato entro 1 secondo
+- [x] **STAMP-03**: Cassiere inserisce importo speso inline per points/cashback
+- [x] **STAMP-04**: Cassiere fa scansioni multiple consecutive senza ricaricare
 
-### PROFILE — Profilazione Clienti Leggera
+### PROFILE — Profilazione Clienti
 
-- [x] **PROF-01**: Merchant può aggiungere uno o più tag liberi a un cliente dalla sua scheda (es. "VIP", "Abituale", "Premio Riscattato")
-- [x] **PROF-02**: Merchant può rimuovere un tag da un cliente
-- [x] **PROF-03**: Merchant può filtrare la lista clienti per tag nella pagina /dashboard/customers
+- [x] **PROF-01**: Merchant aggiunge tag liberi a un cliente
+- [x] **PROF-02**: Merchant rimuove tag da un cliente
+- [x] **PROF-03**: Merchant filtra lista clienti per tag
 
 ### NOTIFY — Notifiche Segmentate
 
-- [x] **NOTIFY-01**: Merchant può selezionare un tag specifico come destinatari prima di inviare una notifica
-- [x] **NOTIFY-02**: Merchant vede il numero di clienti che riceveranno la notifica prima di inviarla
-- [x] **NOTIFY-03**: Merchant può inviare notifica a tutti i clienti di un programma specifico (filtro per programma)
+- [x] **NOTIFY-01**: Merchant seleziona tag come destinatari notifica
+- [x] **NOTIFY-02**: Merchant vede conteggio clienti destinatari prima di inviare
+- [x] **NOTIFY-03**: Merchant invia notifica a tutti i clienti di un programma specifico
 
 ### EXPORT — Export Dati Clienti
 
-- [x] **EXPORT-01**: Merchant può scaricare un file CSV con la lista dei clienti (nome, email, telefono, programma, saldo corrente) dalla pagina /dashboard/customers
+- [x] **EXPORT-01**: Merchant scarica CSV clienti da /dashboard/customers
 
 ### LAND — Landing Page Self-Service
 
-- [ ] **LAND-01**: Visitatore vede una landing page con valore proposto chiaro e credibile sopra the fold
-- [ ] **LAND-02**: Visitatore vede come funziona il flusso (3 step: merchant crea → cliente scansiona → wallet si aggiorna)
-- [ ] **LAND-03**: Visitatore si registra come merchant dalla landing page senza uscire dalla pagina (CTA → register)
-- [ ] **LAND-04**: Merchant registrato viene reindirizzato all'onboarding wizard già esistente
+- [x] **LAND-01**: Visitatore vede landing con valore proposto sopra the fold
+- [x] **LAND-02**: Visitatore vede flusso 3-step
+- [x] **LAND-03**: Visitatore si registra dalla landing senza uscire
+- [x] **LAND-04**: Merchant registrato viene reindirizzato all'onboarding
 
-### BUG — Fix Critici
+### BUG — Fix Critici v1.0
 
-- [x] **BUG-01**: Idempotency key generata una volta al momento della scansione (non con Date.now() dentro ogni handler) — previene doppi stamp
-- [x] **BUG-02**: Tabella `notification_logs` creata in Supabase — lo storico notifiche funziona
-- [x] **BUG-03**: Tipo "Missioni" rimosso dal selettore di creazione programma (o disabled con tooltip) — previene crash wallet API
-- [x] **BUG-04**: Colonne Stripe (`stripe_customer_id`, `stripe_subscription_id`, `stripe_subscription_status`, `plan_expires_at`) aggiunte alla tabella `merchants` via SQL migration
-- [x] **BUG-05**: API routes `/api/wallet` e `/api/wallet-update` verificano che la richiesta provenga da un contesto valido (auth check di base)
+- [x] **BUG-01**: Idempotency key generata una volta al momento della scansione
+- [x] **BUG-02**: Tabella notification_logs creata in Supabase
+- [x] **BUG-03**: Tipo "Missioni" rimosso dal selettore creazione programma
+- [x] **BUG-04**: Colonne Stripe aggiunte a merchants via SQL migration
+- [x] **BUG-05**: API routes /api/wallet e /api/wallet-update verificano contesto valido
 
-## v2 Requirements
+---
 
-### Performance
+## v2 Requirements (Milestone v2.0)
 
-- **PERF-01**: Pagina /c/[token] usa Supabase Realtime subscription invece di polling ogni 5 secondi
-- **PERF-02**: Dashboard aggregazioni spostate server-side (RPC Supabase) invece di browser-side
-- **PERF-03**: Stamp transactions paginate (limit 100) nella dashboard
+### FIX — Bug Critici v2.0
 
-### Type Safety
+- [ ] **FIX-01**: Form landing app/page.tsx salva i lead nel DB (tabella leads o contact_requests)
+- [ ] **FIX-02**: Programmi con carte attive supportano soft delete (colonna deleted_at) — merchant può eliminare programma attivo
+- [ ] **FIX-03**: Hard delete programma con modal di conferma (digita nome programma) — elimina in cascata rewards/tiers/cards/stamp_transactions
+- [ ] **FIX-04**: Hero image /api/wallet-image applica background-color corretto da query param ?color= (decodifica URL-encoded, applica al div radice)
 
-- **TYPE-01**: `lib/types.ts` riscritto in sync con lo schema Supabase reale
-- **TYPE-02**: Rimossi i 84 cast `as any` dalle pagine principali
+### DESIGN — Design System v2.0
 
-### Sicurezza
+- [ ] **DESIGN-01**: Zero emoji in tutta la dashboard e tutti i componenti — tutte sostituite con icone Lucide React
+- [ ] **DESIGN-02**: Sidebar sinistra fissa 240px sfondo #111111 testo bianco, hover #1E1E1E, active #2A2A2A, icone Lucide + label
+- [ ] **DESIGN-03**: Area contenuto sfondo #F5F5F5 in tutte le pagine dashboard
+- [ ] **DESIGN-04**: Cards metriche — sfondo bianco, border 1px solid #E8E8E8, border-radius 12px, padding 24px, shadow 0 1px 3px rgba(0,0,0,0.08)
+- [ ] **DESIGN-05**: Tabelle — header #F9F9F9, righe bianche, bordo #F0F0F0, zero zebra stripes
+- [ ] **DESIGN-06**: Bottoni primari — sfondo #111111 testo bianco hover #333333 radius 8px; secondary — border #E0E0E0 hover #F5F5F5
+- [ ] **DESIGN-07**: Typography — font Inter su body, titoli pagina text-2xl font-semibold, subtitles text-sm text-gray-500
+- [ ] **DESIGN-08**: Form inputs — border #E0E0E0 radius 8px focus border #111111 outline none padding 12px
+- [ ] **DESIGN-09**: Badge/status pills — verde #DCFCE7 testo #16A34A per attivo; grigio per inattivo; rosso #FEE2E2 testo #DC2626 per scaduto
+- [ ] **DESIGN-10**: Empty states — icona Lucide 48px colore #D1D5DB centrata + testo descrittivo, zero emoji
+- [ ] **DESIGN-11**: Design system applicato a tutte le pagine in app/dashboard/ e tutti i componenti dashboard
 
-- **SEC-01**: Row-Level Security configurata su tabelle cards, programs, card_holders
-- **SEC-02**: `/api/stripe-checkout` deriva merchantId dalla sessione auth, non dal body
+### SEG — Segmentazione Clienti Dormienti
 
-### Tech Debt
+- [ ] **SEG-01**: Merchant vede filtri Tutti / Attivi (ultimi 30gg) / Dormienti (30-90gg) / Persi (>90gg) in /dashboard/cards con conteggio per ogni segmento
+- [ ] **SEG-02**: Merchant seleziona clienti in bulk (checkbox per riga + seleziona tutti)
+- [ ] **SEG-03**: Merchant invia notifica push o messaggio WhatsApp ai clienti selezionati in bulk
 
-- **DEBT-01**: Unificato campo stamp (`current_stamps` vs `stamp_count`) — singolo campo con migration
-- **DEBT-02**: Rimossi fallback `reward_text` — solo `reward_description`
-- **DEBT-03**: Estratti handler transazione da stamp/page.tsx in `lib/stamp-operations.ts`
+### BDAY — Automazione Compleanno
+
+- [ ] **BDAY-01**: Cliente vede campo data di nascita opzionale nel form iscrizione /join/[programId]
+- [ ] **BDAY-02**: Colonna birth_date (type date, nullable) aggiunta a tabella card_holders
+- [ ] **BDAY-03**: Cron job in vercel.json esegue /api/cron/birthday ogni giorno alle 09:00 UTC
+- [ ] **BDAY-04**: Route /api/cron/birthday trova card_holders con birth_date = oggi e invia notifica push TEXT_AND_NOTIFY personalizzata "Tanti auguri [Nome]! Oggi hai un regalo speciale che ti aspetta."
+
+### REVIEW — Raccolta Recensioni Google
+
+- [ ] **REVIEW-01**: Campo google_reviews_url (opzionale) nella tabella programs e nel form crea/modifica programma in dashboard
+- [ ] **REVIEW-02**: Dopo riscatto premio in /c/[token] appare banner "Ti è piaciuto? Lascia una recensione!" con link — visibile solo se google_reviews_url è compilato
+
+### PLAN — Sistema Piani Free/Pro/Business
+
+- [ ] **PLAN-01**: Colonna plan (text, default 'free') nella tabella merchants — valori: 'free', 'pro', 'business'
+- [ ] **PLAN-02**: Hook usePlan() legge piano del merchant corrente da Supabase
+- [ ] **PLAN-03**: Componente UpgradePrompt mostra "Funzionalità disponibile nel piano PRO — Aggiorna ora" con CTA per feature premium bloccate
+- [ ] **PLAN-04**: Pagina /dashboard/upgrade con confronto piani (Free/Pro/Business) e prezzi (Free €0, Pro €39/mese, Business €99/mese)
+- [ ] **PLAN-05**: Feature gating applicato: FREE max 1 programma (solo bollini) + max 50 carte + no push + branding Zale obbligatorio; PRO tutto illimitato + push + WhatsApp + segmentazione + birthday + reviews + export CSV; BUSINESS tutto PRO + webhook + API pubblica
+
+### WA — WhatsApp Marketing Maytapi
+
+- [ ] **WA-01**: Colonne maytapi_phone_id e maytapi_session_status aggiuante a tabella merchants
+- [ ] **WA-02**: Pagina /dashboard/settings/whatsapp con istruzioni di connessione e QR code generato via Maytapi API
+- [ ] **WA-03**: API routes POST /api/whatsapp/connect (crea sessione, ritorna QR), GET /api/whatsapp/status (verifica sessione), POST /api/whatsapp/send (manda a singolo o lista con rate limit 200/giorno)
+- [ ] **WA-04**: Tab "WhatsApp" in /dashboard/notifications accanto a "Push Notification"
+- [ ] **WA-05**: Rate limiting client-side e server-side: max 200 messaggi/giorno per numero WhatsApp
+
+### WH — Webhook per Integrazioni
+
+- [ ] **WH-01**: Tabella webhook_endpoints (id, merchant_id, url, events text[], secret, is_active boolean, created_at)
+- [ ] **WH-02**: Pagina /dashboard/settings/webhooks con CRUD endpoint (aggiungi URL + seleziona eventi: nuovo_cliente, bollino_aggiunto, premio_riscattato, card_creata)
+- [ ] **WH-03**: Helper lib/webhooks.ts con funzione triggerWebhook(merchantId, event, payload) — payload firmato HMAC-SHA256
+- [ ] **WH-04**: triggerWebhook chiamato nei punti giusti: /api/wallet-update (bollino_aggiunto), /c/[token] (card_creata, premio_riscattato), /join/[programId] (nuovo_cliente)
+
+### ANALYTICS — Analytics Avanzata
+
+- [ ] **ANALYTICS-01**: Pagina /dashboard/analytics mostra totale clienti attivi con trend ultimi 30 giorni
+- [ ] **ANALYTICS-02**: Grafico a barre bollini/punti assegnati per giorno (ultimi 30gg) con recharts
+- [ ] **ANALYTICS-03**: Tasso di ritorno — % clienti che tornano entro 30gg dalla prima visita
+- [ ] **ANALYTICS-04**: Totale premi riscattati (da stamp_transactions type='redeem')
+- [ ] **ANALYTICS-05**: Grafico a torta segmenti clienti (attivi/dormienti/persi) con recharts
+
+### CSV2 — Export CSV Avanzato
+
+- [ ] **CSV2-01**: Pulsante "Esporta CSV" in /dashboard/cards con dati: nome, email, telefono, piano, bollini/punti attuali, ultima visita, data iscrizione
+- [ ] **CSV2-02**: Export CSV disponibile solo per piano PRO e BUSINESS (UpgradePrompt per FREE)
+
+---
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Apple Wallet | Android dominante in Italia, aggiunge complessità significativa |
-| Stripe attivazione | Dopo feedback da primo merchant reale |
-| Test automatici | Non bloccante per il lancio, da aggiungere progressivamente |
-| Multi-sede per merchant | Complessità > valore per v1 |
+| Apple Wallet | Android dominante in Italia, alta complessità |
+| Stripe attivazione completa | Dopo feedback da primo merchant reale |
+| Test automatici | Da aggiungere progressivamente, non bloccante |
+| Multi-sede per merchant | Complessità > valore attuale |
 | White-label completo | Dopo stabilizzazione prodotto |
 | Sistema referral | v3 o oltre |
-| Tipo "Missioni" completo | Alta complessità, richiede tabella card_missions + UI dedicata |
 | App mobile nativa | Anti-tesi al valore (no-app experience) |
+| Tipo "Missioni" completo | Alta complessità, tabella card_missions + UI dedicata |
+| API pubblica (BUSINESS) | Struttura da definire in milestone separata |
+
+---
 
 ## Traceability
 
+### v1.0 Requirements (all Complete)
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | Phase 1 | Complete |
-| BUG-02 | Phase 1 | Complete |
-| BUG-03 | Phase 1 | Complete |
-| BUG-04 | Phase 1 | Complete |
-| BUG-05 | Phase 1 | Complete |
-| UI-01 | Phase 2 | Complete |
-| UI-02 | Phase 2 | Complete |
-| UI-03 | Phase 2 | Complete |
-| STAMP-01 | Phase 2 | Complete |
-| STAMP-02 | Phase 2 | Complete |
-| STAMP-03 | Phase 2 | Pending |
-| STAMP-04 | Phase 2 | Complete |
-| JOIN-01 | Phase 3 | Pending |
-| JOIN-02 | Phase 3 | Pending |
-| JOIN-03 | Phase 3 | Pending |
-| JOIN-04 | Phase 3 | Pending |
-| CARD-01 | Phase 3 | Pending |
-| CARD-02 | Phase 3 | Pending |
-| CARD-03 | Phase 3 | Pending |
-| PROF-01 | Phase 4 | Complete |
-| PROF-02 | Phase 4 | Complete |
-| PROF-03 | Phase 4 | Complete |
-| NOTIFY-01 | Phase 4 | Complete |
-| NOTIFY-02 | Phase 4 | Complete |
-| NOTIFY-03 | Phase 4 | Complete |
-| EXPORT-01 | Phase 4 | Complete |
-| LAND-01 | Phase 5 | Pending |
-| LAND-02 | Phase 5 | Pending |
-| LAND-03 | Phase 5 | Pending |
-| LAND-04 | Phase 5 | Pending |
+| BUG-01..05 | Phase 1 — Stability | Complete |
+| UI-01..03, STAMP-01..04 | Phase 2 — Merchant UX | Complete |
+| JOIN-01..04, CARD-01..03 | Phase 3 — Customer Pages | Complete |
+| PROF-01..03, NOTIFY-01..03, EXPORT-01 | Phase 4 — Retention Tools | Complete |
+| LAND-01..04 | Phase 5 — Landing Page | Complete |
+
+### v2.0 Requirements
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| FIX-01 | Phase 6 — Critical Fixes v2 | Pending |
+| FIX-02 | Phase 6 — Critical Fixes v2 | Pending |
+| FIX-03 | Phase 6 — Critical Fixes v2 | Pending |
+| FIX-04 | Phase 6 — Critical Fixes v2 | Pending |
+| DESIGN-01 | Phase 7 — Design System v2 | Pending |
+| DESIGN-02 | Phase 7 — Design System v2 | Pending |
+| DESIGN-03 | Phase 7 — Design System v2 | Pending |
+| DESIGN-04 | Phase 7 — Design System v2 | Pending |
+| DESIGN-05 | Phase 7 — Design System v2 | Pending |
+| DESIGN-06 | Phase 7 — Design System v2 | Pending |
+| DESIGN-07 | Phase 7 — Design System v2 | Pending |
+| DESIGN-08 | Phase 7 — Design System v2 | Pending |
+| DESIGN-09 | Phase 7 — Design System v2 | Pending |
+| DESIGN-10 | Phase 7 — Design System v2 | Pending |
+| DESIGN-11 | Phase 7 — Design System v2 | Pending |
+| SEG-01 | Phase 8 — Engagement Automation | Pending |
+| SEG-02 | Phase 8 — Engagement Automation | Pending |
+| SEG-03 | Phase 8 — Engagement Automation | Pending |
+| BDAY-01 | Phase 8 — Engagement Automation | Pending |
+| BDAY-02 | Phase 8 — Engagement Automation | Pending |
+| BDAY-03 | Phase 8 — Engagement Automation | Pending |
+| BDAY-04 | Phase 8 — Engagement Automation | Pending |
+| REVIEW-01 | Phase 9 — Business Tools | Pending |
+| REVIEW-02 | Phase 9 — Business Tools | Pending |
+| PLAN-01 | Phase 9 — Business Tools | Pending |
+| PLAN-02 | Phase 9 — Business Tools | Pending |
+| PLAN-03 | Phase 9 — Business Tools | Pending |
+| PLAN-04 | Phase 9 — Business Tools | Pending |
+| PLAN-05 | Phase 9 — Business Tools | Pending |
+| WA-01 | Phase 10 — WhatsApp Marketing | Pending |
+| WA-02 | Phase 10 — WhatsApp Marketing | Pending |
+| WA-03 | Phase 10 — WhatsApp Marketing | Pending |
+| WA-04 | Phase 10 — WhatsApp Marketing | Pending |
+| WA-05 | Phase 10 — WhatsApp Marketing | Pending |
+| WH-01 | Phase 11 — Webhook Integrations | Pending |
+| WH-02 | Phase 11 — Webhook Integrations | Pending |
+| WH-03 | Phase 11 — Webhook Integrations | Pending |
+| WH-04 | Phase 11 — Webhook Integrations | Pending |
+| ANALYTICS-01 | Phase 12 — Advanced Analytics + CSV Export | Pending |
+| ANALYTICS-02 | Phase 12 — Advanced Analytics + CSV Export | Pending |
+| ANALYTICS-03 | Phase 12 — Advanced Analytics + CSV Export | Pending |
+| ANALYTICS-04 | Phase 12 — Advanced Analytics + CSV Export | Pending |
+| ANALYTICS-05 | Phase 12 — Advanced Analytics + CSV Export | Pending |
+| CSV2-01 | Phase 12 — Advanced Analytics + CSV Export | Pending |
+| CSV2-02 | Phase 12 — Advanced Analytics + CSV Export | Pending |
 
 **Coverage:**
-- v1 requirements: 30 total
-- Mapped to phases: 30
-- Unmapped: 0 ✓
+- v2 requirements: 47 total
+- Mapped to phases: 47
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-02*
-*Last updated: 2026-03-02 — Phase 2 plan 02-02 complete: STAMP-01, STAMP-02, STAMP-04 resolved*
+*Last updated: 2026-03-02 — Roadmap v2.0 created with phase names*

@@ -12,11 +12,23 @@ Five phases that take FidelityApp from a working prototype with known bugs to a 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
+### Milestone v1.0 (Completed 2026-03-02)
+
 - [x] **Phase 1: Stability** - Fix all critical bugs and missing DB schema before any UI work
 - [x] **Phase 2: Merchant UX** - Polish dashboard + scanner so the daily merchant workflow is fast and reliable (completed 2026-03-02)
-- [ ] **Phase 3: Customer Pages** - Redesign /join and /c/[token] so customers convert and understand their card
+- [x] **Phase 3: Customer Pages** - Redesign /join and /c/[token] so customers convert and understand their card
 - [x] **Phase 4: Retention Tools** - Tag customers, send segmented notifications, export CSV data (completed 2026-03-02)
-- [ ] **Phase 5: Landing Page** - Self-service acquisition page so merchants register without Alessandro
+- [x] **Phase 5: Landing Page** - Self-service acquisition page so merchants register without Alessandro
+
+### Milestone v2.0 — Redesign Completo (in corso)
+
+- [ ] **Phase 6: Critical Fixes v2** - Fix lead capture, cascade delete, and hero image color before any redesign work
+- [ ] **Phase 7: Design System v2** - Replace all emoji with Lucide icons and apply unified professional design tokens across every dashboard page
+- [ ] **Phase 8: Engagement Automation** - Segment dormant customers and automate birthday notifications
+- [ ] **Phase 9: Business Tools** - Collect Google reviews post-redemption and gate features behind Free/Pro/Business plans
+- [ ] **Phase 10: WhatsApp Marketing** - Connect Maytapi, send WhatsApp messages to customers from the notifications tab
+- [ ] **Phase 11: Webhook Integrations** - Let merchants connect external tools via signed webhooks
+- [ ] **Phase 12: Advanced Analytics + CSV Export** - Recharts dashboards with return rates, segment pie charts, and PRO-gated CSV export
 
 ## Phase Details
 
@@ -102,15 +114,115 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md — Landing page self-service (above-fold value prop + phone mockup CSS, social proof bar, 3-step flow, CTA → /register → /onboarding)
 
+---
+
+## Milestone v2.0 Phase Details
+
+### Phase 6: Critical Fixes v2
+**Goal**: Le tre rotture silenziose che danneggiano la percezione del prodotto sono risolte prima che il design system venga applicato
+**Depends on**: Phase 5 (v1.0 complete)
+**Requirements**: FIX-01, FIX-02, FIX-03, FIX-04
+**Success Criteria** (what must be TRUE):
+  1. Visitatore compila il form della landing page e il lead appare nella tabella leads (o contact_requests) di Supabase
+  2. Merchant elimina un programma con carte attive e vede l'opzione soft delete — il programma sparisce dalla UI ma i dati rimangono nel DB
+  3. Merchant vuole eliminare definitivamente un programma, digita il nome nel modal di conferma, e cards/rewards/tiers/stamp_transactions vengono eliminati in cascata
+  4. Google Wallet mostra lo sfondo della hero image nel colore principale del programma (non bianco/nero di default)
+**Plans**: TBD
+
+### Phase 7: Design System v2
+**Goal**: Ogni pagina della dashboard ha lo stesso aspetto professionale — sidebar nera, sfondo grigio, zero emoji, token visivi coerenti
+**Depends on**: Phase 6
+**Requirements**: DESIGN-01, DESIGN-02, DESIGN-03, DESIGN-04, DESIGN-05, DESIGN-06, DESIGN-07, DESIGN-08, DESIGN-09, DESIGN-10, DESIGN-11
+**Success Criteria** (what must be TRUE):
+  1. Merchant naviga tutte le pagine dashboard senza vedere una singola emoji — ogni icona è un componente Lucide React
+  2. Sidebar sinistra da 240px con sfondo #111111 è visibile e fissa su tutte le pagine dashboard
+  3. L'area contenuto ha sfondo #F5F5F5, le card metriche sono bianche con bordo #E8E8E8 e shadow sottile, le tabelle hanno header #F9F9F9 senza zebra stripes
+  4. Bottoni primari sono #111111 con testo bianco, secondari con bordo #E0E0E0 — coerenti in ogni pagina
+  5. Ogni pagina con lista vuota mostra un'icona Lucide da 48px grigia con testo descrittivo (nessun emoji, nessuna pagina bianca)
+**Plans**: TBD
+
+### Phase 8: Engagement Automation
+**Goal**: Merchant può identificare clienti a rischio abbandono e il sistema invia auguri di compleanno in automatico
+**Depends on**: Phase 7
+**Requirements**: SEG-01, SEG-02, SEG-03, BDAY-01, BDAY-02, BDAY-03, BDAY-04
+**Success Criteria** (what must be TRUE):
+  1. Merchant apre /dashboard/cards e vede quattro filtri (Tutti / Attivi / Dormienti / Persi) con il conteggio di clienti per ogni segmento
+  2. Merchant seleziona tutti i clienti "Dormienti" con un checkbox e invia una notifica push o WhatsApp al gruppo in bulk
+  3. Cliente si iscrive via /join/[programId] e vede il campo data di nascita opzionale nel form
+  4. Il cron job gira ogni giorno alle 09:00 UTC e invia "Tanti auguri [Nome]! Oggi hai un regalo speciale che ti aspetta." a ogni cliente che compie gli anni
+**Plans**: TBD
+
+### Phase 9: Business Tools
+**Goal**: Il merchant raccoglie recensioni Google dopo ogni riscatto e il sistema applica limiti di piano in modo trasparente
+**Depends on**: Phase 8
+**Requirements**: REVIEW-01, REVIEW-02, PLAN-01, PLAN-02, PLAN-03, PLAN-04, PLAN-05
+**Success Criteria** (what must be TRUE):
+  1. Merchant inserisce il link Google Reviews nel form di creazione/modifica programma e il campo viene salvato
+  2. Cliente che riscatta un premio vede il banner "Ti è piaciuto? Lascia una recensione!" con link diretto — solo se il merchant ha configurato il link
+  3. Merchant FREE che tenta di creare un secondo programma vede l'UpgradePrompt invece del form
+  4. Merchant FREE che tenta di usare push notifications, WhatsApp o segmentazione vede l'UpgradePrompt con CTA alla pagina upgrade
+  5. Merchant apre /dashboard/upgrade e vede il confronto Free/Pro/Business con prezzi (€0 / €39 / €99 al mese)
+**Plans**: TBD
+
+### Phase 10: WhatsApp Marketing
+**Goal**: Merchant connette il proprio numero WhatsApp tramite Maytapi e invia messaggi di marketing ai clienti dalla dashboard
+**Depends on**: Phase 9
+**Requirements**: WA-01, WA-02, WA-03, WA-04, WA-05
+**Success Criteria** (what must be TRUE):
+  1. Merchant apre /dashboard/settings/whatsapp, scansiona il QR code Maytapi con il telefono e la sessione viene confermata come attiva
+  2. Merchant vede il tab "WhatsApp" accanto a "Push Notification" in /dashboard/notifications
+  3. Merchant seleziona destinatari e invia un messaggio WhatsApp — il messaggio arriva sul telefono del cliente entro 60 secondi
+  4. Merchant che supera i 200 messaggi giornalieri vede un errore esplicito e non può inviare altri messaggi fino al giorno successivo
+**Plans**: TBD
+
+### Phase 11: Webhook Integrations
+**Goal**: Merchant tecnico può ricevere eventi di FidelityApp in qualsiasi sistema esterno tramite webhook firmati
+**Depends on**: Phase 10
+**Requirements**: WH-01, WH-02, WH-03, WH-04
+**Success Criteria** (what must be TRUE):
+  1. Merchant apre /dashboard/settings/webhooks, aggiunge un URL con gli eventi desiderati, e l'endpoint appare nella lista
+  2. Merchant elimina o disabilita un webhook endpoint dalla stessa pagina senza contattare il supporto
+  3. Ogni volta che un cliente guadagna un bollino, il sistema invia un POST firmato HMAC-SHA256 all'URL configurato entro 5 secondi
+  4. Tool esterno (es. Zapier, Make) riceve il payload e può verificare la firma con il secret del merchant
+**Plans**: TBD
+
+### Phase 12: Advanced Analytics + CSV Export
+**Goal**: Merchant vede trend reali di engagement con grafici recharts e può esportare i dati clienti in CSV (solo PRO/BUSINESS)
+**Depends on**: Phase 11
+**Requirements**: ANALYTICS-01, ANALYTICS-02, ANALYTICS-03, ANALYTICS-04, ANALYTICS-05, CSV2-01, CSV2-02
+**Success Criteria** (what must be TRUE):
+  1. Merchant apre /dashboard/analytics e vede il totale clienti attivi con il trend rispetto agli ultimi 30 giorni
+  2. Merchant vede un grafico a barre recharts con bollini/punti assegnati per giorno negli ultimi 30 giorni
+  3. Merchant legge il tasso di ritorno: la percentuale di clienti tornati entro 30 giorni dalla prima visita
+  4. Merchant vede un grafico a torta recharts che mostra la distribuzione Attivi / Dormienti / Persi
+  5. Merchant PRO clicca "Esporta CSV" in /dashboard/cards e scarica il file con nome, email, telefono, piano, saldo e ultima visita — merchant FREE vede l'UpgradePrompt
+**Plans**: TBD
+
+---
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+
+### Milestone v1.0 (Complete)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stability | 3/3 | Complete | 2026-03-02 |
-| 2. Merchant UX | 2/2 | Complete   | 2026-03-02 |
+| 2. Merchant UX | 2/2 | Complete | 2026-03-02 |
 | 3. Customer Pages | 2/2 | Complete | 2026-03-02 |
-| 4. Retention Tools | 3/3 | Complete   | 2026-03-02 |
+| 4. Retention Tools | 3/3 | Complete | 2026-03-02 |
 | 5. Landing Page | 1/1 | Complete | 2026-03-02 |
+
+### Milestone v2.0 — Redesign Completo
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 6. Critical Fixes v2 | 0/? | Not started | - |
+| 7. Design System v2 | 0/? | Not started | - |
+| 8. Engagement Automation | 0/? | Not started | - |
+| 9. Business Tools | 0/? | Not started | - |
+| 10. WhatsApp Marketing | 0/? | Not started | - |
+| 11. Webhook Integrations | 0/? | Not started | - |
+| 12. Advanced Analytics + CSV Export | 0/? | Not started | - |
