@@ -130,7 +130,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Hero image color fix (?color= param in wallet-image route + getHeroImageUrl) + Lead capture form on landing page
+- [x] 06-01-PLAN.md — Hero image color fix (?color= param in wallet-image route + getHeroImageUrl) + Lead capture form on landing page
 - [ ] 06-02-PLAN.md — Soft delete (archive) + hard delete with name confirmation for programs
 
 ### Phase 7: Design System v2
@@ -223,7 +223,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Critical Fixes v2 | 0/2 | Ready to execute | - |
+| 6. Critical Fixes v2 | 1/2 | In progress | - |
 | 7. Design System v2 | 0/? | Not started | - |
 | 8. Engagement Automation | 0/? | Not started | - |
 | 9. Business Tools | 0/? | Not started | - |
