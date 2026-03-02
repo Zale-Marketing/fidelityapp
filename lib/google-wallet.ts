@@ -169,13 +169,13 @@ function buildClassTemplateInfo(programType: ProgramType): any {
         {
           threeItems: {
             startItem: {
-              firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] },
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['conversione']" }] },
             },
             middleItem: {
-              firstValue: { fields: [{ fieldPath: "object.textModulesData['premio']" }] },
+              firstValue: { fields: [{ fieldPath: 'object.loyaltyPoints.balance' }] },
             },
             endItem: {
-              firstValue: { fields: [{ fieldPath: "object.textModulesData['conversione']" }] },
+              firstValue: { fields: [{ fieldPath: "object.textModulesData['premio']" }] },
             },
           },
         },
