@@ -127,7 +127,11 @@ Plans:
   2. Merchant elimina un programma con carte attive e vede l'opzione soft delete — il programma sparisce dalla UI ma i dati rimangono nel DB
   3. Merchant vuole eliminare definitivamente un programma, digita il nome nel modal di conferma, e cards/rewards/tiers/stamp_transactions vengono eliminati in cascata
   4. Google Wallet mostra lo sfondo della hero image nel colore principale del programma (non bianco/nero di default)
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Hero image color fix (?color= param in wallet-image route + getHeroImageUrl) + Lead capture form on landing page
+- [ ] 06-02-PLAN.md — Soft delete (archive) + hard delete with name confirmation for programs
 
 ### Phase 7: Design System v2
 **Goal**: Ogni pagina della dashboard ha lo stesso aspetto professionale — sidebar nera, sfondo grigio, zero emoji, token visivi coerenti
@@ -219,7 +223,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Critical Fixes v2 | 0/? | Not started | - |
+| 6. Critical Fixes v2 | 0/2 | Ready to execute | - |
 | 7. Design System v2 | 0/? | Not started | - |
 | 8. Engagement Automation | 0/? | Not started | - |
 | 9. Business Tools | 0/? | Not started | - |
