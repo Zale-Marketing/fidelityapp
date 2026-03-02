@@ -33,9 +33,9 @@
 
 ### PROFILE — Profilazione Clienti Leggera
 
-- [ ] **PROF-01**: Merchant può aggiungere uno o più tag liberi a un cliente dalla sua scheda (es. "VIP", "Abituale", "Premio Riscattato")
-- [ ] **PROF-02**: Merchant può rimuovere un tag da un cliente
-- [ ] **PROF-03**: Merchant può filtrare la lista clienti per tag nella pagina /dashboard/customers
+- [x] **PROF-01**: Merchant può aggiungere uno o più tag liberi a un cliente dalla sua scheda (es. "VIP", "Abituale", "Premio Riscattato")
+- [x] **PROF-02**: Merchant può rimuovere un tag da un cliente
+- [x] **PROF-03**: Merchant può filtrare la lista clienti per tag nella pagina /dashboard/customers
 
 ### NOTIFY — Notifiche Segmentate
 
@@ -122,9 +122,9 @@
 | CARD-01 | Phase 3 | Pending |
 | CARD-02 | Phase 3 | Pending |
 | CARD-03 | Phase 3 | Pending |
-| PROF-01 | Phase 4 | Pending |
-| PROF-02 | Phase 4 | Pending |
-| PROF-03 | Phase 4 | Pending |
+| PROF-01 | Phase 4 | Complete |
+| PROF-02 | Phase 4 | Complete |
+| PROF-03 | Phase 4 | Complete |
 | NOTIFY-01 | Phase 4 | Pending |
 | NOTIFY-02 | Phase 4 | Pending |
 | NOTIFY-03 | Phase 4 | Pending |

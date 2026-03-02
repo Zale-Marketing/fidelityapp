@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-02T12:31:25.744Z"
+last_updated: "2026-03-02T12:52:55.277Z"
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 10
+  completed_plans: 8
 ---
 
 ---
@@ -75,6 +75,7 @@ Progress: [########░░] 80%
 - Trend: Consistent
 
 *Updated after each plan completion*
+| Phase 04-retention-tools P01 | 2 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,8 @@ Recent decisions affecting current work:
 - [03-02] getProgressMessage() re-derives variables locally (not outer scope) for purity and safe invocation
 - [03-02] Old stamps progress bar removed — replaced by unified progress message row serving all 5 program types
 - [03-02] Bold text badges (ATTIVO/SCADUTO) replace emoji circles for subscription status — avoids unicode rendering issues
+- [Phase 04-01]: RLS on card_holder_tags uses nested subquery through card_holders.merchant_id for indirect ownership
+- [Phase 04-01]: All card_holders extended columns use ADD COLUMN IF NOT EXISTS for full idempotency
 
 ### Pending Todos
 
