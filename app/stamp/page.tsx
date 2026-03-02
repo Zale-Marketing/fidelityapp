@@ -36,6 +36,22 @@ export default function StampPage() {
     }
   }, [])
 
+  // Auto-reset after success or non-subscription error — STAMP-04
+  useEffect(() => {
+    if (mode === 'success') {
+      const timer = setTimeout(() => {
+        resetScanner().then(() => startScanner())
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+    if (mode === 'error' && !showActivateSubscription) {
+      const timer = setTimeout(() => {
+        resetScanner().then(() => startScanner())
+      }, 4000)
+      return () => clearTimeout(timer)
+    }
+  }, [mode, showActivateSubscription])
+
   async function checkAuth() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
@@ -897,27 +913,40 @@ export default function StampPage() {
         )}
 
         {mode === 'success' && (
-          <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-5xl">✅</span>
+          <div className="fixed inset-0 bg-green-500 flex flex-col items-center justify-center p-8 text-center z-50">
+            <div className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6">
+              <svg className="w-16 h-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
             </div>
-            <h2 className="text-3xl font-bold text-green-600 mb-4">Fatto!</h2>
-            <p className="text-gray-600 text-lg whitespace-pre-line mb-8">{message}</p>
-            <button onClick={resetScanner} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-colors">
-              📷 Scansiona un'altra carta
-            </button>
+            <h2 className="text-4xl font-bold text-white mb-4">Fatto!</h2>
+            <p className="text-white/90 text-xl whitespace-pre-line mb-8">{message}</p>
+            <p className="text-white/60 text-sm">Reset automatico in corso...</p>
           </div>
         )}
 
-        {mode === 'error' && (
+        {mode === 'error' && !showActivateSubscription && (
+          <div className="fixed inset-0 bg-red-600 flex flex-col items-center justify-center p-8 text-center z-50">
+            <div className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6">
+              <svg className="w-16 h-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-4">Errore</h2>
+            <p className="text-white/90 text-xl whitespace-pre-line mb-8">{message}</p>
+            <p className="text-white/60 text-sm">Reset automatico in corso...</p>
+          </div>
+        )}
+
+        {mode === 'error' && showActivateSubscription && (
           <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
             <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-5xl">{showActivateSubscription ? '🔄' : '❌'}</span>
+              <span className="text-5xl">🔄</span>
             </div>
-            <h2 className="text-3xl font-bold text-red-600 mb-4">{showActivateSubscription ? 'Abbonamento Scaduto' : 'Errore'}</h2>
+            <h2 className="text-3xl font-bold text-red-600 mb-4">Abbonamento Scaduto</h2>
             <p className="text-gray-600 text-lg whitespace-pre-line mb-6">{message}</p>
-            
-            {showActivateSubscription && cardData && (
+
+            {cardData && (
               <div className="space-y-3 mb-6">
                 <p className="text-sm text-gray-500 mb-4">Seleziona la durata:</p>
                 <div className="bg-pink-50 rounded-xl p-4 mb-4">
@@ -931,9 +960,9 @@ export default function StampPage() {
                 <button onClick={() => activateSubscription(12)} className="w-full bg-pink-200 text-pink-700 py-3 rounded-xl font-medium hover:bg-pink-300 transition-colors">🎉 Attiva 1 Anno</button>
               </div>
             )}
-            
+
             <button onClick={resetScanner} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-colors">
-              {showActivateSubscription ? '← Annulla' : '🔄 Riprova'}
+              ← Annulla
             </button>
           </div>
         )}
