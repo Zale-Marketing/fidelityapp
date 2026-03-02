@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import { getNextRewardText } from './wallet-helpers'
 
 const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID || ''
 const CLIENT_EMAIL = process.env.GOOGLE_WALLET_CLIENT_EMAIL || ''
@@ -282,19 +283,16 @@ function buildTextModulesData(data: WalletCardData): any[] {
     case 'stamps': {
       const currentStamps = data.stampCount ?? 0
       const total = data.stampsRequired || 10
-      const nextReward = data.dbRewards?.find(r => r.stamps_required > currentStamps)
-      let premioBody: string
-      if (!nextReward) {
-        premioBody = `PREMIO PRONTO: ${data.rewardDescription || ''}`
-      } else if (nextReward.stamps_required >= total) {
-        premioBody = `${nextReward.name} a ${nextReward.stamps_required}`
-      } else {
-        premioBody = `${nextReward.name} a ${nextReward.stamps_required}`
-      }
+      const { header: prizeHeader, body: prizeBody } = getNextRewardText(
+        currentStamps,
+        total,
+        data.rewardDescription || '',
+        data.dbRewards || []
+      )
       modules.push({
         id: 'premio',
-        header: 'PROSSIMO PREMIO',
-        body: premioBody,
+        header: prizeHeader,
+        body: prizeBody,
       })
       break
     }
@@ -617,15 +615,14 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
     case 'stamps': {
       const currentStamps = data.stampCount ?? 0
       const stampsRequired = data.stampsRequired ?? 10
-      const nextReward = data.dbRewards?.find(r => r.stamps_required > currentStamps)
-      if (!nextReward) {
-        notifHeader = 'Premio raggiunto!'
-        notifBody = `Premio raggiunto! Mostra la carta al cassiere per riscattare: ${data.rewardDescription || ''}`
-      } else {
-        const mancano = nextReward.stamps_required - currentStamps
-        notifHeader = 'Bollino aggiunto!'
-        notifBody = `Hai ${currentStamps} / ${stampsRequired} bollini. ${mancano} per il prossimo premio: ${nextReward.name}`
-      }
+      const { header: prizeHeader, body: prizeBody } = getNextRewardText(
+        currentStamps,
+        stampsRequired,
+        data.rewardDescription || '',
+        data.dbRewards || []
+      )
+      notifHeader = data.programName || 'Bollino aggiunto!'
+      notifBody = `Hai ${currentStamps} / ${stampsRequired} bollini. ${prizeHeader}: ${prizeBody}`
       break
     }
     case 'points': {

@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@supabase/supabase-js'
+import { getNextRewardText } from '@/lib/wallet-helpers'
 
 export const runtime = 'edge'
 
@@ -127,6 +128,13 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
   const stamps = card.current_stamps || card.stamp_count || 0
   const total = program.stamps_required || 10
 
+  const { header: prizeHeader, body: prizeBody } = getNextRewardText(
+    stamps,
+    total,
+    program.reward_description || '',
+    rewards
+  )
+
   // Calcolo dimensioni cerchi adattive
   const useTwoRows = total > 10
   const circlesPerRow = useTwoRows ? Math.ceil(total / 2) : total
@@ -139,14 +147,13 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
   const row1 = useTwoRows ? allIndices.slice(0, circlesPerRow) : allIndices
   const row2 = useTwoRows ? allIndices.slice(circlesPerRow) : []
 
-  // Solo cerchi — i dati testuali sono nelle righe native (cardTemplateOverride)
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      gap,
+      gap: 12,
       width: '100%',
       height: '100%',
       paddingBottom: 28,
@@ -182,6 +189,33 @@ function generateStampsLayout(card: any, program: any, color: string, rewards: a
             ))}
           </div>
         )}
+      </div>
+
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 2,
+      }}>
+        <div style={{
+          display: 'flex',
+          fontSize: 18,
+          color: 'rgba(255,255,255,0.7)',
+          fontWeight: 600,
+          letterSpacing: 2,
+          lineHeight: 1,
+        }}>
+          {prizeHeader}
+        </div>
+        <div style={{
+          display: 'flex',
+          fontSize: 22,
+          color: 'white',
+          fontWeight: 700,
+          lineHeight: 1,
+        }}>
+          {prizeBody}
+        </div>
       </div>
     </div>
   )
