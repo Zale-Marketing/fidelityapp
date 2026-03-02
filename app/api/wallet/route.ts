@@ -41,6 +41,14 @@ export async function POST(request: NextRequest) {
     const merchant = card.merchants
     const customer = card.card_holders
 
+    // Carica premi intermedi (query separata come da CLAUDE.md)
+    const { data: rewards } = await supabase
+      .from('rewards')
+      .select('*')
+      .eq('program_id', card.program_id)
+      .eq('is_active', true)
+      .order('stamps_required', { ascending: true })
+
     let tierDiscount = 0
     let nextTierName = ''
     let nextTierMinSpend = 0
@@ -135,7 +143,9 @@ export async function POST(request: NextRequest) {
       
       activeMissions,
       completedMissions,
-      
+
+      dbRewards: rewards || [],
+
       customerName: customer?.full_name,
       customerEmail: customer?.email,
     }

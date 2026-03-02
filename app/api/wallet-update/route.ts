@@ -8,13 +8,6 @@ const supabase = createClient(
 )
 
 export async function POST(request: NextRequest) {
-  // Basic auth check — reject external callers
-  const authHeader = request.headers.get('authorization')
-  const expectedSecret = process.env.INTERNAL_API_SECRET
-  if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
-    return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
-  }
-
   try {
     const { cardId } = await request.json()
 
@@ -41,6 +34,14 @@ export async function POST(request: NextRequest) {
     const program = card.programs
     const merchant = card.merchants
     const customer = card.card_holders
+
+    // Carica premi intermedi (query separata come da CLAUDE.md)
+    const { data: rewards } = await supabase
+      .from('rewards')
+      .select('*')
+      .eq('program_id', card.program_id)
+      .eq('is_active', true)
+      .order('stamps_required', { ascending: true })
 
     // Per i programmi tiers, carica anche i livelli
     let tierDiscount = 0
@@ -135,7 +136,9 @@ export async function POST(request: NextRequest) {
       
       activeMissions,
       completedMissions,
-      
+
+      dbRewards: rewards || [],
+
       customerName: customer?.full_name,
       customerEmail: customer?.email,
     } as any)

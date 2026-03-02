@@ -53,6 +53,7 @@ export type WalletCardData = {
   stampCount?: number
   stampsRequired?: number
   stampRewards?: Array<{ stamps: number; reward: string }>
+  dbRewards?: Array<{ stamps_required: number; name: string; [key: string]: any }>
 
   // POINTS
   pointsBalance?: number
@@ -279,18 +280,21 @@ function buildTextModulesData(data: WalletCardData): any[] {
 
   switch (data.programType) {
     case 'stamps': {
-      const stamps = data.stampCount || 0
+      const currentStamps = data.stampCount ?? 0
       const total = data.stampsRequired || 10
-      const isComplete = stamps >= total
-      const nextReward = data.stampRewards?.find((r) => r.stamps > stamps)
+      const nextReward = data.dbRewards?.find(r => r.stamps_required > currentStamps)
+      let premioBody: string
+      if (!nextReward) {
+        premioBody = `PREMIO PRONTO: ${data.rewardDescription || ''}`
+      } else if (nextReward.stamps_required >= total) {
+        premioBody = `${nextReward.name} a ${nextReward.stamps_required}`
+      } else {
+        premioBody = `${nextReward.name} a ${nextReward.stamps_required}`
+      }
       modules.push({
         id: 'premio',
         header: 'PROSSIMO PREMIO',
-        body: isComplete
-          ? `PRONTO: ${data.rewardDescription || ''}`
-          : nextReward
-          ? `${nextReward.reward} a ${nextReward.stamps}`
-          : `${data.rewardDescription || ''} a ${total}`,
+        body: premioBody,
       })
       break
     }
@@ -588,13 +592,73 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
       method: 'PATCH',
       data: updateData,
     })
-    console.log(`✅ Wallet aggiornato: ${objectId}`)
+    console.log(`Wallet aggiornato: ${objectId}`)
   } catch (error: any) {
     if (error.code === 404) {
-      console.log('ℹ️ Carta non ancora nel wallet')
+      console.log('Carta non ancora nel wallet')
     } else {
-      console.log('⚠️ Wallet update error:', error.message)
+      console.log('Wallet update error:', error.message)
     }
+  }
+
+  // Notifica push TEXT_AND_NOTIFY (separata — se fallisce non blocca l'update)
+  let notifHeader: string
+  let notifBody: string
+
+  switch (data.programType) {
+    case 'stamps': {
+      const currentStamps = data.stampCount ?? 0
+      const stampsRequired = data.stampsRequired ?? 10
+      const nextReward = data.dbRewards?.find(r => r.stamps_required > currentStamps)
+      let premioBody: string
+      if (!nextReward) {
+        premioBody = `PREMIO PRONTO: ${data.rewardDescription || ''}`
+      } else if (nextReward.stamps_required >= stampsRequired) {
+        premioBody = `${nextReward.name} a ${nextReward.stamps_required}`
+      } else {
+        premioBody = `${nextReward.name} a ${nextReward.stamps_required}`
+      }
+      notifHeader = 'Bollino aggiunto!'
+      notifBody = `Hai ${currentStamps} bollini su ${stampsRequired}. ${premioBody}`
+      break
+    }
+    case 'points':
+      notifHeader = 'Punti aggiunti!'
+      notifBody = `Hai ${Math.round(data.pointsBalance || 0)} punti.`
+      break
+    case 'cashback':
+      notifHeader = 'Cashback aggiornato!'
+      notifBody = `Il tuo credito e EUR ${(data.cashbackBalance || 0).toFixed(2)}`
+      break
+    case 'tiers':
+      notifHeader = 'Livello aggiornato!'
+      notifBody = `Sei ${data.currentTier || 'Base'}`
+      break
+    case 'subscription':
+      notifHeader = 'Abbonamento'
+      notifBody = `Utilizzi oggi: ${data.dailyUses || 0} / ${data.dailyLimit || 1}`
+      break
+    default:
+      notifHeader = 'Aggiornamento'
+      notifBody = 'La tua carta e stata aggiornata.'
+  }
+
+  try {
+    await client.request({
+      url: `https://walletobjects.googleapis.com/walletobjects/v1/loyaltyObject/${objectId}/addMessage`,
+      method: 'POST',
+      data: {
+        message: {
+          header: notifHeader,
+          body: notifBody,
+          id: `msg_${Date.now()}`,
+          messageType: 'TEXT_AND_NOTIFY',
+        },
+      },
+    })
+    console.log('Notifica inviata:', notifHeader)
+  } catch (msgError: any) {
+    console.warn('addMessage warning:', msgError.message)
   }
 }
 
