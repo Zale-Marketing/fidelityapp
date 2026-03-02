@@ -68,8 +68,8 @@ export default function RegisterPage() {
       return
     }
 
-    // Tutto ok, vai alla dashboard
-    router.push('/dashboard')
+    // Tutto ok, vai all'onboarding
+    router.push('/onboarding')
   }
 
   return (
