@@ -20,9 +20,14 @@ export function formatPhoneIT(phone: string): string | null {
 
 async function sendappGet(path: string): Promise<any> {
   const res = await fetch(`${SENDAPP_BASE}${path}`)
+  const contentType = res.headers.get('content-type') || ''
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`SendApp ${path} → ${res.status}: ${text}`)
+  }
+  if (!contentType.includes('application/json')) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`SendApp returned non-JSON response (${res.status}): ${text.substring(0, 200)}`)
   }
   return res.json()
 }
@@ -101,9 +106,14 @@ export async function sendGroupText(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ group_id: groupId, type: 'text', message, instance_id: instanceId, access_token: accessToken }),
   })
+  const ct1 = res.headers.get('content-type') || ''
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`SendApp send-group-message → ${res.status}: ${text}`)
+  }
+  if (!ct1.includes('application/json')) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`SendApp returned non-JSON response (${res.status}): ${text.substring(0, 200)}`)
   }
   return res.json()
 }
@@ -120,9 +130,14 @@ export async function sendGroupMedia(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ group_id: groupId, type: 'media', message, media_url: mediaUrl, instance_id: instanceId, access_token: accessToken }),
   })
+  const ct2 = res.headers.get('content-type') || ''
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(`SendApp send-group-message → ${res.status}: ${text}`)
+  }
+  if (!ct2.includes('application/json')) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`SendApp returned non-JSON response (${res.status}): ${text.substring(0, 200)}`)
   }
   return res.json()
 }

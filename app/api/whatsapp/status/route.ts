@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ qr: qrData.qr || qrData })
       } catch (err) {
         console.error('[whatsapp/status] getQRCode error:', err)
-        return NextResponse.json({ error: 'QR non disponibile' }, { status: 404 })
+        return NextResponse.json({ error: 'QR non disponibile' }, { status: 500 })
       }
     }
 
