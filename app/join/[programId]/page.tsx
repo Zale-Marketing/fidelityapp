@@ -67,6 +67,7 @@ export default function JoinPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [birthDate, setBirthDate] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -167,6 +168,7 @@ export default function JoinPage() {
             full_name: fullName.trim(),
             email: email ? email.toLowerCase().trim() : null,
             phone: phone ? phone.trim() : null,
+            birth_date: birthDate || null,
           })
           .select('id')
           .single()
@@ -465,6 +467,18 @@ export default function JoinPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+39 333 000 0000"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Data di nascita <span className="text-gray-400 font-normal">(opzionale)</span>
+                </label>
+                <input
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:border-transparent outline-none"
                 />
               </div>
