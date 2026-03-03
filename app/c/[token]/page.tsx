@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useParams } from 'next/navigation'
 import type { Card, Program, Merchant } from '@/lib/types'
+import { Star } from 'lucide-react'
 
 type Tier = {
   id: string
@@ -622,6 +623,30 @@ export default function CustomerCardPage() {
             )}
 
           </div>
+
+          {/* Google Reviews Banner */}
+          {(card.status === 'reward_ready' || card.status === 'redeemed') &&
+            (program as any).google_reviews_url && (
+            <div className="border-t border-dashed border-gray-200 p-6 text-center">
+              <div className="w-10 h-10 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Star size={18} className="text-yellow-500" />
+              </div>
+              <p className="text-sm font-semibold text-gray-800 mb-1">
+                Ti e piaciuto? Lascia una recensione!
+              </p>
+              <p className="text-xs text-gray-500 mb-4">
+                Aiuta altri clienti a scoprirci
+              </p>
+              <a
+                href={(program as any).google_reviews_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block bg-[#111111] text-white px-5 py-2.5 rounded-[8px] text-sm font-semibold hover:bg-[#333333] transition-colors"
+              >
+                Lascia una Recensione su Google
+              </a>
+            </div>
+          )}
 
           {/* 4. QR Code — UNCHANGED, still last */}
           <div className="border-t border-dashed p-6">

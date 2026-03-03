@@ -51,6 +51,7 @@ export default function EditProgramPage() {
   const [externalRewardsUrl, setExternalRewardsUrl] = useState('')
   const [termsUrl, setTermsUrl] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
+  const [googleReviewsUrl, setGoogleReviewsUrl] = useState('')
   const [walletMessage, setWalletMessage] = useState('')
 
   const [stampsRequired, setStampsRequired] = useState(10)
@@ -121,6 +122,7 @@ export default function EditProgramPage() {
     setExternalRewardsUrl(programData.external_rewards_url || '')
     setTermsUrl(programData.terms_url || programData.rules_url || '')
     setWebsiteUrl(programData.website_url || '')
+    setGoogleReviewsUrl(programData.google_reviews_url || '')
     setWalletMessage(programData.wallet_message || '')
     setStampsRequired(programData.stamps_required || 10)
     setRewardDescription(programData.reward_description || '')
@@ -166,6 +168,7 @@ export default function EditProgramPage() {
       terms_url: termsUrl || null,
       rules_url: termsUrl || null,
       website_url: websiteUrl || null,
+      google_reviews_url: googleReviewsUrl || null,
       wallet_message: walletMessage || null,
       updated_at: new Date().toISOString()
     }
@@ -890,6 +893,22 @@ export default function EditProgramPage() {
                   placeholder="https://tuosito.com"
                 />
                 <p className="text-xs text-gray-400 mt-1">Mostrato come &quot;Sito Web&quot; nel Wallet</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Link Recensioni Google (opzionale)
+                </label>
+                <input
+                  type="url"
+                  value={googleReviewsUrl}
+                  onChange={e => setGoogleReviewsUrl(e.target.value)}
+                  placeholder="https://g.page/r/..."
+                  className="border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-sm focus:border-[#111111] focus:outline-none w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Apparira un banner sul cliente dopo ogni riscatto premio
+                </p>
               </div>
 
               <div>

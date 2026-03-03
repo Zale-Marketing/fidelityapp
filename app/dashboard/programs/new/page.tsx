@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Stamp, Star, Coins, Crown, RefreshCw, ArrowLeft, Plus, X, MapPin } from 'lucide-react'
+import { Stamp, Star, Coins, Crown, RefreshCw, ArrowLeft, Plus, X, MapPin, Lock } from 'lucide-react'
+import UpgradePrompt from '@/components/ui/UpgradePrompt'
 
 type ProgramType = 'stamps' | 'points' | 'cashback' | 'tiers' | 'subscription'
 
@@ -62,6 +63,7 @@ export default function NewProgramPage() {
   const [merchantId, setMerchantId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [planBlocked, setPlanBlocked] = useState(false)
+  const [isFree, setIsFree] = useState(false)
   const [currentProgramCount, setCurrentProgramCount] = useState(0)
 
   // Form base
@@ -76,6 +78,7 @@ export default function NewProgramPage() {
   const [externalRewardsUrl, setExternalRewardsUrl] = useState('')
   const [termsUrl, setTermsUrl] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
+  const [googleReviewsUrl, setGoogleReviewsUrl] = useState('')
   const [walletMessage, setWalletMessage] = useState('')
 
   // Bollini
@@ -144,7 +147,9 @@ export default function NewProgramPage() {
       const count = progCount || 0
       setCurrentProgramCount(count)
 
-      if (merchantData?.plan !== 'PRO' && count >= 5) {
+      const planValue = (merchantData?.plan || 'free').toLowerCase()
+      setIsFree(planValue === 'free')
+      if (planValue === 'free' && count >= 1) {
         setPlanBlocked(true)
       }
     }
@@ -228,6 +233,7 @@ export default function NewProgramPage() {
       terms_url: termsUrl || null,
       rules_url: termsUrl || null,
       website_url: websiteUrl || null,
+      google_reviews_url: googleReviewsUrl || null,
       wallet_message: walletMessage || null,
       is_active: true,
       allow_multiple_redemption: true
@@ -332,32 +338,7 @@ export default function NewProgramPage() {
 
       {/* Blocco piano FREE */}
       {planBlocked && (
-        <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-          <div className="w-12 h-12 bg-[#FEF3C7] rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-xl">🔒</span>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Limite Piano FREE raggiunto</h2>
-          <p className="text-gray-600 mb-2">
-            Hai già {currentProgramCount} programmi attivi. Il piano FREE include fino a 5 programmi.
-          </p>
-          <p className="text-gray-500 mb-6">
-            Passa a <strong>PRO</strong> per creare programmi illimitati a soli €19/mese.
-          </p>
-          <div className="flex gap-3 justify-center flex-wrap">
-            <Link
-              href="/dashboard/billing"
-              className="bg-[#111111] text-white px-6 py-3 rounded-[8px] font-semibold text-sm hover:bg-[#333333] transition-colors"
-            >
-              Passa a PRO — €19/mese
-            </Link>
-            <Link
-              href="/dashboard/programs"
-              className="bg-[#F5F5F5] text-gray-700 px-6 py-3 rounded-[8px] font-semibold text-sm hover:bg-[#E8E8E8] transition-colors"
-            >
-              Torna ai Programmi
-            </Link>
-          </div>
-        </div>
+        <UpgradePrompt feature="Programmi aggiuntivi" requiredPlan="PRO" />
       )}
 
       {!planBlocked && <>
@@ -388,12 +369,22 @@ export default function NewProgramPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {PROGRAM_TYPES.map((type) => {
               const TypeIcon = type.Icon
+              const isLocked = isFree && type.id !== 'stamps'
               return (
                 <button
                   key={type.id}
-                  onClick={() => selectType(type.id)}
-                  className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 text-left hover:border-[#111111] transition-all shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
+                  onClick={() => !isLocked && selectType(type.id)}
+                  className={`bg-white border border-[#E8E8E8] rounded-[12px] p-6 text-left transition-all shadow-[0_1px_3px_rgba(0,0,0,0.08)] relative ${
+                    isLocked
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:border-[#111111] hover:shadow-[0_2px_8px_rgba(0,0,0,0.12)] cursor-pointer'
+                  }`}
                 >
+                  {isLocked && (
+                    <div className="absolute top-2 right-2">
+                      <Lock size={14} className="text-gray-400" />
+                    </div>
+                  )}
                   <div
                     className="w-12 h-12 rounded-[8px] flex items-center justify-center mb-4"
                     style={{ backgroundColor: type.color + '20' }}
@@ -1091,6 +1082,22 @@ export default function NewProgramPage() {
                     placeholder="https://tuosito.com"
                   />
                   <p className="text-xs text-gray-400 mt-1">Mostrato come &quot;Sito Web&quot; nel Wallet</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Link Recensioni Google (opzionale)
+                  </label>
+                  <input
+                    type="url"
+                    value={googleReviewsUrl}
+                    onChange={e => setGoogleReviewsUrl(e.target.value)}
+                    placeholder="https://g.page/r/..."
+                    className="border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-sm focus:border-[#111111] focus:outline-none w-full"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Apparira un banner sul cliente dopo ogni riscatto premio
+                  </p>
                 </div>
 
                 <div>
