@@ -64,7 +64,11 @@ export async function POST(request: NextRequest) {
   }
 
   if (!events || !Array.isArray(events) || events.length === 0) {
-    return NextResponse.json({ error: 'Seleziona almeno un evento' }, { status: 400 })
+    return NextResponse.json({ error: 'Seleziona un evento' }, { status: 400 })
+  }
+
+  if (events.length > 1) {
+    return NextResponse.json({ error: 'Ogni endpoint può gestire un solo evento' }, { status: 400 })
   }
 
   const invalidEvents = events.filter((e: string) => !ALLOWED_EVENTS.includes(e))

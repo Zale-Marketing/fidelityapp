@@ -69,7 +69,7 @@ export default function WebhooksSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newUrl, setNewUrl] = useState('')
-  const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set())
+  const [selectedEvent, setSelectedEvent] = useState<string>('')
   const [saving, setSaving] = useState(false)
   const [newSecret, setNewSecret] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -104,7 +104,7 @@ export default function WebhooksSettingsPage() {
   async function handleAddEndpoint(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    if (!newUrl || selectedEvents.size === 0) return
+    if (!newUrl || !selectedEvent) return
     setSaving(true)
 
     try {
@@ -117,7 +117,7 @@ export default function WebhooksSettingsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ url: newUrl, events: Array.from(selectedEvents) }),
+        body: JSON.stringify({ url: newUrl, events: [selectedEvent] }),
       })
 
       const data = await res.json()
@@ -133,7 +133,7 @@ export default function WebhooksSettingsPage() {
       setEndpoints(prev => [endpointWithoutSecret, ...prev])
       setNewSecret(data.secret)
       setNewUrl('')
-      setSelectedEvents(new Set())
+      setSelectedEvent('')
       setShowAddForm(false)
     } catch {
       setError('Errore di rete')
@@ -175,15 +175,6 @@ export default function WebhooksSettingsPage() {
     if (res.ok) {
       setEndpoints(prev => prev.filter(ep => ep.id !== endpointId))
     }
-  }
-
-  function toggleEvent(eventId: string) {
-    setSelectedEvents(prev => {
-      const next = new Set(prev)
-      if (next.has(eventId)) next.delete(eventId)
-      else next.add(eventId)
-      return next
-    })
   }
 
   if (planLoading || loading) {
@@ -247,18 +238,19 @@ export default function WebhooksSettingsPage() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-[#111111] truncate">{endpoint.url}</p>
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {endpoint.events.map(ev => {
+                        <div className="mt-1.5">
+                          {(() => {
+                            const ev = endpoint.events[0]
                             const label = AVAILABLE_EVENTS.find(e => e.id === ev)?.label ?? ev
                             return (
-                              <span
-                                key={ev}
-                                className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full"
-                              >
+                              <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
                                 {label}
                               </span>
                             )
-                          })}
+                          })()}
+                          {endpoint.events.length > 1 && (
+                            <span className="ml-1 text-xs text-gray-400">+{endpoint.events.length - 1}</span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -309,20 +301,19 @@ export default function WebhooksSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-2">Eventi</label>
-                  <div className="space-y-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Evento</label>
+                  <select
+                    value={selectedEvent}
+                    onChange={e => setSelectedEvent(e.target.value)}
+                    required
+                    className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-3 text-sm focus:border-[#111111] focus:outline-none bg-white"
+                  >
+                    <option value="">— Seleziona evento —</option>
                     {AVAILABLE_EVENTS.map(ev => (
-                      <label key={ev.id} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedEvents.has(ev.id)}
-                          onChange={() => toggleEvent(ev.id)}
-                          className="rounded"
-                        />
-                        <span className="text-sm text-gray-700">{ev.label}</span>
-                      </label>
+                      <option key={ev.id} value={ev.id}>{ev.label}</option>
                     ))}
-                  </div>
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Un endpoint gestisce un solo tipo di evento.</p>
                 </div>
                 {error && (
                   <p className="text-xs text-red-600 bg-red-50 rounded-[6px] px-3 py-2">{error}</p>
@@ -330,7 +321,7 @@ export default function WebhooksSettingsPage() {
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    disabled={saving || !newUrl || selectedEvents.size === 0}
+                    disabled={saving || !newUrl || !selectedEvent}
                     className="bg-[#111111] text-white px-4 py-2.5 rounded-[8px] text-sm font-semibold hover:bg-[#333333] disabled:opacity-50"
                   >
                     {saving ? 'Salvataggio...' : 'Aggiungi Endpoint'}
