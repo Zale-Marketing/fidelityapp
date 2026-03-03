@@ -665,8 +665,12 @@ export default function StampPage() {
           program_id: card.program_id,
           merchant_id: card.merchant_id,
           reward: {
+            id: null,
             name: program.reward_description || program.reward_text || 'Premio',
+            description: null,
             stamps_required: program.stamps_required,
+            reward_type: null,
+            type: 'final',
           },
           card: {
             stamp_count: 0,
@@ -711,8 +715,12 @@ export default function StampPage() {
           program_id: card.program_id,
           merchant_id: card.merchant_id,
           reward: {
+            id: intermediateReward.id,
             name: intermediateReward.name,
+            description: intermediateReward.description ?? null,
             stamps_required: intermediateReward.stamps_required,
+            reward_type: intermediateReward.reward_type ?? null,
+            type: 'intermediate',
           },
           card: {
             stamp_count: currentStamps,

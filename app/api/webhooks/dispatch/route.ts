@@ -143,7 +143,7 @@ async function buildPremioRiscattatoPayload(merchantId: string, rawData: any) {
       name: program.name,
       type: program.program_type,
     } : null,
-    reward: {
+    reward: rawData.reward ?? {
       name: reward_description ?? null,
       stamps_required: program?.stamps_required ?? null,
     },
