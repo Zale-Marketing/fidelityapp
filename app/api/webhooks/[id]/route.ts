@@ -28,7 +28,7 @@ async function getAuthenticatedMerchantId(request: NextRequest): Promise<string 
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = getSupabase()
   const merchantId = await getAuthenticatedMerchantId(request)
@@ -36,7 +36,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
   }
 
-  const { id } = params
+  const { id } = await params
 
   // Verify ownership
   const { data: existing } = await supabase
@@ -73,7 +73,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = getSupabase()
   const merchantId = await getAuthenticatedMerchantId(request)
@@ -81,7 +81,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
   }
 
-  const { id } = params
+  const { id } = await params
 
   const { error } = await supabase
     .from('webhook_endpoints')
