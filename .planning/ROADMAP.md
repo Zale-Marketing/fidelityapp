@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Milestone v2.0 — Redesign Completo (in corso)
 
 - [x] **Phase 6: Critical Fixes v2** - Fix lead capture, cascade delete, and hero image color before any redesign work (completed 2026-03-02)
-- [ ] **Phase 7: Design System v2** - Replace all emoji with Lucide icons and apply unified professional design tokens across every dashboard page
+- [x] **Phase 7: Design System v2** - Replace all emoji with Lucide icons and apply unified professional design tokens across every dashboard page (completed 2026-03-03)
 - [ ] **Phase 8: Engagement Automation** - Segment dormant customers and automate birthday notifications
 - [ ] **Phase 9: Business Tools** - Collect Google reviews post-redemption and gate features behind Free/Pro/Business plans
 - [ ] **Phase 10: WhatsApp Marketing** - Connect Maytapi, send WhatsApp messages to customers from the notifications tab
@@ -146,10 +146,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Foundation: install lucide-react, dashboard layout con sidebar #111111, font Inter, componenti MetricCard/StatusBadge/EmptyState
-- [ ] 07-02-PLAN.md — Dashboard home + programs list + notifications + settings (4 pagine semplici)
-- [ ] 07-03-PLAN.md — Analytics + billing + customers list (3 pagine medie)
-- [ ] 07-04-PLAN.md — Programs new + programs detail + programs edit + customer detail (4 pagine complesse)
+- [x] 07-01-PLAN.md — Foundation: install lucide-react, dashboard layout con sidebar #111111, font Inter, componenti MetricCard/StatusBadge/EmptyState
+- [x] 07-02-PLAN.md — Dashboard home + programs list + notifications + settings (4 pagine semplici)
+- [x] 07-03-PLAN.md — Analytics + billing + customers list (3 pagine medie)
+- [x] 07-04-PLAN.md — Programs new + programs detail + programs edit + customer detail (4 pagine complesse)
 
 ### Phase 8: Engagement Automation
 **Goal**: Merchant può identificare clienti a rischio abbandono e il sistema invia auguri di compleanno in automatico

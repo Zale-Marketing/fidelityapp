@@ -77,17 +77,17 @@
 
 ### DESIGN — Design System v2.0
 
-- [ ] **DESIGN-01**: Zero emoji in tutta la dashboard e tutti i componenti — tutte sostituite con icone Lucide React
+- [x] **DESIGN-01**: Zero emoji in tutta la dashboard e tutti i componenti — tutte sostituite con icone Lucide React
 - [x] **DESIGN-02**: Sidebar sinistra fissa 240px sfondo #111111 testo bianco, hover #1E1E1E, active #2A2A2A, icone Lucide + label
 - [x] **DESIGN-03**: Area contenuto sfondo #F5F5F5 in tutte le pagine dashboard
 - [x] **DESIGN-04**: Cards metriche — sfondo bianco, border 1px solid #E8E8E8, border-radius 12px, padding 24px, shadow 0 1px 3px rgba(0,0,0,0.08)
-- [ ] **DESIGN-05**: Tabelle — header #F9F9F9, righe bianche, bordo #F0F0F0, zero zebra stripes
-- [ ] **DESIGN-06**: Bottoni primari — sfondo #111111 testo bianco hover #333333 radius 8px; secondary — border #E0E0E0 hover #F5F5F5
+- [x] **DESIGN-05**: Tabelle — header #F9F9F9, righe bianche, bordo #F0F0F0, zero zebra stripes
+- [x] **DESIGN-06**: Bottoni primari — sfondo #111111 testo bianco hover #333333 radius 8px; secondary — border #E0E0E0 hover #F5F5F5
 - [x] **DESIGN-07**: Typography — font Inter su body, titoli pagina text-2xl font-semibold, subtitles text-sm text-gray-500
-- [ ] **DESIGN-08**: Form inputs — border #E0E0E0 radius 8px focus border #111111 outline none padding 12px
+- [x] **DESIGN-08**: Form inputs — border #E0E0E0 radius 8px focus border #111111 outline none padding 12px
 - [x] **DESIGN-09**: Badge/status pills — verde #DCFCE7 testo #16A34A per attivo; grigio per inattivo; rosso #FEE2E2 testo #DC2626 per scaduto
 - [x] **DESIGN-10**: Empty states — icona Lucide 48px colore #D1D5DB centrata + testo descrittivo, zero emoji
-- [ ] **DESIGN-11**: Design system applicato a tutte le pagine in app/dashboard/ e tutti i componenti dashboard
+- [x] **DESIGN-11**: Design system applicato a tutte le pagine in app/dashboard/ e tutti i componenti dashboard
 
 ### SEG — Segmentazione Clienti Dormienti
 
@@ -181,17 +181,17 @@
 | FIX-02 | Phase 6 — Critical Fixes v2 | Complete |
 | FIX-03 | Phase 6 — Critical Fixes v2 | Complete |
 | FIX-04 | Phase 6 — Critical Fixes v2 | Pending |
-| DESIGN-01 | Phase 7 — Design System v2 | Pending |
+| DESIGN-01 | Phase 7 — Design System v2 | Complete |
 | DESIGN-02 | Phase 7 — Design System v2 | Complete |
 | DESIGN-03 | Phase 7 — Design System v2 | Complete |
 | DESIGN-04 | Phase 7 — Design System v2 | Complete |
-| DESIGN-05 | Phase 7 — Design System v2 | Pending |
-| DESIGN-06 | Phase 7 — Design System v2 | Pending |
+| DESIGN-05 | Phase 7 — Design System v2 | Complete |
+| DESIGN-06 | Phase 7 — Design System v2 | Complete |
 | DESIGN-07 | Phase 7 — Design System v2 | Complete |
-| DESIGN-08 | Phase 7 — Design System v2 | Pending |
+| DESIGN-08 | Phase 7 — Design System v2 | Complete |
 | DESIGN-09 | Phase 7 — Design System v2 | Complete |
 | DESIGN-10 | Phase 7 — Design System v2 | Complete |
-| DESIGN-11 | Phase 7 — Design System v2 | Pending |
+| DESIGN-11 | Phase 7 — Design System v2 | Complete |
 | SEG-01 | Phase 8 — Engagement Automation | Pending |
 | SEG-02 | Phase 8 — Engagement Automation | Pending |
 | SEG-03 | Phase 8 — Engagement Automation | Pending |
