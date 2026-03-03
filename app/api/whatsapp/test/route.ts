@@ -9,11 +9,7 @@ function getSupabase() {
   )
 }
 
-async function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-// POST — { to: string, message: string, mediaUrl?: string }
+// POST — { phone: string, message: string }
 export async function POST(req: NextRequest) {
   try {
     const supabase = getSupabase()
@@ -41,21 +37,21 @@ export async function POST(req: NextRequest) {
 
     const merchantId = profile.merchant_id
 
-    let body: { to?: unknown; message?: unknown; mediaUrl?: unknown }
+    let body: { phone?: unknown; message?: unknown } = {}
     try {
       body = await req.json()
     } catch {
       return NextResponse.json({ error: 'Body non valido' }, { status: 400 })
     }
 
-    if (!body.to || typeof body.to !== 'string') {
-      return NextResponse.json({ error: '"to" è richiesto' }, { status: 400 })
+    if (!body.phone || typeof body.phone !== 'string') {
+      return NextResponse.json({ error: '"phone" è richiesto' }, { status: 400 })
     }
     if (!body.message || typeof body.message !== 'string' || !body.message.trim()) {
       return NextResponse.json({ error: '"message" non può essere vuoto' }, { status: 400 })
     }
 
-    const normalizedPhone = formatPhoneIT(body.to)
+    const normalizedPhone = formatPhoneIT(body.phone)
     if (!normalizedPhone) {
       return NextResponse.json({ error: 'Numero di telefono non valido' }, { status: 400 })
     }
@@ -67,11 +63,11 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (!merchant?.sendapp_instance_id || !merchant?.sendapp_access_token) {
-      return NextResponse.json({ error: 'WhatsApp non connesso. Collega il tuo numero nelle impostazioni.' }, { status: 400 })
+      return NextResponse.json({ error: 'WhatsApp non connesso' }, { status: 400 })
     }
 
     if (merchant.sendapp_status !== 'connected') {
-      return NextResponse.json({ error: 'Sessione WhatsApp non attiva. Riconnetti il tuo numero.' }, { status: 400 })
+      return NextResponse.json({ error: 'Sessione WhatsApp non attiva' }, { status: 400 })
     }
 
     await sendTextMessage(
@@ -86,12 +82,12 @@ export async function POST(req: NextRequest) {
       to_phone: normalizedPhone,
       message: (body.message as string).trim(),
       status: 'sent',
-      event_type: 'manual',
+      event_type: 'test',
     })
 
     return NextResponse.json({ success: true })
-  } catch (err) {
-    console.error('[whatsapp/send] error:', err)
-    return NextResponse.json({ error: 'Errore interno del server' }, { status: 500 })
+  } catch (err: any) {
+    console.error('[whatsapp/test] error:', err)
+    return NextResponse.json({ error: err?.message || 'Errore interno del server' }, { status: 500 })
   }
 }

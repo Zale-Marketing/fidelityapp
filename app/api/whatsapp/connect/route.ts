@@ -1,19 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-
-const MAYTAPI_BASE = `https://api.maytapi.com/api/${process.env.MAYTAPI_PRODUCT_ID}`
-
-async function callMaytapi(path: string, options: RequestInit = {}) {
-  const res = await fetch(`${MAYTAPI_BASE}${path}`, {
-    ...options,
-    headers: {
-      'x-maytapi-key': process.env.MAYTAPI_API_TOKEN!,
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string> || {}),
-    },
-  })
-  return res
-}
+import { setWebhook } from '@/lib/sendapp'
 
 function getSupabase() {
   return createClient(
@@ -48,73 +35,60 @@ async function getMerchantId(req: NextRequest): Promise<{ merchantId: string | n
   return { merchantId: profile.merchant_id, error: null }
 }
 
-// POST — create Maytapi session, store phone_id
+// POST — salva credenziali SendApp, registra webhook, aggiorna status='connected'
 export async function POST(req: NextRequest) {
   try {
     const supabase = getSupabase()
     const { merchantId, error } = await getMerchantId(req)
     if (error) return error
 
-    // Check if merchant already has a phone_id (idempotent)
-    const { data: merchant } = await supabase
-      .from('merchants')
-      .select('maytapi_phone_id')
-      .eq('id', merchantId)
-      .single()
-
-    if (merchant?.maytapi_phone_id) {
-      return NextResponse.json({ phoneId: merchant.maytapi_phone_id })
+    let body: { instanceId?: string; accessToken?: string } = {}
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Body non valido' }, { status: 400 })
     }
 
-    // Create new Maytapi phone session
-    const addRes = await callMaytapi('/addPhone', {
-      method: 'POST',
-      body: JSON.stringify({}),
-    })
+    const instanceId = body.instanceId?.trim()
+    const accessToken = body.accessToken?.trim()
 
-    if (!addRes.ok) {
-      const errText = await addRes.text()
-      console.error('Maytapi addPhone error:', addRes.status, errText)
-      return NextResponse.json({ error: 'Errore nella creazione della sessione Maytapi' }, { status: 502 })
+    if (!instanceId || !accessToken) {
+      return NextResponse.json({ error: 'instanceId e accessToken sono richiesti' }, { status: 400 })
     }
 
-    const addData = await addRes.json()
-    console.log('Maytapi addPhone response:', JSON.stringify(addData))
-
-    // Try multiple possible field names for phone_id
-    const phoneId: string | undefined =
-      addData?.id ??
-      addData?.pid ??
-      addData?.data?.id ??
-      addData?.data?.pid
-
-    if (!phoneId) {
-      console.error('Maytapi addPhone: phone_id missing from response:', JSON.stringify(addData))
-      return NextResponse.json({ error: 'Risposta Maytapi non valida: phone_id mancante' }, { status: 502 })
+    // Registra webhook su SendApp
+    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/whatsapp/incoming`
+    try {
+      await setWebhook(instanceId, accessToken, webhookUrl)
+    } catch (err) {
+      console.error('[whatsapp/connect] setWebhook error:', err)
+      // Non bloccante — continua comunque
     }
 
-    // Save phone_id to merchants table
+    // Salva credenziali e imposta status connected
     const { error: updateError } = await supabase
       .from('merchants')
       .update({
-        maytapi_phone_id: phoneId,
-        maytapi_session_status: 'pending',
+        sendapp_instance_id: instanceId,
+        sendapp_access_token: accessToken,
+        sendapp_status: 'connected',
+        sendapp_provider: 'cloud',
       })
       .eq('id', merchantId)
 
     if (updateError) {
-      console.error('Error saving phone_id:', updateError)
+      console.error('[whatsapp/connect] update error:', updateError)
       return NextResponse.json({ error: 'Errore nel salvataggio' }, { status: 500 })
     }
 
-    return NextResponse.json({ phoneId })
+    return NextResponse.json({ success: true, status: 'connected' })
   } catch (err) {
-    console.error('WhatsApp connect error:', err)
+    console.error('[whatsapp/connect] error:', err)
     return NextResponse.json({ error: 'Errore interno del server' }, { status: 500 })
   }
 }
 
-// PATCH — disconnect WhatsApp (clear phone_id)
+// PATCH — disconnetti WhatsApp (svuota credenziali)
 export async function PATCH(req: NextRequest) {
   try {
     const supabase = getSupabase()
@@ -124,20 +98,20 @@ export async function PATCH(req: NextRequest) {
     const { error: updateError } = await supabase
       .from('merchants')
       .update({
-        maytapi_phone_id: null,
-        maytapi_session_status: 'inactive',
-        maytapi_daily_count: 0,
+        sendapp_instance_id: null,
+        sendapp_access_token: null,
+        sendapp_status: 'disconnected',
       })
       .eq('id', merchantId)
 
     if (updateError) {
-      console.error('Error disconnecting WhatsApp:', updateError)
+      console.error('[whatsapp/connect PATCH] error:', updateError)
       return NextResponse.json({ error: 'Errore nella disconnessione' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('WhatsApp disconnect error:', err)
+    console.error('[whatsapp/connect PATCH] error:', err)
     return NextResponse.json({ error: 'Errore interno del server' }, { status: 500 })
   }
 }
