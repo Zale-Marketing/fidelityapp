@@ -39,7 +39,7 @@ export default function StampPage() {
 
   // Auto-reset after success or non-subscription error — STAMP-04
   useEffect(() => {
-    if (mode === 'success' || mode === 'intermediate_reward') {
+    if (mode === 'success') {
       const timer = setTimeout(() => {
         resetScanner().then(() => startScanner())
       }, 3000)
@@ -680,6 +680,53 @@ export default function StampPage() {
     setMessage(`🎁 Premio riscattato!\n\n"${program.reward_description || program.reward_text || 'Premio'}"\n\nBollini azzerati.`)
   }
 
+  async function redeemIntermediateReward() {
+    if (!cardData || !intermediateReward) return
+
+    const { card, program } = cardData
+    const currentStamps = card.current_stamps || card.stamp_count || 0
+
+    await supabase.from('stamp_transactions').insert({
+      card_id: card.id,
+      program_id: program.id,
+      merchant_id: card.merchant_id,
+      card_holder_id: card.card_holder_id || null,
+      delta: 0,
+      type: 'redeem',
+      transaction_type: 'intermediate_reward_redeemed',
+      note: intermediateReward.id,
+      idempotency_key: `${idempotencyKeyRef.current || card.id}-int-${intermediateReward.id}`
+    })
+
+    // Trigger premio_riscattato — bollino_aggiunto è già stato triggerato al momento della scansione
+    fetch('/api/webhooks/dispatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        merchantId: card.merchant_id,
+        event: 'premio_riscattato',
+        data: {
+          card_id: card.id,
+          card_holder_id: card.card_holder_id,
+          program_id: card.program_id,
+          merchant_id: card.merchant_id,
+          reward: {
+            name: intermediateReward.name,
+            stamps_required: intermediateReward.stamps_required,
+          },
+          card: {
+            stamp_count: currentStamps,
+            previous_stamp_count: currentStamps,
+          },
+        },
+      }),
+    }).catch(console.error)
+
+    setIntermediateReward(null)
+    setMode('success')
+    setMessage(`🎁 Premio riscattato!\n\n"${intermediateReward.name}"`)
+  }
+
   async function redeemPointsReward() {
     if (!cardData) return
     
@@ -1012,17 +1059,30 @@ export default function StampPage() {
         )}
 
         {mode === 'intermediate_reward' && intermediateReward && (
-          <div className="fixed inset-0 bg-green-500 flex flex-col items-center justify-center p-8 text-center z-50">
-            <div className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6">
+          <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
+            <div className="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-5xl">🎁</span>
             </div>
-            <h2 className="text-4xl font-bold text-white mb-3">Premio Intermedio!</h2>
-            <p className="text-white text-2xl font-bold mb-2">{intermediateReward.name}</p>
+            <h2 className="text-3xl font-bold text-yellow-600 mb-3">Premio Intermedio!</h2>
+            <p className="text-gray-900 text-2xl font-bold mb-2">{intermediateReward.name}</p>
             {intermediateReward.description && (
-              <p className="text-white/80 text-lg mb-4">{intermediateReward.description}</p>
+              <p className="text-gray-600 text-base mb-4">{intermediateReward.description}</p>
             )}
-            <p className="text-white/90 text-xl whitespace-pre-line mb-8">{message}</p>
-            <p className="text-white/60 text-sm">Reset automatico in corso...</p>
+            <p className="text-gray-500 text-lg whitespace-pre-line mb-8">{message}</p>
+            <div className="space-y-3">
+              <button
+                onClick={redeemIntermediateReward}
+                className="w-full bg-green-500 text-white py-4 rounded-2xl font-bold text-lg hover:bg-green-600 transition-colors"
+              >
+                🎁 Ritira Premio
+              </button>
+              <button
+                onClick={() => resetScanner().then(() => startScanner())}
+                className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                Solo bollino — ritira dopo
+              </button>
+            </div>
           </div>
         )}
 
