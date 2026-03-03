@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { updateWalletCard } from '@/lib/google-wallet'
 import { createClient } from '@supabase/supabase-js'
+import { triggerWebhook } from '@/lib/webhooks'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -142,6 +143,17 @@ export async function POST(request: NextRequest) {
       customerName: customer?.full_name,
       customerEmail: customer?.email,
     } as any)
+
+    // Fire-and-forget webhook — do NOT await
+    triggerWebhook(card.merchant_id, 'bollino_aggiunto', {
+      card_id: card.id,
+      program_id: card.program_id,
+      card_holder_id: card.card_holder_id,
+      program_type: program.program_type,
+      new_stamp_count: card.current_stamps || card.stamp_count || 0,
+      new_points_balance: card.points_balance || 0,
+      new_cashback_balance: card.cashback_balance || 0,
+    }).catch(console.error)
 
     return NextResponse.json({ success: true })
 

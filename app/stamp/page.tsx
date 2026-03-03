@@ -602,6 +602,22 @@ export default function StampPage() {
     // 🆕 AGGIORNA WALLET
     await updateWallet(card.id)
 
+    // Fire-and-forget webhook dispatch for premio_riscattato
+    fetch('/api/webhooks/dispatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        merchantId: card.merchant_id,
+        event: 'premio_riscattato',
+        data: {
+          card_id: card.id,
+          card_holder_id: card.card_holder_id,
+          program_id: card.program_id,
+          reward_description: program.reward_description || program.reward_text,
+        },
+      }),
+    }).catch(console.error)
+
     setMode('success')
     setMessage(`🎁 Premio riscattato!\n\n"${program.reward_description || program.reward_text || 'Premio'}"\n\nBollini azzerati.`)
   }
@@ -649,6 +665,22 @@ export default function StampPage() {
 
     // 🆕 AGGIORNA WALLET
     await updateWallet(card.id)
+
+    // Fire-and-forget webhook dispatch for premio_riscattato
+    fetch('/api/webhooks/dispatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        merchantId: card.merchant_id,
+        event: 'premio_riscattato',
+        data: {
+          card_id: card.id,
+          card_holder_id: card.card_holder_id,
+          program_id: card.program_id,
+          reward_description: program.reward_description || program.reward_text,
+        },
+      }),
+    }).catch(console.error)
 
     setMode('success')
     setMessage(`🎁 Premio riscattato!\n\n"${program.reward_description || program.reward_text || 'Sconto'}"\n\nPunti rimanenti: ${newBalance}`)

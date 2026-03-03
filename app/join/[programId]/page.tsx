@@ -226,6 +226,29 @@ export default function JoinPage() {
       const link = `${window.location.origin}/c/${newCard.scan_token}`
       setCardLink(link)
       setDone(true)
+
+      // Fire-and-forget webhook dispatch via server route (do NOT await)
+      const dispatchWebhook = (event: string, data: Record<string, unknown>) => {
+        fetch('/api/webhooks/dispatch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ merchantId, event, data }),
+        }).catch(console.error)
+      }
+
+      dispatchWebhook('nuovo_cliente', {
+        card_holder_id: cardHolderId,
+        full_name: fullName.trim(),
+        email: email ? email.toLowerCase().trim() : null,
+        program_id: programId,
+      })
+      dispatchWebhook('card_creata', {
+        card_id: newCard.id,
+        card_holder_id: cardHolderId,
+        program_id: programId,
+        merchant_id: merchantId,
+      })
+
       setTimeout(() => {
         router.push(`/c/${newCard.scan_token}`)
       }, 2500)
