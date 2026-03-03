@@ -249,7 +249,7 @@ function BillingContent() {
       </div>
 
       {/* Piani */}
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
+      <div className="grid md:grid-cols-3 gap-6 mb-6">
         {/* FREE */}
         <div className={`bg-white border rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)] ${!isPro ? 'border-[#111111]' : 'border-[#E8E8E8]'}`}>
           {!isPro && (
@@ -257,7 +257,7 @@ function BillingContent() {
           )}
           <h2 className="text-2xl font-bold text-gray-900 mt-3">FREE</h2>
           <p className="text-4xl font-bold text-gray-900 mt-4">
-            0 <span className="text-lg font-normal text-gray-500">/mese</span>
+            €0 <span className="text-lg font-normal text-gray-500">/mese</span>
           </p>
           <ul className="mt-6 space-y-3 text-gray-600 text-sm">
             <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Fino a 5 programmi</li>
@@ -279,17 +279,9 @@ function BillingContent() {
             <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full font-medium">POPOLARE</span>
           </div>
 
-          <div className="mt-4 space-y-2">
-            <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold text-gray-900">19</p>
-              <span className="text-gray-500 text-sm">/mese</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-bold text-[#16A34A]">149</p>
-              <span className="text-gray-500 text-sm">/anno</span>
-              <span className="text-[#16A34A] text-xs font-medium bg-[#DCFCE7] px-2 py-0.5 rounded-full">Risparmi 79</span>
-            </div>
-          </div>
+          <p className="text-4xl font-bold text-gray-900 mt-4">
+            €39 <span className="text-lg font-normal text-gray-500">/mese</span>
+          </p>
 
           <ul className="mt-6 space-y-3 text-gray-600 text-sm">
             <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Programmi illimitati</li>
@@ -298,27 +290,43 @@ function BillingContent() {
             <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Scanner QR</li>
             <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Analytics avanzate</li>
             <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Notifiche push clienti</li>
-            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Supporto prioritario</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> WhatsApp Marketing</li>
           </ul>
 
           {!isPro && (
-            <div className="mt-6 space-y-3">
+            <div className="mt-6">
               <button
                 onClick={() => handleUpgrade('PRO_MONTHLY')}
                 disabled={checkingOut}
                 className="w-full bg-[#111111] text-white py-3 rounded-[8px] text-sm font-semibold hover:bg-[#333333] disabled:opacity-50 transition-colors"
               >
-                {checkingOut ? 'Reindirizzamento...' : 'Attiva PRO — 19/mese'}
-              </button>
-              <button
-                onClick={() => handleUpgrade('PRO_YEARLY')}
-                disabled={checkingOut}
-                className="w-full border-2 border-[#16A34A] text-[#16A34A] py-3 rounded-[8px] text-sm font-semibold hover:bg-[#DCFCE7] disabled:opacity-50 transition-colors"
-              >
-                {checkingOut ? 'Reindirizzamento...' : 'Attiva PRO Annuale — 149/anno'}
+                {checkingOut ? 'Reindirizzamento...' : 'Attiva PRO — €39/mese'}
               </button>
             </div>
           )}
+        </div>
+
+        {/* BUSINESS */}
+        <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <h2 className="text-2xl font-bold text-gray-900 mt-3">BUSINESS</h2>
+          <p className="text-4xl font-bold text-gray-900 mt-4">
+            €99 <span className="text-lg font-normal text-gray-500">/mese</span>
+          </p>
+          <ul className="mt-6 space-y-3 text-gray-600 text-sm">
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Tutto il piano PRO</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Webhook integrations</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> API pubblica</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Multi-sede</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> White-label</li>
+          </ul>
+          <div className="mt-6">
+            <Link
+              href="/dashboard/upgrade"
+              className="block w-full bg-[#111111] text-white py-3 rounded-[8px] text-sm font-semibold hover:bg-[#333333] transition-colors text-center"
+            >
+              Attiva BUSINESS
+            </Link>
+          </div>
         </div>
       </div>
 
