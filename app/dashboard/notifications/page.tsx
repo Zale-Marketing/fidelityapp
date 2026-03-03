@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import EmptyState from '@/components/ui/EmptyState'
 import { Bell } from 'lucide-react'
+import { usePlan } from '@/lib/hooks/usePlan'
+import UpgradePrompt from '@/components/ui/UpgradePrompt'
 
 type Program = {
   id: string
@@ -34,6 +36,7 @@ type NotificationLog = {
 export default function NotificationsPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { isFree, loading: planLoading } = usePlan()
 
   const [merchantId, setMerchantId] = useState('')
   const [programs, setPrograms] = useState<Program[]>([])
@@ -307,6 +310,10 @@ export default function NotificationsPage() {
 
         {/* Form Invio */}
         <div>
+          {!planLoading && isFree ? (
+            <UpgradePrompt feature="Notifiche Push" requiredPlan="PRO" />
+          ) : (
+          <>
           <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
             <h2 className="font-semibold text-base text-gray-900 mb-1">Invia Messaggio</h2>
             <p className="text-gray-500 text-sm mb-5">
@@ -407,6 +414,8 @@ export default function NotificationsPage() {
               <li>Puoi sovrascrivere il messaggio in qualsiasi momento</li>
             </ul>
           </div>
+          </>
+          )}
         </div>
 
         {/* Storia Notifiche */}
