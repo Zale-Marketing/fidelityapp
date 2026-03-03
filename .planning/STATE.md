@@ -31,14 +31,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** Un cassiere italiano inquadra il QR del cliente e in 3 secondi il Google Wallet si aggiorna — senza app, senza attrito, senza spiegazioni.
-**Current focus:** Phase 6 — Critical Fixes v2
+**Current focus:** Phase 11 — Webhook Integrations
 
 ## Current Position
 
-Phase: 6 — Critical Fixes v2
+Phase: 10 — WhatsApp Marketing (complete) → next: Phase 11
 Plan: — (all plans complete)
-Status: Phase 6 complete — all 4 fixes done (FIX-01, FIX-02, FIX-03, FIX-04)
-Last activity: 2026-03-02 — Completed 06-02-PLAN.md (FIX-02 soft delete + FIX-03 hard delete)
+Status: Phase 10 complete — all WA requirements done (WA-01..WA-05)
+Last activity: 2026-03-03 — Completed 10-02-PLAN.md (WhatsApp send API + notifications tab)
 
 ## Progress Bar
 
@@ -55,7 +55,7 @@ v2.0: [ ] Phase 6  [ ] Phase 7  [ ] Phase 8  [ ] Phase 9  [ ] Phase 10  [ ] Phas
 | 7 | Design System v2 | DESIGN-01..11 | Not started |
 | 8 | Engagement Automation | SEG-01..03, BDAY-01..04 | Not started |
 | 9 | Business Tools | REVIEW-01..02, PLAN-01..05 | Not started |
-| 10 | WhatsApp Marketing | WA-01..05 | Not started |
+| 10 | WhatsApp Marketing | WA-01..05 | Complete (2/2 plans done) |
 | 11 | Webhook Integrations | WH-01..04 | Not started |
 | 12 | Advanced Analytics + CSV Export | ANALYTICS-01..05, CSV2-01..02 | Not started |
 
@@ -98,8 +98,8 @@ v2.0: [ ] Phase 6  [ ] Phase 7  [ ] Phase 8  [ ] Phase 9  [ ] Phase 10  [ ] Phas
 
 ## Session Continuity
 
-Next action: Run `/gsd:plan-phase 7` to generate execution plans for Phase 7: Design System v2
+Next action: Run `/gsd:plan-phase 11` to generate execution plans for Phase 11: Webhook Integrations
 
-Plan 06-01 complete (2026-03-03): FIX-04 hero image color + FIX-01 lead capture
-Plan 06-02 complete (2026-03-02): FIX-02 soft delete + FIX-03 hard delete with cascade
-Phase 6 fully complete — all 4 critical fixes shipped
+Plan 10-01 complete (2026-03-03): SQL migration docs + /api/whatsapp/connect + /api/whatsapp/status + settings page
+Plan 10-02 complete (2026-03-03): /api/whatsapp/send (rate limit + normalization) + WhatsApp tab in notifications
+Phase 10 fully complete — all 5 WhatsApp requirements shipped
