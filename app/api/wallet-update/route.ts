@@ -144,16 +144,21 @@ export async function POST(request: NextRequest) {
       customerEmail: customer?.email,
     } as any)
 
-    // Fire-and-forget webhook — do NOT await
-    triggerWebhook(card.merchant_id, 'bollino_aggiunto', {
-      card_id: card.id,
-      program_id: card.program_id,
-      card_holder_id: card.card_holder_id,
-      program_type: program.program_type,
-      new_stamp_count: card.current_stamps || card.stamp_count || 0,
-      new_points_balance: card.points_balance || 0,
-      new_cashback_balance: card.cashback_balance || 0,
-    }).catch(console.error)
+    // Temporaneamente await per debug — vedere log Vercel
+    try {
+      await triggerWebhook(card.merchant_id, 'bollino_aggiunto', {
+        card_id: card.id,
+        program_id: card.program_id,
+        card_holder_id: card.card_holder_id,
+        program_type: program.program_type,
+        new_stamp_count: card.current_stamps || card.stamp_count || 0,
+        new_points_balance: card.points_balance || 0,
+        new_cashback_balance: card.cashback_balance || 0,
+      })
+      console.log('[webhook] triggerWebhook completato')
+    } catch (e) {
+      console.error('[webhook] triggerWebhook errore:', e)
+    }
 
     return NextResponse.json({ success: true })
 

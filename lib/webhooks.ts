@@ -1,11 +1,6 @@
 import { createHmac } from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export type WebhookEvent =
   | 'bollino_aggiunto'
   | 'carta_creata'
@@ -26,23 +21,32 @@ export async function triggerWebhook(
 ): Promise<void> {
   console.log(`[webhook] triggerWebhook START — merchantId=${merchantId} event=${event}`)
 
+  // Client creato dentro la funzione per garantire le env vars a runtime
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
   const { data: endpoints, error } = await supabase
     .from('webhook_endpoints')
-    .select('id, url, secret')
+    .select('*')
     .eq('merchant_id', merchantId)
     .eq('is_active', true)
-    .filter('events', 'cs', `{"${event}"}`)
+    .contains('events', [event])
 
   if (error) {
     console.error(`[webhook] Errore query endpoint: ${error.message}`)
     return
   }
+
+  console.log(`[webhook] Endpoint trovati: ${endpoints?.length ?? 0}`)
+
   if (!endpoints || endpoints.length === 0) {
-    console.log(`[webhook] Nessun endpoint attivo trovato per merchantId=${merchantId} event=${event}`)
+    console.log(`[webhook] Nessun endpoint attivo per merchantId=${merchantId} event=${event}`)
     return
   }
 
-  console.log(`[webhook] ${endpoints.length} endpoint trovati: ${endpoints.map((e: { url: string }) => e.url).join(', ')}`)
+  console.log(`[webhook] URL endpoint: ${endpoints.map((e: { url: string }) => e.url).join(', ')}`)
 
   const payload: WebhookPayload = {
     event,
