@@ -121,6 +121,25 @@ export default function CustomersPage() {
           )
       }
 
+      // Fire-and-forget webhook dispatch for nuovo_cliente
+      fetch('/api/webhooks/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          merchantId: merchantId,
+          event: 'nuovo_cliente',
+          data: {
+            card_holder_id: data.id,
+            full_name: data.full_name,
+            contact_email: data.contact_email,
+            phone: data.phone,
+            birth_date: data.birth_date,
+            marketing_consent: data.marketing_consent,
+            acquisition_source: data.acquisition_source,
+          },
+        }),
+      }).catch(console.error)
+
       const customerTags = tags.filter(t => newCustomer.selectedTags.includes(t.id))
       setCustomers([{ ...data, cards_count: 0, tags: customerTags }, ...customers])
 
