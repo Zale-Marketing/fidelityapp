@@ -596,7 +596,6 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
     accountName: data.customerName || 'Cliente',
     loyaltyPoints: buildLoyaltyPoints(data),
     textModulesData: buildTextModulesData(data),
-    notifyPreference: 'notifyOnUpdate',
   }
 
   if (hasHeroImage) {
@@ -699,7 +698,7 @@ export async function updateWalletCard(data: WalletCardData): Promise<void> {
           header: notifHeader,
           body: notifBody,
           id: `msg_${Date.now()}`,
-          messageType: 'TEXT_AND_NOTIFY',
+          message_type: 'TEXT_AND_NOTIFY',
         },
       },
     })

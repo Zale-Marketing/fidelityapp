@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
             header,
             body: message,
             id: `notif_${Date.now()}`,
-            messageType: 'TEXT_AND_NOTIFY',
+            message_type: 'TEXT_AND_NOTIFY',
           },
         },
       })
