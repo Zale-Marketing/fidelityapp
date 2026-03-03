@@ -31,7 +31,7 @@ export async function triggerWebhook(
     .select('id, url, secret')
     .eq('merchant_id', merchantId)
     .eq('is_active', true)
-    .contains('events', [event])
+    .filter('events', 'cs', `{"${event}"}`)
 
   if (error) {
     console.error(`[webhook] Errore query endpoint: ${error.message}`)
