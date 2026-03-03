@@ -176,6 +176,17 @@ export default function StampPage() {
             .single()
           card = byToken
         }
+
+        // Codice corto 8 char (alternateText mostrato sotto il QR Google Wallet)
+        if (!card && trimmed.length === 8) {
+          const { data: byPrefix } = await supabase
+            .from('cards')
+            .select(cardSelect)
+            .ilike('scan_token', trimmed.toLowerCase() + '%')
+            .eq('merchant_id', profile.merchant_id)
+            .limit(1)
+          card = byPrefix?.[0] ?? null
+        }
       }
 
       if (!card) {
