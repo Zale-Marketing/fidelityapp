@@ -203,3 +203,42 @@ The WhatsApp integration uses Maytapi as the provider. You need to:
 **Why needed:** All /api/whatsapp/* routes call the Maytapi API using these credentials. Without them, all WhatsApp functionality will return 500 errors.
 
 **Status:** PENDING — required before any WhatsApp functionality works.
+
+---
+
+## Phase 11: Webhook Integrations
+
+### SQL — Create webhook_endpoints table (WH-01)
+
+Go to: Supabase Dashboard > SQL Editor, then run:
+
+```sql
+CREATE TABLE IF NOT EXISTS webhook_endpoints (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  merchant_id uuid NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+  url text NOT NULL,
+  events text[] NOT NULL DEFAULT '{}',
+  secret text NOT NULL,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS webhook_endpoints_merchant_id_idx
+  ON webhook_endpoints(merchant_id);
+
+ALTER TABLE webhook_endpoints ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Merchants manage own webhook endpoints" ON webhook_endpoints
+  FOR ALL USING (
+    merchant_id IN (
+      SELECT merchant_id FROM profiles WHERE id = auth.uid()
+    )
+  );
+```
+
+After running, verify:
+1. Go to Supabase Dashboard -> Table Editor -> webhook_endpoints
+2. Confirm columns: id, merchant_id, url, events (type: text[]), secret, is_active, created_at
+3. Confirm RLS is enabled (green shield icon on the table)
+
+**Status:** PENDING — must be executed before Phase 11 webhook CRUD API and UI can function.
