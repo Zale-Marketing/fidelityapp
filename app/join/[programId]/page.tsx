@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useParams, useRouter } from 'next/navigation'
 
@@ -53,7 +53,7 @@ const TYPE_LABELS: Record<string, string> = {
 export default function JoinPage() {
   const params = useParams()
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const programId = params.programId as string
 
   const [program, setProgram] = useState<ProgramInfo | null>(null)
