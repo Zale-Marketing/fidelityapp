@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { updateWalletCard } from '@/lib/google-wallet'
 import { createClient } from '@supabase/supabase-js'
 import { triggerWebhook } from '@/lib/webhooks'
+import { sendWhatsAppToCustomer } from '@/lib/sendapp'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -194,6 +195,15 @@ export async function POST(request: NextRequest) {
       console.log('[webhook] triggerWebhook completato')
     } catch (e) {
       console.error('[webhook] triggerWebhook errore:', e)
+    }
+
+    // Messaggio WhatsApp automatico dopo aggiunta bollino (fire-and-forget)
+    if (customer?.phone && program.program_type === 'stamps') {
+      const stampCount = card.current_stamps ?? card.stamp_count ?? 0
+      const stampsRequired = program.stamps_required ?? 10
+      const stampsRemaining = Math.max(0, stampsRequired - stampCount)
+      const msg = `Ciao ${customer.full_name || ''}! Hai ${stampCount} bollini su ${program.name}. Ti mancano ${stampsRemaining} per il tuo premio 🎉`
+      sendWhatsAppToCustomer(card.merchant_id, customer.phone, msg, 'bollino_aggiunto').catch(console.error)
     }
 
     return NextResponse.json({ success: true })

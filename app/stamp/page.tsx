@@ -682,6 +682,17 @@ export default function StampPage() {
 
     setMode('success')
     setMessage(`🎁 Premio riscattato!\n\n"${program.reward_description || program.reward_text || 'Premio'}"\n\nBollini azzerati.`)
+
+    // WhatsApp automatico dopo riscatto premio (fire-and-forget)
+    if (customer?.phone) {
+      const prizeName = program.reward_description || program.reward_text || 'Premio'
+      const msg = `Complimenti ${customer.full_name || ''}! Hai riscattato il premio: ${prizeName}. Buon utilizzo! 🏆`
+      fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: customer.phone, message: msg }),
+      }).catch(console.error)
+    }
   }
 
   async function redeemIntermediateReward() {
