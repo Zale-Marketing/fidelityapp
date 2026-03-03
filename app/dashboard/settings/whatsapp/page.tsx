@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { MessageCircle, Wifi, WifiOff } from 'lucide-react'
+import { MessageCircle, Wifi, WifiOff, Key } from 'lucide-react'
 import { usePlan } from '@/lib/hooks/usePlan'
 import UpgradePrompt from '@/components/ui/UpgradePrompt'
 
@@ -19,6 +19,13 @@ export default function WhatsAppSettingsPage() {
   const [connecting, setConnecting] = useState(false)
   const [qrTimestamp, setQrTimestamp] = useState(0)
   const [dailyCount, setDailyCount] = useState(0)
+
+  // Maytapi credentials
+  const [merchantId, setMerchantId] = useState<string | null>(null)
+  const [maytapiProductId, setMaytapiProductId] = useState('')
+  const [maytapiApiToken, setMaytapiApiToken] = useState('')
+  const [savingCredentials, setSavingCredentials] = useState(false)
+  const [credentialsSaved, setCredentialsSaved] = useState(false)
 
   const statusPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const qrRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -46,6 +53,25 @@ export default function WhatsAppSettingsPage() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('merchant_id')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.merchant_id) {
+        setMerchantId(profile.merchant_id)
+        const { data: merchant } = await supabase
+          .from('merchants')
+          .select('maytapi_product_id, maytapi_api_token')
+          .eq('id', profile.merchant_id)
+          .single()
+        if (merchant) {
+          setMaytapiProductId(merchant.maytapi_product_id || '')
+          setMaytapiApiToken(merchant.maytapi_api_token || '')
+        }
+      }
 
       await fetchStatus()
       setLoading(false)
@@ -155,6 +181,20 @@ export default function WhatsAppSettingsPage() {
     } catch {
       alert('Errore nella disconnessione.')
     }
+  }
+
+  async function saveCredentials(e: React.FormEvent) {
+    e.preventDefault()
+    if (!merchantId) return
+    setSavingCredentials(true)
+    setCredentialsSaved(false)
+    await supabase
+      .from('merchants')
+      .update({ maytapi_product_id: maytapiProductId, maytapi_api_token: maytapiApiToken })
+      .eq('id', merchantId)
+    setSavingCredentials(false)
+    setCredentialsSaved(true)
+    setTimeout(() => setCredentialsSaved(false), 3000)
   }
 
   if (loading || planLoading) {
@@ -286,6 +326,46 @@ export default function WhatsAppSettingsPage() {
               <li>Limite di 200 messaggi al giorno per evitare ban</li>
               <li>I messaggi arrivano direttamente su WhatsApp del cliente</li>
             </ul>
+          </div>
+
+          {/* Maytapi Credentials */}
+          <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mt-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+            <div className="flex items-center gap-2 mb-4">
+              <Key size={16} className="text-gray-500" />
+              <h2 className="text-sm font-semibold text-gray-900">Credenziali Maytapi (avanzato)</h2>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Inserisci le credenziali del tuo account Maytapi per usare il tuo numero dedicato.
+            </p>
+            <form onSubmit={saveCredentials} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">MAYTAPI_PRODUCT_ID</label>
+                <input
+                  type="text"
+                  value={maytapiProductId}
+                  onChange={e => setMaytapiProductId(e.target.value)}
+                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2.5 text-sm focus:border-[#111111] focus:outline-none font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">MAYTAPI_API_TOKEN</label>
+                <input
+                  type="password"
+                  value={maytapiApiToken}
+                  onChange={e => setMaytapiApiToken(e.target.value)}
+                  placeholder="Il tuo token API Maytapi"
+                  className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2.5 text-sm focus:border-[#111111] focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={savingCredentials}
+                className="w-full bg-[#111111] text-white py-2.5 rounded-[8px] text-sm font-semibold hover:bg-[#333333] disabled:opacity-50 transition-colors"
+              >
+                {savingCredentials ? 'Salvataggio...' : credentialsSaved ? 'Salvato!' : 'Salva Credenziali'}
+              </button>
+            </form>
           </div>
         </div>
       )}
