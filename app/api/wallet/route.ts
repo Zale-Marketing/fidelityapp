@@ -159,27 +159,30 @@ export async function POST(request: NextRequest) {
       console.log('=== WALLET LINK GENERATED ===')
 
       console.log('[wallet] triggerWebhook carta_creata — merchantId:', card.merchant_id)
-      // Fire-and-forget webhook — do NOT await
-      triggerWebhook(card.merchant_id, 'carta_creata', {
-        merchant: { id: card.merchant_id },
-        card: {
-          id: card.id,
-          scan_token: card.scan_token ?? null,
-          wallet_provider: card.wallet_provider ?? null,
-          created_at: card.created_at ?? null,
-        },
-        card_holder: customer ? {
-          id: customer.id,
-          full_name: customer.full_name ?? null,
-          email: customer.contact_email ?? null,
-          phone: customer.contact_phone ?? customer.phone ?? null,
-        } : null,
-        program: {
-          id: program.id,
-          name: program.name,
-          type: program.program_type,
-        },
-      }).catch(console.error)
+      try {
+        await triggerWebhook(card.merchant_id, 'carta_creata', {
+          merchant: { id: card.merchant_id },
+          card: {
+            id: card.id,
+            scan_token: card.scan_token ?? null,
+            wallet_provider: card.wallet_provider ?? null,
+            created_at: card.created_at ?? null,
+          },
+          card_holder: customer ? {
+            id: customer.id,
+            full_name: customer.full_name ?? null,
+            email: customer.contact_email ?? null,
+            phone: customer.contact_phone ?? customer.phone ?? null,
+          } : null,
+          program: {
+            id: program.id,
+            name: program.name,
+            type: program.program_type,
+          },
+        })
+      } catch (whErr) {
+        console.error('[wallet] triggerWebhook error:', whErr)
+      }
 
       return NextResponse.json({ walletLink })
     } catch (walletError: any) {

@@ -475,6 +475,22 @@ export default function ProgramDetailPage() {
       setShowCreateCard(false)
       setShowSuccessModal(true)
       resetForm()
+
+      // Dispatch carta_creata webhook via server route (client component — no service role key)
+      fetch('/api/webhooks/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          merchantId,
+          event: 'carta_creata',
+          data: {
+            card_id: newCard.id,
+            card_holder_id: customerData?.id ?? null,
+            program_id: program.id,
+            merchant_id: merchantId,
+          },
+        }),
+      }).catch(console.error)
     }
   }
 
