@@ -273,8 +273,8 @@ function BillingContent() {
         </div>
 
         {/* PRO */}
-        <div className={`bg-white rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)] ${isPro ? 'border-2 border-[#111111]' : 'border-2 border-dashed border-[#E0E0E0]'}`}>
-          {isPro && (
+        <div className={`bg-white rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)] ${isPro && !isBusiness ? 'border-2 border-[#111111]' : 'border-2 border-dashed border-[#E0E0E0]'}`}>
+          {isPro && !isBusiness && (
             <span className="bg-[#111111] text-white text-xs px-2.5 py-1 rounded-full font-medium">ATTUALE</span>
           )}
           <div className="flex items-center gap-2 mt-3">
@@ -310,7 +310,10 @@ function BillingContent() {
         </div>
 
         {/* BUSINESS */}
-        <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <div className={`bg-white rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)] ${isBusiness ? 'border-2 border-[#111111]' : 'border border-[#E8E8E8]'}`}>
+          {isBusiness && (
+            <span className="bg-[#111111] text-white text-xs px-2.5 py-1 rounded-full font-medium">ATTUALE</span>
+          )}
           <h2 className="text-2xl font-bold text-gray-900 mt-3">BUSINESS</h2>
           <p className="text-4xl font-bold text-gray-900 mt-4">
             €99 <span className="text-lg font-normal text-gray-500">/mese</span>

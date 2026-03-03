@@ -248,7 +248,7 @@ export default function JoinPage() {
         email: email ? email.toLowerCase().trim() : null,
         program_id: programId,
       })
-      dispatchWebhook('card_creata', {
+      dispatchWebhook('carta_creata', {
         card_id: newCard.id,
         card_holder_id: cardHolderId,
         program_id: programId,

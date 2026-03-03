@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateWalletLink } from '@/lib/google-wallet'
 import { createClient } from '@supabase/supabase-js'
+import { triggerWebhook } from '@/lib/webhooks'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -156,6 +157,15 @@ export async function POST(request: NextRequest) {
     try {
       const walletLink = await generateWalletLink(walletData as any)
       console.log('=== WALLET LINK GENERATED ===')
+
+      // Fire-and-forget webhook — do NOT await
+      triggerWebhook(card.merchant_id, 'carta_creata', {
+        card_id: card.id,
+        program_id: card.program_id,
+        merchant_id: card.merchant_id,
+        card_holder_name: customer?.full_name || null,
+      }).catch(console.error)
+
       return NextResponse.json({ walletLink })
     } catch (walletError: any) {
       console.error('=== WALLET GENERATION ERROR ===')
