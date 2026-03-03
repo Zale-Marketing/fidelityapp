@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { merchantId } = await req.json()
 
@@ -16,7 +16,7 @@ export async function DELETE(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const programId = params.id
+  const { id: programId } = await params
 
   // Verifica che il programma appartenga a questo merchant
   const { data: program } = await supabase
