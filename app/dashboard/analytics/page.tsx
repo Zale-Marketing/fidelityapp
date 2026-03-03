@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import MetricCard from '@/components/ui/MetricCard'
+import EmptyState from '@/components/ui/EmptyState'
+import { BarChart2, Users, TrendingUp, CreditCard, Plus, Stamp, Star, Coins, Crown, RefreshCw } from 'lucide-react'
 
 type DayStat = {
   date: string
@@ -23,6 +26,14 @@ type ProgramStat = {
   conversion_rate: number
 }
 
+const TYPE_ICONS: Record<string, any> = {
+  stamps: Stamp,
+  points: Star,
+  cashback: Coins,
+  tiers: Crown,
+  subscription: RefreshCw,
+}
+
 export default function AnalyticsPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -30,20 +41,14 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [merchantId, setMerchantId] = useState('')
 
-  // Overview
   const [totalCards, setTotalCards] = useState(0)
   const [totalCustomers, setTotalCustomers] = useState(0)
   const [totalStampsMonth, setTotalStampsMonth] = useState(0)
   const [totalRewardsMonth, setTotalRewardsMonth] = useState(0)
   const [newCardsMonth, setNewCardsMonth] = useState(0)
 
-  // Per programma
   const [programStats, setProgramStats] = useState<ProgramStat[]>([])
-
-  // Timeline ultimi 30 giorni
   const [timeline, setTimeline] = useState<DayStat[]>([])
-
-  // Periodo selezionato
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d')
 
   useEffect(() => {
@@ -72,7 +77,6 @@ export default function AnalyticsPage() {
     const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    // Conteggi base
     const [
       { count: cardsCount },
       { count: customersCount },
@@ -89,7 +93,6 @@ export default function AnalyticsPage() {
     setTotalCustomers(customersCount || 0)
     setNewCardsMonth(newCardsCount || 0)
 
-    // Transazioni del mese
     const { data: monthTx } = await supabase
       .from('stamp_transactions')
       .select('type, transaction_type, delta, points_earned, created_at')
@@ -112,7 +115,6 @@ export default function AnalyticsPage() {
     setTotalStampsMonth(stamps)
     setTotalRewardsMonth(rewards)
 
-    // Timeline per periodo selezionato
     const { data: periodTx } = await supabase
       .from('stamp_transactions')
       .select('type, transaction_type, delta, points_earned, created_at')
@@ -126,7 +128,6 @@ export default function AnalyticsPage() {
       .eq('merchant_id', mid)
       .gte('created_at', startDate.toISOString())
 
-    // Raggruppa per giorno
     const dayMap = new Map<string, DayStat>()
     for (let d = 0; d < days; d++) {
       const date = new Date(now.getTime() - (days - 1 - d) * 24 * 60 * 60 * 1000)
@@ -155,7 +156,6 @@ export default function AnalyticsPage() {
 
     setTimeline(Array.from(dayMap.values()))
 
-    // Stats per programma
     const { data: progs } = await supabase
       .from('programs')
       .select('id, name, program_type, primary_color')
@@ -205,167 +205,143 @@ export default function AnalyticsPage() {
   const maxStamps = Math.max(...timeline.map(d => d.stamps), 1)
   const maxCards = Math.max(...timeline.map(d => d.new_cards), 1)
 
-  const TYPE_ICONS: Record<string, string> = {
-    stamps: '🎫', points: '⭐', cashback: '💰', tiers: '👑', subscription: '🔄',
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-4 border-[#111111] border-t-transparent rounded-full" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4">
-        <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-indigo-600 hover:underline text-sm">
-              ← Dashboard
-            </Link>
-            <h1 className="text-xl font-bold text-gray-900">📊 Analytics</h1>
-          </div>
-          {/* Periodo */}
-          <div className="flex gap-2">
-            {(['7d', '30d', '90d'] as const).map(p => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  period === p
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {p === '7d' ? '7 giorni' : p === '30d' ? '30 giorni' : '90 giorni'}
-              </button>
-            ))}
-          </div>
+    <div className="px-6 py-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Analytics</h1>
+          <p className="text-sm text-gray-500 mt-1">Statistiche del programma fedeltà</p>
         </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-6 py-8">
-
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-            <p className="text-xs text-gray-500 uppercase mb-1">Card Totali</p>
-            <p className="text-3xl font-bold text-gray-900">{totalCards}</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-            <p className="text-xs text-gray-500 uppercase mb-1">Clienti</p>
-            <p className="text-3xl font-bold text-blue-600">{totalCustomers}</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-            <p className="text-xs text-gray-500 uppercase mb-1">Nuove Card (mese)</p>
-            <p className="text-3xl font-bold text-green-600">{newCardsMonth}</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-            <p className="text-xs text-gray-500 uppercase mb-1">Timbri (mese)</p>
-            <p className="text-3xl font-bold text-indigo-600">{totalStampsMonth}</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-            <p className="text-xs text-gray-500 uppercase mb-1">Premi (mese)</p>
-            <p className="text-3xl font-bold text-purple-600">{totalRewardsMonth}</p>
-          </div>
+        {/* Periodo */}
+        <div className="flex gap-2">
+          {(['7d', '30d', '90d'] as const).map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`px-3 py-1.5 rounded-[8px] text-sm font-medium transition-colors ${
+                period === p
+                  ? 'bg-[#111111] text-white'
+                  : 'bg-white border border-[#E0E0E0] text-gray-600 hover:bg-[#F5F5F5]'
+              }`}
+            >
+              {p === '7d' ? '7 giorni' : p === '30d' ? '30 giorni' : '90 giorni'}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Grafico Timbri nel tempo */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h2 className="font-bold text-lg text-gray-900 mb-4">Attività nel tempo</h2>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <MetricCard label="Card Totali" value={totalCards} icon={<CreditCard size={20} />} />
+        <MetricCard label="Clienti" value={totalCustomers} icon={<Users size={20} />} />
+        <MetricCard label="Nuove Card (mese)" value={newCardsMonth} icon={<Plus size={20} />} />
+        <MetricCard label="Timbri (mese)" value={totalStampsMonth} icon={<TrendingUp size={20} />} />
+        <MetricCard label="Premi (mese)" value={totalRewardsMonth} icon={<BarChart2 size={20} />} />
+      </div>
 
-          {timeline.every(d => d.stamps === 0 && d.new_cards === 0) ? (
-            <div className="text-center py-12 text-gray-400">
-              <p className="text-4xl mb-3">📈</p>
-              <p>Nessun dato per il periodo selezionato</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Legenda */}
-              <div className="flex gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-indigo-500" />
-                  <span className="text-gray-600">Timbri / Punti</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="text-gray-600">Nuove Card</span>
-                </div>
+      {/* Grafico Timbri nel tempo */}
+      <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <h2 className="font-semibold text-base text-gray-900 mb-4">Attività nel tempo</h2>
+
+        {timeline.every(d => d.stamps === 0 && d.new_cards === 0) ? (
+          <EmptyState
+            icon={BarChart2}
+            title="Nessun dato"
+            description="Nessun dato per il periodo selezionato"
+          />
+        ) : (
+          <div className="space-y-4">
+            <div className="flex gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#111111]" />
+                <span className="text-gray-600">Timbri / Punti</span>
               </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#16A34A]" />
+                <span className="text-gray-600">Nuove Card</span>
+              </div>
+            </div>
 
-              {/* Barchart semplice */}
-              <div className="flex items-end gap-1 h-40 overflow-x-auto pb-2">
-                {timeline.map((day, i) => {
-                  const stampH = maxStamps > 0 ? Math.round((day.stamps / maxStamps) * 120) : 0
-                  const cardH = maxCards > 0 ? Math.round((day.new_cards / maxCards) * 120) : 0
-                  const label = new Date(day.date).toLocaleDateString('it-IT', {
-                    day: '2-digit',
-                    month: period === '90d' ? 'short' : '2-digit'
-                  })
+            <div className="flex items-end gap-1 h-40 overflow-x-auto pb-2">
+              {timeline.map((day) => {
+                const stampH = maxStamps > 0 ? Math.round((day.stamps / maxStamps) * 120) : 0
+                const cardH = maxCards > 0 ? Math.round((day.new_cards / maxCards) * 120) : 0
+                const label = new Date(day.date).toLocaleDateString('it-IT', {
+                  day: '2-digit',
+                  month: period === '90d' ? 'short' : '2-digit'
+                })
 
-                  return (
-                    <div key={day.date} className="flex flex-col items-center gap-1 flex-shrink-0" style={{ minWidth: period === '90d' ? '8px' : '20px' }}>
-                      <div className="flex items-end gap-px h-32">
-                        <div
-                          className="w-2 bg-indigo-500 rounded-t transition-all"
-                          style={{ height: stampH || 1, minHeight: day.stamps > 0 ? 4 : 0 }}
-                          title={`${day.stamps} timbri`}
-                        />
-                        <div
-                          className="w-2 bg-green-500 rounded-t transition-all"
-                          style={{ height: cardH || 1, minHeight: day.new_cards > 0 ? 4 : 0 }}
-                          title={`${day.new_cards} nuove card`}
-                        />
-                      </div>
-                      {period !== '90d' && (
-                        <p className="text-xs text-gray-400" style={{ fontSize: '10px' }}>{label}</p>
-                      )}
+                return (
+                  <div key={day.date} className="flex flex-col items-center gap-1 flex-shrink-0" style={{ minWidth: period === '90d' ? '8px' : '20px' }}>
+                    <div className="flex items-end gap-px h-32">
+                      <div
+                        className="w-2 bg-[#111111] rounded-t transition-all"
+                        style={{ height: stampH || 1, minHeight: day.stamps > 0 ? 4 : 0 }}
+                        title={`${day.stamps} timbri`}
+                      />
+                      <div
+                        className="w-2 bg-[#16A34A] rounded-t transition-all"
+                        style={{ height: cardH || 1, minHeight: day.new_cards > 0 ? 4 : 0 }}
+                        title={`${day.new_cards} nuove card`}
+                      />
                     </div>
-                  )
-                })}
-              </div>
+                    {period !== '90d' && (
+                      <p className="text-gray-400" style={{ fontSize: '10px' }}>{label}</p>
+                    )}
+                  </div>
+                )
+              })}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
-        {/* Stats per programma */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="font-bold text-lg text-gray-900 mb-4">Performance per Programma</h2>
+      {/* Stats per programma */}
+      <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <h2 className="font-semibold text-base text-gray-900 mb-4">Performance per Programma</h2>
 
-          {programStats.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <p>Nessun programma trovato.</p>
-              <Link href="/dashboard/programs/new" className="text-indigo-600 hover:underline mt-2 block">
-                Crea il primo programma →
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {programStats.map(prog => (
+        {programStats.length === 0 ? (
+          <EmptyState
+            icon={BarChart2}
+            title="Nessun programma"
+            description="Crea il tuo primo programma per vedere le statistiche"
+            actionLabel="Crea programma"
+            actionHref="/dashboard/programs/new"
+          />
+        ) : (
+          <div className="space-y-3">
+            {programStats.map(prog => {
+              const TypeIcon = TYPE_ICONS[prog.program_type] || Stamp
+              return (
                 <Link
                   key={prog.id}
                   href={`/dashboard/programs/${prog.id}`}
-                  className="block hover:bg-gray-50 rounded-xl p-4 transition-colors border border-gray-100"
+                  className="block hover:bg-gray-50/50 rounded-[8px] p-4 transition-colors border border-[#F0F0F0]"
                 >
                   <div className="flex items-center gap-4">
-                    {/* Color + icon */}
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                      className="w-10 h-10 rounded-[8px] flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: prog.primary_color + '20' }}
                     >
-                      {TYPE_ICONS[prog.program_type] || '🎫'}
+                      <TypeIcon size={18} style={{ color: prog.primary_color }} />
                     </div>
 
-                    {/* Name + bar */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900">{prog.name}</p>
+                      <p className="font-medium text-gray-900">{prog.name}</p>
                       <div className="flex items-center gap-4 mt-2">
                         <div className="flex-1">
-                          <div className="w-full bg-gray-100 rounded-full h-2">
+                          <div className="w-full bg-gray-100 rounded-full h-1.5">
                             <div
-                              className="h-2 rounded-full"
+                              className="h-1.5 rounded-full"
                               style={{
                                 backgroundColor: prog.primary_color,
                                 width: `${Math.min((prog.cards_count / Math.max(totalCards, 1)) * 100, 100)}%`
@@ -376,36 +352,34 @@ export default function AnalyticsPage() {
                       </div>
                     </div>
 
-                    {/* Stats */}
                     <div className="flex gap-6 flex-shrink-0 text-center">
                       <div>
                         <p className="text-lg font-bold text-gray-900">{prog.cards_count}</p>
                         <p className="text-xs text-gray-400">card</p>
                       </div>
                       <div>
-                        <p className="text-lg font-bold text-indigo-600">{prog.stamps_this_month}</p>
+                        <p className="text-lg font-bold text-gray-900">{prog.stamps_this_month}</p>
                         <p className="text-xs text-gray-400">timbri/mese</p>
                       </div>
                       <div>
-                        <p className="text-lg font-bold text-purple-600">{prog.rewards_this_month}</p>
+                        <p className="text-lg font-bold text-gray-900">{prog.rewards_this_month}</p>
                         <p className="text-xs text-gray-400">premi/mese</p>
                       </div>
                     </div>
                   </div>
                 </Link>
-              ))}
-            </div>
-          )}
-        </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
-        {/* Export hint */}
-        <div className="mt-6 text-center text-sm text-gray-400">
-          Vuoi esportare i dati?{' '}
-          <Link href="/dashboard/customers" className="text-indigo-600 hover:underline">
-            Vai a Clienti CRM →
-          </Link>
-        </div>
-      </main>
+      <div className="mt-6 text-center text-sm text-gray-400">
+        Vuoi esportare i dati?{' '}
+        <Link href="/dashboard/customers" className="text-gray-700 hover:text-gray-900 underline transition-colors">
+          Vai a Clienti CRM
+        </Link>
+      </div>
     </div>
   )
 }

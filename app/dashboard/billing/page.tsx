@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
+import StatusBadge from '@/components/ui/StatusBadge'
+import { Check, X } from 'lucide-react'
 
 function BillingContent() {
   const [merchant, setMerchant] = useState<any>(null)
@@ -114,7 +116,6 @@ function BillingContent() {
         const expires = new Date(data.expiresAt).toLocaleDateString('it-IT')
         setPromoSuccess(`Piano PRO attivato! Accesso gratuito fino al ${expires}.`)
         setPromoCode('')
-        // Ricarica dati merchant
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
@@ -159,229 +160,220 @@ function BillingContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-4 border-[#111111] border-t-transparent rounded-full" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard" className="text-indigo-600 hover:text-indigo-700">
-              ← Dashboard
-            </Link>
-            <h1 className="text-xl font-bold text-gray-900">Abbonamento</h1>
-          </div>
+    <div className="px-6 py-6">
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Abbonamento</h1>
+        <p className="text-sm text-gray-500 mt-1">Gestisci il tuo piano</p>
+      </div>
+
+      {/* Messaggi */}
+      {successMsg && (
+        <div className="bg-[#DCFCE7] border border-[#BBF7D0] rounded-[8px] p-4 mb-6">
+          <p className="text-[#16A34A] font-semibold text-sm">Upgrade completato! Il tuo piano PRO è attivo.</p>
         </div>
-      </header>
+      )}
+      {canceledMsg && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-[8px] p-4 mb-6">
+          <p className="text-yellow-700 text-sm">Acquisto annullato. Puoi riprovare in qualsiasi momento.</p>
+        </div>
+      )}
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      {!stripeAvailable && (
+        <div className="bg-orange-50 border border-orange-200 rounded-[8px] p-4 mb-6">
+          <p className="font-semibold text-orange-800 text-sm">Stripe non ancora attivo</p>
+          <p className="text-orange-700 text-sm mt-1">
+            Leggi <strong>BLOCCO.md</strong> per configurare Stripe e abilitare i pagamenti.
+          </p>
+        </div>
+      )}
 
-        {/* Messaggio successo/annullamento */}
-        {successMsg && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-            <p className="text-green-700 font-semibold">Upgrade completato! Il tuo piano PRO è attivo.</p>
-          </div>
-        )}
-        {canceledMsg && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-            <p className="text-yellow-700">Acquisto annullato. Puoi riprovare in qualsiasi momento.</p>
-          </div>
-        )}
-
-        {/* Stripe non configurato warning */}
-        {!stripeAvailable && (
-          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
-            <p className="font-semibold text-orange-800">Stripe non ancora attivo</p>
-            <p className="text-orange-700 text-sm mt-1">
-              Leggi <strong>BLOCCO.md</strong> per configurare Stripe e abilitare i pagamenti.
-            </p>
-          </div>
-        )}
-
-        {/* Piano Attuale */}
-        <div className="bg-white rounded-xl shadow p-6 mb-8">
-          <div className="flex justify-between items-center flex-wrap gap-4">
-            <div>
-              <p className="text-gray-500 text-sm">Piano attuale</p>
+      {/* Piano Attuale */}
+      <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <div className="flex justify-between items-center flex-wrap gap-4">
+          <div>
+            <p className="text-gray-500 text-sm">Piano attuale</p>
+            <div className="flex items-center gap-3 mt-1">
               <p className="text-3xl font-bold text-gray-900">
                 {isPro ? 'PRO' : 'FREE'}
               </p>
-              {subStatus && subStatus !== 'active' && (
-                <p className="text-sm text-orange-600 mt-1">
-                  Stato abbonamento: {subStatus === 'past_due' ? 'Pagamento scaduto' : subStatus}
-                </p>
-              )}
-              {merchant?.plan_expires_at && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Accesso PRO fino al {new Date(merchant.plan_expires_at).toLocaleDateString('it-IT')}
-                </p>
-              )}
+              {isPro && <StatusBadge variant="active" />}
             </div>
-            <div className="text-right">
-              <p className="text-gray-500 text-sm">Programmi</p>
-              <p className="text-2xl font-bold">
-                {programs.length} / {isPro ? '∞' : '5'}
+            {subStatus && subStatus !== 'active' && (
+              <p className="text-sm text-orange-600 mt-1">
+                Stato abbonamento: {subStatus === 'past_due' ? 'Pagamento scaduto' : subStatus}
               </p>
-            </div>
-          </div>
-
-          {/* Barra utilizzo programmi FREE */}
-          {!isPro && (
-            <div className="mt-4">
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="h-2 rounded-full bg-indigo-600"
-                  style={{ width: `${Math.min((programs.length / 5) * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">{programs.length} su 5 programmi usati</p>
-            </div>
-          )}
-
-          {/* Pulsante gestione se PRO con Stripe */}
-          {isPro && merchant?.stripe_customer_id && (
-            <button
-              onClick={handleManageSubscription}
-              disabled={openingPortal}
-              className="mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 text-sm"
-            >
-              {openingPortal ? 'Apertura...' : 'Gestisci Abbonamento →'}
-            </button>
-          )}
-        </div>
-
-        {/* Piani */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* FREE */}
-          <div className={`bg-white rounded-xl shadow p-6 ${!isPro ? 'ring-2 ring-indigo-600' : ''}`}>
-            {!isPro && (
-              <span className="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">ATTUALE</span>
             )}
-            <h2 className="text-2xl font-bold text-gray-900 mt-2">FREE</h2>
-            <p className="text-4xl font-bold text-gray-900 mt-4">
-              €0 <span className="text-lg font-normal text-gray-500">/mese</span>
+            {merchant?.plan_expires_at && (
+              <p className="text-sm text-gray-500 mt-1">
+                Accesso PRO fino al {new Date(merchant.plan_expires_at).toLocaleDateString('it-IT')}
+              </p>
+            )}
+          </div>
+          <div className="text-right">
+            <p className="text-gray-500 text-sm">Programmi</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {programs.length} / {isPro ? '' : '5'}
             </p>
-            <ul className="mt-6 space-y-3 text-gray-600">
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Fino a 5 programmi</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Clienti illimitati</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Google Wallet</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Scanner QR</li>
-              <li className="flex items-center gap-2"><span className="text-red-400">✗</span> Analytics avanzate</li>
-              <li className="flex items-center gap-2"><span className="text-red-400">✗</span> Notifiche push</li>
-            </ul>
-          </div>
-
-          {/* PRO */}
-          <div className={`bg-white rounded-xl shadow p-6 ${isPro ? 'ring-2 ring-indigo-600' : 'border-2 border-dashed border-indigo-300'}`}>
-            {isPro && (
-              <span className="bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">ATTUALE</span>
-            )}
-            <div className="flex items-center gap-2 mt-2">
-              <h2 className="text-2xl font-bold text-gray-900">PRO</h2>
-              <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full font-medium">POPOLARE</span>
-            </div>
-
-            {/* Prezzi mensile / annuale */}
-            <div className="mt-4 space-y-2">
-              <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-bold text-gray-900">€19</p>
-                <span className="text-gray-500">/mese</span>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-green-600">€149</p>
-                <span className="text-gray-500">/anno</span>
-                <span className="text-green-600 text-xs font-medium bg-green-50 px-2 py-0.5 rounded-full">Risparmi €79</span>
-              </div>
-            </div>
-
-            <ul className="mt-6 space-y-3 text-gray-600">
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Programmi illimitati</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Clienti illimitati</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Google Wallet</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Scanner QR</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Analytics avanzate</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Notifiche push clienti</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Supporto prioritario</li>
-            </ul>
-
-            {!isPro && (
-              <div className="mt-6 space-y-3">
-                <button
-                  onClick={() => handleUpgrade('PRO_MONTHLY')}
-                  disabled={checkingOut}
-                  className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {checkingOut ? 'Reindirizzamento...' : 'Attiva PRO — €19/mese'}
-                </button>
-                <button
-                  onClick={() => handleUpgrade('PRO_YEARLY')}
-                  disabled={checkingOut}
-                  className="w-full border-2 border-green-500 text-green-700 py-3 rounded-lg font-semibold hover:bg-green-50 disabled:opacity-50"
-                >
-                  {checkingOut ? 'Reindirizzamento...' : 'Attiva PRO Annuale — €149/anno'}
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Codice Promo */}
         {!isPro && (
-          <div className="bg-white rounded-xl shadow p-6 mb-8">
-            <h3 className="font-bold text-gray-900 mb-1">Hai un codice promo?</h3>
-            <p className="text-sm text-gray-500 mb-4">Inserisci il codice per attivare il piano PRO gratuitamente.</p>
-            <div className="flex gap-3 flex-wrap">
-              <input
-                type="text"
-                value={promoCode}
-                onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); setPromoSuccess('') }}
-                onKeyDown={e => e.key === 'Enter' && handlePromoCode()}
-                placeholder="Es. BETA2026"
-                className="flex-1 min-w-0 border border-gray-300 rounded-lg px-4 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          <div className="mt-4">
+            <div className="w-full bg-gray-100 rounded-full h-1.5">
+              <div
+                className="h-1.5 rounded-full bg-[#111111]"
+                style={{ width: `${Math.min((programs.length / 5) * 100, 100)}%` }}
               />
-              <button
-                onClick={handlePromoCode}
-                disabled={promoLoading || !promoCode.trim()}
-                className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {promoLoading ? 'Verifica...' : 'Applica'}
-              </button>
             </div>
-            {promoError && <p className="mt-3 text-sm text-red-600">{promoError}</p>}
-            {promoSuccess && <p className="mt-3 text-sm text-green-700 font-medium">{promoSuccess}</p>}
+            <p className="text-xs text-gray-500 mt-1">{programs.length} su 5 programmi usati</p>
           </div>
         )}
 
-        {/* FAQ */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <h3 className="font-bold text-gray-900 mb-4">Domande Frequenti</h3>
-          <div className="space-y-4 text-sm">
-            <div>
-              <p className="font-semibold text-gray-800">Posso disdire quando voglio?</p>
-              <p className="text-gray-600 mt-1">Sì, puoi disdire in qualsiasi momento dal portale clienti Stripe. L'accesso PRO rimane attivo fino alla fine del periodo pagato.</p>
+        {isPro && merchant?.stripe_customer_id && (
+          <button
+            onClick={handleManageSubscription}
+            disabled={openingPortal}
+            className="mt-4 border border-[#E0E0E0] text-gray-700 px-4 py-2 rounded-[8px] text-sm font-medium hover:bg-[#F5F5F5] transition-colors"
+          >
+            {openingPortal ? 'Apertura...' : 'Gestisci Abbonamento'}
+          </button>
+        )}
+      </div>
+
+      {/* Piani */}
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
+        {/* FREE */}
+        <div className={`bg-white border rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)] ${!isPro ? 'border-[#111111]' : 'border-[#E8E8E8]'}`}>
+          {!isPro && (
+            <span className="bg-[#111111] text-white text-xs px-2.5 py-1 rounded-full font-medium">ATTUALE</span>
+          )}
+          <h2 className="text-2xl font-bold text-gray-900 mt-3">FREE</h2>
+          <p className="text-4xl font-bold text-gray-900 mt-4">
+            0 <span className="text-lg font-normal text-gray-500">/mese</span>
+          </p>
+          <ul className="mt-6 space-y-3 text-gray-600 text-sm">
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Fino a 5 programmi</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Clienti illimitati</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Google Wallet</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Scanner QR</li>
+            <li className="flex items-center gap-2"><X size={16} className="text-[#DC2626] flex-shrink-0" /> Analytics avanzate</li>
+            <li className="flex items-center gap-2"><X size={16} className="text-[#DC2626] flex-shrink-0" /> Notifiche push</li>
+          </ul>
+        </div>
+
+        {/* PRO */}
+        <div className={`bg-white rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)] ${isPro ? 'border-2 border-[#111111]' : 'border-2 border-dashed border-[#E0E0E0]'}`}>
+          {isPro && (
+            <span className="bg-[#111111] text-white text-xs px-2.5 py-1 rounded-full font-medium">ATTUALE</span>
+          )}
+          <div className="flex items-center gap-2 mt-3">
+            <h2 className="text-2xl font-bold text-gray-900">PRO</h2>
+            <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full font-medium">POPOLARE</span>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <div className="flex items-baseline gap-2">
+              <p className="text-3xl font-bold text-gray-900">19</p>
+              <span className="text-gray-500 text-sm">/mese</span>
             </div>
-            <div>
-              <p className="font-semibold text-gray-800">I miei dati rimangono se torno a FREE?</p>
-              <p className="text-gray-600 mt-1">Sì, tutti i clienti e le carte rimangono. Solo i programmi oltre il 5° vengono messi in pausa (non cancellati).</p>
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800">È sicuro il pagamento?</p>
-              <p className="text-gray-600 mt-1">Sì, i pagamenti sono gestiti da Stripe, leader mondiale nei pagamenti online. I dati della carta non passano mai dai nostri server.</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-bold text-[#16A34A]">149</p>
+              <span className="text-gray-500 text-sm">/anno</span>
+              <span className="text-[#16A34A] text-xs font-medium bg-[#DCFCE7] px-2 py-0.5 rounded-full">Risparmi 79</span>
             </div>
           </div>
+
+          <ul className="mt-6 space-y-3 text-gray-600 text-sm">
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Programmi illimitati</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Clienti illimitati</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Google Wallet</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Scanner QR</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Analytics avanzate</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Notifiche push clienti</li>
+            <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> Supporto prioritario</li>
+          </ul>
+
+          {!isPro && (
+            <div className="mt-6 space-y-3">
+              <button
+                onClick={() => handleUpgrade('PRO_MONTHLY')}
+                disabled={checkingOut}
+                className="w-full bg-[#111111] text-white py-3 rounded-[8px] text-sm font-semibold hover:bg-[#333333] disabled:opacity-50 transition-colors"
+              >
+                {checkingOut ? 'Reindirizzamento...' : 'Attiva PRO — 19/mese'}
+              </button>
+              <button
+                onClick={() => handleUpgrade('PRO_YEARLY')}
+                disabled={checkingOut}
+                className="w-full border-2 border-[#16A34A] text-[#16A34A] py-3 rounded-[8px] text-sm font-semibold hover:bg-[#DCFCE7] disabled:opacity-50 transition-colors"
+              >
+                {checkingOut ? 'Reindirizzamento...' : 'Attiva PRO Annuale — 149/anno'}
+              </button>
+            </div>
+          )}
         </div>
-      </main>
+      </div>
+
+      {/* Codice Promo */}
+      {!isPro && (
+        <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <h3 className="font-semibold text-gray-900 mb-1 text-sm">Hai un codice promo?</h3>
+          <p className="text-sm text-gray-500 mb-4">Inserisci il codice per attivare il piano PRO gratuitamente.</p>
+          <div className="flex gap-3 flex-wrap">
+            <input
+              type="text"
+              value={promoCode}
+              onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); setPromoSuccess('') }}
+              onKeyDown={e => e.key === 'Enter' && handlePromoCode()}
+              placeholder="Es. BETA2026"
+              className="flex-1 min-w-0 border border-[#E0E0E0] rounded-[8px] px-3 py-2.5 text-sm font-mono uppercase focus:outline-none focus:border-[#111111] transition-colors"
+            />
+            <button
+              onClick={handlePromoCode}
+              disabled={promoLoading || !promoCode.trim()}
+              className="bg-[#111111] text-white px-5 py-2.5 rounded-[8px] text-sm font-semibold hover:bg-[#333333] disabled:opacity-50 transition-colors"
+            >
+              {promoLoading ? 'Verifica...' : 'Applica'}
+            </button>
+          </div>
+          {promoError && <p className="mt-3 text-sm text-[#DC2626]">{promoError}</p>}
+          {promoSuccess && <p className="mt-3 text-sm text-[#16A34A] font-medium">{promoSuccess}</p>}
+        </div>
+      )}
+
+      {/* FAQ */}
+      <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <h3 className="font-semibold text-gray-900 mb-4 text-sm">Domande Frequenti</h3>
+        <div className="space-y-4 text-sm">
+          <div>
+            <p className="font-medium text-gray-800">Posso disdire quando voglio?</p>
+            <p className="text-gray-600 mt-1">Sì, puoi disdire in qualsiasi momento dal portale clienti Stripe. L'accesso PRO rimane attivo fino alla fine del periodo pagato.</p>
+          </div>
+          <div>
+            <p className="font-medium text-gray-800">I miei dati rimangono se torno a FREE?</p>
+            <p className="text-gray-600 mt-1">Sì, tutti i clienti e le carte rimangono. Solo i programmi oltre il 5° vengono messi in pausa (non cancellati).</p>
+          </div>
+          <div>
+            <p className="font-medium text-gray-800">È sicuro il pagamento?</p>
+            <p className="text-gray-600 mt-1">Sì, i pagamenti sono gestiti da Stripe, leader mondiale nei pagamenti online. I dati della carta non passano mai dai nostri server.</p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
 export default function BillingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-100 flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-[#111111] border-t-transparent rounded-full" /></div>}>
       <BillingContent />
     </Suspense>
   )

@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { CardHolder, CustomerTag } from '@/lib/types'
+import MetricCard from '@/components/ui/MetricCard'
+import EmptyState from '@/components/ui/EmptyState'
+import { Users, Search, Tag, Mail, Phone, Plus, Trash2, Download, Check } from 'lucide-react'
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<(CardHolder & { cards_count: number, tags: CustomerTag[] })[]>([])
@@ -19,7 +22,6 @@ export default function CustomersPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  // Form nuovo cliente
   const [newCustomer, setNewCustomer] = useState({
     full_name: '',
     contact_email: '',
@@ -31,8 +33,7 @@ export default function CustomersPage() {
     selectedTags: [] as string[]
   })
 
-  // Form nuovo tag
-  const [newTag, setNewTag] = useState({ name: '', color: '#6366f1' })
+  const [newTag, setNewTag] = useState({ name: '', color: '#111111' })
 
   useEffect(() => {
     loadData()
@@ -55,7 +56,6 @@ export default function CustomersPage() {
 
     setMerchantId(profile.merchant_id)
 
-    // Carica tags prima
     const { data: tagsData } = await supabase
       .from('customer_tags')
       .select('*')
@@ -63,7 +63,6 @@ export default function CustomersPage() {
 
     if (tagsData) setTags(tagsData)
 
-    // Carica clienti con conteggio cards
     const { data: customersData } = await supabase
       .from('card_holders')
       .select(`
@@ -74,7 +73,6 @@ export default function CustomersPage() {
       .order('created_at', { ascending: false })
 
     if (customersData && tagsData) {
-      // Carica i tag per ogni cliente
       const { data: holderTags } = await supabase
         .from('card_holder_tags')
         .select('card_holder_id, tag_id')
@@ -96,7 +94,6 @@ export default function CustomersPage() {
   async function createCustomer() {
     if (!merchantId || !newCustomer.full_name) return
 
-    // Crea il cliente
     const { data, error } = await supabase
       .from('card_holders')
       .insert({
@@ -113,7 +110,6 @@ export default function CustomersPage() {
       .single()
 
     if (!error && data) {
-      // Aggiungi i tag selezionati
       if (newCustomer.selectedTags.length > 0) {
         await supabase
           .from('card_holder_tags')
@@ -125,10 +121,9 @@ export default function CustomersPage() {
           )
       }
 
-      // Aggiungi alla lista con i tag
       const customerTags = tags.filter(t => newCustomer.selectedTags.includes(t.id))
       setCustomers([{ ...data, cards_count: 0, tags: customerTags }, ...customers])
-      
+
       setShowAddModal(false)
       setNewCustomer({
         full_name: '',
@@ -159,7 +154,7 @@ export default function CustomersPage() {
     if (!error && data) {
       setTags([...tags, data])
       setShowTagModal(false)
-      setNewTag({ name: '', color: '#6366f1' })
+      setNewTag({ name: '', color: '#111111' })
     }
   }
 
@@ -172,8 +167,7 @@ export default function CustomersPage() {
       .eq('id', tagId)
 
     setTags(tags.filter(t => t.id !== tagId))
-    
-    // Rimuovi il tag dai clienti nella UI
+
     setCustomers(customers.map(c => ({
       ...c,
       tags: c.tags.filter(t => t.id !== tagId)
@@ -185,7 +179,6 @@ export default function CustomersPage() {
     setExporting(true)
 
     try {
-      // Fetch cards with program data for filtered customers only
       const holderIds = filteredCustomers.map(c => c.id)
 
       if (holderIds.length === 0) {
@@ -207,10 +200,7 @@ export default function CustomersPage() {
         .in('card_holder_id', holderIds)
         .eq('status', 'active')
 
-      // Build rows: one per customer+program combination
       const rows: string[][] = []
-
-      // Header row
       rows.push(['Nome', 'Email', 'Telefono', 'Programma', 'Saldo Corrente', 'Data Iscrizione', 'Tag'])
 
       for (const customer of filteredCustomers) {
@@ -219,7 +209,6 @@ export default function CustomersPage() {
         const dateIscrizione = new Date(customer.created_at).toLocaleDateString('it-IT')
 
         if (customerCards.length === 0) {
-          // Customer with no active cards — include with empty program/saldo
           rows.push([
             customer.full_name || '',
             customer.contact_email || '',
@@ -239,7 +228,7 @@ export default function CustomersPage() {
             let saldo = ''
             if (programType === 'stamps') saldo = String(card.stamp_count ?? 0)
             else if (programType === 'points') saldo = String(card.points_balance ?? 0)
-            else if (programType === 'cashback') saldo = `€${card.cashback_balance ?? 0}`
+            else if (programType === 'cashback') saldo = `${card.cashback_balance ?? 0}`
             else if (programType === 'tiers') saldo = card.current_tier || ''
             else if (programType === 'subscription') saldo = card.subscription_status || ''
 
@@ -256,7 +245,6 @@ export default function CustomersPage() {
         }
       }
 
-      // Convert to CSV string — escape fields containing commas or quotes
       const csvContent = rows.map(row =>
         row.map(cell => {
           const str = String(cell ?? '')
@@ -267,8 +255,7 @@ export default function CustomersPage() {
         }).join(',')
       ).join('\n')
 
-      // Trigger browser download
-      const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+      const today = new Date().toISOString().slice(0, 10)
       const filename = `clienti-${today}.csv`
       const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
@@ -282,7 +269,7 @@ export default function CustomersPage() {
 
     } catch (err) {
       console.error('Errore export CSV:', err)
-      alert('Errore durante l\'esportazione. Riprova.')
+      alert("Errore durante l'esportazione. Riprova.")
     }
 
     setExporting(false)
@@ -302,19 +289,17 @@ export default function CustomersPage() {
     }
   }
 
-  // Filtra clienti
   const filteredCustomers = customers.filter(c => {
-    const matchesSearch = 
+    const matchesSearch =
       c.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.contact_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.phone?.includes(searchQuery)
-    
+
     const matchesTag = filterTag === 'all' || c.tags.some(t => t.id === filterTag)
-    
+
     return matchesSearch && matchesTag
   })
 
-  // Statistiche
   const stats = {
     total: customers.length,
     withEmail: customers.filter(c => c.contact_email).length,
@@ -328,153 +313,147 @@ export default function CustomersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-4 border-[#111111] border-t-transparent rounded-full"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b px-6 py-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <Link href="/dashboard" className="text-indigo-600 hover:underline text-sm">
-              ← Dashboard
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 mt-1">👥 Clienti CRM</h1>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowTagModal(true)}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-            >
-              🏷️ Gestisci Tag
-            </button>
-            <button
-              onClick={exportCSV}
-              disabled={exporting || filteredCustomers.length === 0}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-200 disabled:opacity-50"
-            >
-              {exporting ? 'Esportazione...' : 'Esporta CSV'}
-            </button>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-            >
-              + Nuovo Cliente
-            </button>
-          </div>
+    <div className="px-6 py-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Clienti</h1>
+          <p className="text-sm text-gray-500 mt-1">Gestisci i tuoi clienti</p>
         </div>
-      </header>
-
-      <main className="p-6 max-w-7xl mx-auto">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-xl shadow-sm">
-            <p className="text-gray-500 text-sm">Totale Clienti</p>
-            <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-          </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
-            <p className="text-gray-500 text-sm">Con Email</p>
-            <p className="text-3xl font-bold text-blue-600">{stats.withEmail}</p>
-          </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
-            <p className="text-gray-500 text-sm">Consenso Marketing</p>
-            <p className="text-3xl font-bold text-green-600">{stats.withMarketing}</p>
-          </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
-            <p className="text-gray-500 text-sm">Nuovi Questo Mese</p>
-            <p className="text-3xl font-bold text-purple-600">{stats.thisMonth}</p>
-          </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowTagModal(true)}
+            className="border border-[#E0E0E0] text-gray-700 px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#F5F5F5] transition-colors flex items-center gap-2"
+          >
+            <Tag size={14} />
+            Gestisci Tag
+          </button>
+          <button
+            onClick={exportCSV}
+            disabled={exporting || filteredCustomers.length === 0}
+            className="border border-[#E0E0E0] text-gray-700 px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#F5F5F5] disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            <Download size={14} />
+            {exporting ? 'Esportazione...' : 'Esporta CSV'}
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-[#111111] text-white px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#333333] transition-colors flex items-center gap-2"
+          >
+            <Plus size={14} />
+            Nuovo Cliente
+          </button>
         </div>
+      </div>
 
-        {/* Search & Filters */}
-        <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="🔍 Cerca per nome, email o telefono..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex gap-2 flex-wrap">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <MetricCard label="Totale Clienti" value={stats.total} icon={<Users size={20} />} />
+        <MetricCard label="Con Email" value={stats.withEmail} icon={<Mail size={20} />} />
+        <MetricCard label="Consenso Marketing" value={stats.withMarketing} icon={<Check size={20} />} />
+        <MetricCard label="Nuovi Questo Mese" value={stats.thisMonth} icon={<Plus size={20} />} />
+      </div>
+
+      {/* Search & Filters */}
+      <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-4 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Cerca per nome, email o telefono..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors"
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setFilterTag('all')}
+              className={`px-3 py-2 rounded-[8px] text-sm font-medium transition-colors ${
+                filterTag === 'all'
+                  ? 'bg-[#111111] text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Tutti
+            </button>
+            {tags.map(tag => (
               <button
-                onClick={() => setFilterTag('all')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  filterTag === 'all'
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                key={tag.id}
+                onClick={() => setFilterTag(filterTag === tag.id ? 'all' : tag.id)}
+                className={`px-3 py-2 rounded-[8px] text-sm font-medium transition-all ${
+                  filterTag === tag.id
+                    ? 'ring-2 ring-offset-2'
+                    : 'opacity-70 hover:opacity-100'
                 }`}
+                style={{
+                  backgroundColor: tag.color + '20',
+                  color: tag.color
+                }}
               >
-                Tutti
+                {tag.name}
               </button>
-              {tags.map(tag => (
-                <button
-                  key={tag.id}
-                  onClick={() => setFilterTag(filterTag === tag.id ? 'all' : tag.id)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    filterTag === tag.id
-                      ? 'ring-2 ring-offset-2'
-                      : 'opacity-70 hover:opacity-100'
-                  }`}
-                  style={{
-                    backgroundColor: tag.color + '20',
-                    color: tag.color
-                  }}
-                >
-                  {tag.name}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between mt-3 pt-3 border-t">
-            <span className="text-sm text-gray-500">
-              {filteredCustomers.length} client{filteredCustomers.length === 1 ? 'e' : 'i'}
-              {(searchQuery || filterTag !== 'all') ? ' (filtrati)' : ''}
-            </span>
+            ))}
           </div>
         </div>
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#F0F0F0]">
+          <span className="text-sm text-gray-500">
+            {filteredCustomers.length} client{filteredCustomers.length === 1 ? 'e' : 'i'}
+            {(searchQuery || filterTag !== 'all') ? ' (filtrati)' : ''}
+          </span>
+        </div>
+      </div>
 
-        {/* Customers Table */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      {/* Customers Table */}
+      {filteredCustomers.length === 0 && !searchQuery && filterTag === 'all' ? (
+        <EmptyState
+          icon={Users}
+          title="Nessun cliente"
+          description="I clienti appariranno qui quando si iscrivono al tuo programma"
+          actionLabel="Aggiungi Cliente"
+          onAction={() => setShowAddModal(true)}
+        />
+      ) : (
+        <div className="bg-white rounded-[12px] border border-[#E8E8E8] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Cliente</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Contatti</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Tag</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Cards</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Timbri</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Ultima Visita</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Azioni</th>
+            <thead>
+              <tr className="bg-[#F9F9F9] border-b border-[#F0F0F0]">
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Cliente</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Contatti</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tag</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Cards</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Timbri</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ultima Visita</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Azioni</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    {searchQuery || filterTag !== 'all' 
-                      ? 'Nessun cliente trovato con questi filtri' 
-                      : 'Nessun cliente ancora. Clicca "Nuovo Cliente" per iniziare!'}
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500 text-sm">
+                    Nessun cliente trovato con questi filtri
                   </td>
                 </tr>
               ) : (
                 filteredCustomers.map(customer => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
+                  <tr key={customer.id} className="border-b border-[#F0F0F0] last:border-0 hover:bg-gray-50/50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                          <span className="text-indigo-600 font-semibold">
+                        <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-gray-700 font-semibold text-sm">
                             {customer.full_name?.charAt(0).toUpperCase() || '?'}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-sm text-gray-900">
                             {customer.full_name || 'Cliente Anonimo'}
                           </p>
                           <p className="text-xs text-gray-400">
@@ -484,15 +463,21 @@ export default function CustomersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm">
+                      <div className="text-sm space-y-0.5">
                         {customer.contact_email && (
-                          <p className="text-gray-600">📧 {customer.contact_email}</p>
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <Mail size={12} className="text-gray-400 flex-shrink-0" />
+                            <span className="truncate max-w-[140px]">{customer.contact_email}</span>
+                          </div>
                         )}
                         {customer.phone && (
-                          <p className="text-gray-600">📱 {customer.phone}</p>
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <Phone size={12} className="text-gray-400 flex-shrink-0" />
+                            <span>{customer.phone}</span>
+                          </div>
                         )}
                         {!customer.contact_email && !customer.phone && (
-                          <p className="text-gray-400 italic">Nessun contatto</p>
+                          <p className="text-gray-400 italic text-xs">Nessun contatto</p>
                         )}
                       </div>
                     </td>
@@ -517,27 +502,27 @@ export default function CustomersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-sm font-medium">
+                      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
                         {customer.cards_count}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-lg font-bold text-gray-900">
+                      <span className="text-base font-bold text-gray-900">
                         {customer.total_stamps || 0}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {customer.last_visit 
+                      {customer.last_visit
                         ? new Date(customer.last_visit).toLocaleDateString('it-IT')
                         : 'Mai'
                       }
                     </td>
                     <td className="px-6 py-4">
-                      <Link 
+                      <Link
                         href={`/dashboard/customers/${customer.id}`}
-                        className="text-indigo-600 hover:underline font-medium"
+                        className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
                       >
-                        Dettagli →
+                        Dettagli
                       </Link>
                     </td>
                   </tr>
@@ -546,34 +531,33 @@ export default function CustomersPage() {
             </tbody>
           </table>
         </div>
-      </main>
+      )}
 
       {/* Modal Nuovo Cliente */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <h2 className="text-xl font-bold">➕ Nuovo Cliente</h2>
+          <div className="bg-white rounded-[12px] w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-[#F0F0F0]">
+              <h2 className="text-lg font-semibold text-gray-900">Nuovo Cliente</h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Nome Completo *
                 </label>
                 <input
                   type="text"
                   value={newCustomer.full_name}
                   onChange={(e) => setNewCustomer({...newCustomer, full_name: e.target.value})}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors"
                   placeholder="Mario Rossi"
                 />
               </div>
-              
-              {/* TAG SELECTION */}
+
               {tags.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    🏷️ Tag
+                    Tag
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {tags.map(tag => (
@@ -589,12 +573,12 @@ export default function CustomersPage() {
                         style={{
                           backgroundColor: tag.color + '20',
                           color: tag.color,
-                          boxShadow: newCustomer.selectedTags.includes(tag.id) 
-                            ? `0 0 0 2px white, 0 0 0 4px ${tag.color}` 
+                          boxShadow: newCustomer.selectedTags.includes(tag.id)
+                            ? `0 0 0 2px white, 0 0 0 4px ${tag.color}`
                             : 'none'
                         }}
                       >
-                        {newCustomer.selectedTags.includes(tag.id) ? '✓ ' : ''}{tag.name}
+                        {newCustomer.selectedTags.includes(tag.id) ? 'ok ' : ''}{tag.name}
                       </button>
                     ))}
                   </div>
@@ -602,48 +586,40 @@ export default function CustomersPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                 <input
                   type="email"
                   value={newCustomer.contact_email}
                   onChange={(e) => setNewCustomer({...newCustomer, contact_email: e.target.value})}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors"
                   placeholder="mario@email.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Telefono
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Telefono</label>
                 <input
                   type="tel"
                   value={newCustomer.phone}
                   onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors"
                   placeholder="+39 333 1234567"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Data di Nascita
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Data di Nascita</label>
                 <input
                   type="date"
                   value={newCustomer.birth_date}
                   onChange={(e) => setNewCustomer({...newCustomer, birth_date: e.target.value})}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Come ci ha conosciuto?
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Come ci ha conosciuto?</label>
                 <select
                   value={newCustomer.acquisition_source}
                   onChange={(e) => setNewCustomer({...newCustomer, acquisition_source: e.target.value})}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors bg-white"
                 >
                   <option value="">-- Seleziona --</option>
                   <option value="Passaparola">Passaparola</option>
@@ -657,41 +633,39 @@ export default function CustomersPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Note
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Note</label>
                 <textarea
                   value={newCustomer.notes}
                   onChange={(e) => setNewCustomer({...newCustomer, notes: e.target.value})}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors resize-none"
                   rows={3}
                   placeholder="Note aggiuntive sul cliente..."
                 />
               </div>
-              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-[8px] border border-[#E8E8E8]">
                 <input
                   type="checkbox"
                   id="marketing"
                   checked={newCustomer.marketing_consent}
                   onChange={(e) => setNewCustomer({...newCustomer, marketing_consent: e.target.checked})}
-                  className="w-5 h-5 rounded text-indigo-600"
+                  className="w-4 h-4 rounded"
                 />
                 <label htmlFor="marketing" className="text-sm text-gray-700">
-                  ✅ Consenso comunicazioni marketing (GDPR)
+                  Consenso comunicazioni marketing (GDPR)
                 </label>
               </div>
             </div>
-            <div className="p-6 border-t flex gap-3">
+            <div className="p-6 border-t border-[#F0F0F0] flex gap-3">
               <button
                 onClick={() => setShowAddModal(false)}
-                className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="flex-1 border border-[#E0E0E0] text-gray-700 px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#F5F5F5] transition-colors"
               >
                 Annulla
               </button>
               <button
                 onClick={createCustomer}
                 disabled={!newCustomer.full_name}
-                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                className="flex-1 bg-[#111111] text-white px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#333333] disabled:opacity-50 transition-colors"
               >
                 Salva Cliente
               </button>
@@ -703,71 +677,69 @@ export default function CustomersPage() {
       {/* Modal Gestione Tag */}
       {showTagModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
-            <div className="p-6 border-b">
-              <h2 className="text-xl font-bold">🏷️ Gestione Tag</h2>
+          <div className="bg-white rounded-[12px] w-full max-w-md">
+            <div className="p-6 border-b border-[#F0F0F0]">
+              <h2 className="text-lg font-semibold text-gray-900">Gestione Tag</h2>
             </div>
             <div className="p-6">
-              {/* Tag esistenti */}
               <div className="space-y-2 mb-6">
                 {tags.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">Nessun tag creato</p>
+                  <p className="text-gray-500 text-center py-4 text-sm">Nessun tag creato</p>
                 ) : (
                   tags.map(tag => (
-                    <div 
+                    <div
                       key={tag.id}
-                      className="flex items-center justify-between p-3 rounded-lg"
-                      style={{ backgroundColor: tag.color + '20' }}
+                      className="flex items-center justify-between p-3 rounded-[8px]"
+                      style={{ backgroundColor: tag.color + '15' }}
                     >
                       <div className="flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-full" 
+                        <div
+                          className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: tag.color }}
                         />
-                        <span className="font-medium">{tag.name}</span>
+                        <span className="font-medium text-sm">{tag.name}</span>
                       </div>
                       <button
                         onClick={() => deleteTag(tag.id)}
-                        className="text-red-500 hover:text-red-700 text-sm"
+                        className="text-[#DC2626] hover:text-red-700 transition-colors"
                       >
-                        🗑️
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   ))
                 )}
               </div>
 
-              {/* Nuovo tag */}
-              <div className="border-t pt-4">
-                <p className="font-medium mb-3">Nuovo Tag</p>
+              <div className="border-t border-[#F0F0F0] pt-4">
+                <p className="font-medium text-sm text-gray-700 mb-3">Nuovo Tag</p>
                 <div className="flex gap-2">
                   <input
                     type="color"
                     value={newTag.color}
                     onChange={(e) => setNewTag({...newTag, color: e.target.value})}
-                    className="w-12 h-10 rounded cursor-pointer"
+                    className="w-10 h-10 rounded-[8px] cursor-pointer border border-[#E0E0E0]"
                   />
                   <input
                     type="text"
                     value={newTag.name}
                     onChange={(e) => setNewTag({...newTag, name: e.target.value})}
                     placeholder="Nome tag (es. VIP)"
-                    className="flex-1 px-4 py-2 border rounded-lg"
+                    className="flex-1 px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors"
                   />
                   <button
                     onClick={createTag}
                     disabled={!newTag.name}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                    className="bg-[#111111] text-white px-4 py-2 rounded-[8px] text-sm font-medium hover:bg-[#333333] disabled:opacity-50 transition-colors"
                   >
-                    +
+                    <Plus size={14} />
                   </button>
                 </div>
               </div>
             </div>
-            <div className="p-6 border-t">
+            <div className="p-6 border-t border-[#F0F0F0]">
               <button
                 onClick={() => setShowTagModal(false)}
-                className="w-full px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="w-full border border-[#E0E0E0] text-gray-700 px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#F5F5F5] transition-colors"
               >
                 Chiudi
               </button>
