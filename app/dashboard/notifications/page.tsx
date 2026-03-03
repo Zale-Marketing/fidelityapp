@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import EmptyState from '@/components/ui/EmptyState'
-import { Bell } from 'lucide-react'
+import { Bell, MessageCircle } from 'lucide-react'
 import { usePlan } from '@/lib/hooks/usePlan'
 import UpgradePrompt from '@/components/ui/UpgradePrompt'
 
@@ -43,6 +43,8 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
 
+  const [activeTab, setActiveTab] = useState<'push' | 'whatsapp'>('push')
+
   const [selectedProgram, setSelectedProgram] = useState<string>('all')
   const [message, setMessage] = useState('')
   const [sentCount, setSentCount] = useState<number | null>(null)
@@ -53,8 +55,19 @@ export default function NotificationsPage() {
   const [countLoading, setCountLoading] = useState(false)
 
   const countTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const waCountTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [notifHistory, setNotifHistory] = useState<NotificationLog[]>([])
+
+  // WhatsApp state
+  const [waStatus, setWaStatus] = useState<string>('not_connected')
+  const [waDailyCount, setWaDailyCount] = useState(0)
+  const [waSending, setWaSending] = useState(false)
+  const [waSentCount, setWaSentCount] = useState<number | null>(null)
+  const [waMessage, setWaMessage] = useState('')
+  const [waRecipientCount, setWaRecipientCount] = useState(0)
+  const [waSelectedProgram, setWaSelectedProgram] = useState<string>('all')
+  const [waCountLoading, setWaCountLoading] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -103,6 +116,23 @@ export default function NotificationsPage() {
           sent_at: l.sent_at,
           recipients: l.recipients_count || 0,
         })))
+      }
+
+      // Load WhatsApp status (non-blocking)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          const waRes = await fetch('/api/whatsapp/status?action=status', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          })
+          if (waRes.ok) {
+            const waData = await waRes.json()
+            setWaStatus(waData.status || 'not_connected')
+            setWaDailyCount(waData.dailyCount || 0)
+          }
+        }
+      } catch {
+        // ignore WA status error
       }
 
       setLoading(false)
@@ -167,6 +197,50 @@ export default function NotificationsPage() {
     setCountLoading(false)
   }
 
+  async function computeWhatsAppRecipientCount(
+    currentMerchantId: string,
+    currentPrograms: Program[],
+    currentSelectedProgram: string
+  ) {
+    if (!currentMerchantId) return
+    setWaCountLoading(true)
+
+    const programIds = currentSelectedProgram === 'all'
+      ? currentPrograms.map(p => p.id)
+      : [currentSelectedProgram]
+
+    if (programIds.length === 0) {
+      setWaRecipientCount(0)
+      setWaCountLoading(false)
+      return
+    }
+
+    const { data: cards } = await supabase
+      .from('cards')
+      .select('card_holder_id')
+      .in('program_id', programIds)
+      .eq('status', 'active')
+      .not('card_holder_id', 'is', null)
+
+    const holderIds = [...new Set((cards || []).map((c: any) => c.card_holder_id))]
+
+    if (holderIds.length === 0) {
+      setWaRecipientCount(0)
+      setWaCountLoading(false)
+      return
+    }
+
+    const { data: holders } = await supabase
+      .from('card_holders')
+      .select('id')
+      .in('id', holderIds)
+      .not('phone', 'is', null)
+      .neq('phone', '')
+
+    setWaRecipientCount((holders || []).length)
+    setWaCountLoading(false)
+  }
+
   useEffect(() => {
     if (!merchantId) return
     if (countTimer.current) clearTimeout(countTimer.current)
@@ -178,13 +252,24 @@ export default function NotificationsPage() {
     }
   }, [merchantId, selectedProgram, selectedTag, programs])
 
+  useEffect(() => {
+    if (!merchantId) return
+    if (waCountTimer.current) clearTimeout(waCountTimer.current)
+    waCountTimer.current = setTimeout(() => {
+      computeWhatsAppRecipientCount(merchantId, programs, waSelectedProgram)
+    }, 300)
+    return () => {
+      if (waCountTimer.current) clearTimeout(waCountTimer.current)
+    }
+  }, [merchantId, waSelectedProgram, programs])
+
   const handleSend = async () => {
     if (!message.trim()) {
       alert('Inserisci un messaggio.')
       return
     }
     if (message.length > 200) {
-      alert('Il messaggio è troppo lungo (max 200 caratteri).')
+      alert('Il messaggio e troppo lungo (max 200 caratteri).')
       return
     }
 
@@ -290,6 +375,113 @@ export default function NotificationsPage() {
     setSending(false)
   }
 
+  const handleSendWhatsApp = async () => {
+    if (!waMessage.trim()) {
+      alert('Inserisci un messaggio.')
+      return
+    }
+    if (waRecipientCount === 0) {
+      alert('Nessun destinatario con numero WhatsApp.')
+      return
+    }
+
+    setWaSending(true)
+    setWaSentCount(null)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { router.push('/login'); return }
+
+      // Get target program IDs
+      const targetPrograms = waSelectedProgram === 'all'
+        ? programs
+        : programs.filter(p => p.id === waSelectedProgram)
+
+      if (targetPrograms.length === 0) {
+        setWaSending(false)
+        return
+      }
+
+      const programIds = targetPrograms.map(p => p.id)
+
+      // Get cards for those programs
+      const { data: cards } = await supabase
+        .from('cards')
+        .select('card_holder_id')
+        .in('program_id', programIds)
+        .eq('status', 'active')
+        .not('card_holder_id', 'is', null)
+
+      const holderIds = [...new Set((cards || []).map((c: any) => c.card_holder_id))]
+
+      if (holderIds.length === 0) {
+        setWaSending(false)
+        return
+      }
+
+      // Get card_holders with phone
+      const { data: holders } = await supabase
+        .from('card_holders')
+        .select('id, full_name, phone')
+        .in('id', holderIds)
+        .not('phone', 'is', null)
+        .neq('phone', '')
+
+      if (!holders || holders.length === 0) {
+        setWaSending(false)
+        return
+      }
+
+      const recipients = holders.map((h: any) => ({ phone: h.phone, name: h.full_name || undefined }))
+
+      // Send via API route (which handles batching internally)
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ recipients, message: waMessage.trim() }),
+      })
+
+      if (res.status === 429) {
+        alert('Limite giornaliero raggiunto. Riprova domani.')
+        setWaSending(false)
+        return
+      }
+
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || "Errore durante l'invio. Riprova.")
+        setWaSending(false)
+        return
+      }
+
+      const result = await res.json()
+      setWaSentCount(result.sent)
+      setWaMessage('')
+
+      // Refresh daily count
+      try {
+        const waRes = await fetch('/api/whatsapp/status?action=status', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        if (waRes.ok) {
+          const waData = await waRes.json()
+          setWaDailyCount(waData.dailyCount || 0)
+        }
+      } catch {
+        // ignore
+      }
+
+    } catch (err) {
+      console.error(err)
+      alert("Errore durante l'invio. Riprova.")
+    }
+
+    setWaSending(false)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -298,190 +490,396 @@ export default function NotificationsPage() {
     )
   }
 
+  const isWaConnected = waStatus === 'active'
+  const isWaDisconnected = !isWaConnected && waStatus !== 'not_connected' && waStatus !== 'inactive'
+
   return (
     <div className="px-6 py-6">
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Notifiche</h1>
-        <p className="text-sm text-gray-500 mt-1">Invia messaggi ai clienti nel loro Google Wallet</p>
+        <p className="text-sm text-gray-500 mt-1">Invia messaggi ai clienti</p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
+      {/* Tab bar */}
+      <div className="mb-6">
+        <div className="flex gap-1 border border-[#E8E8E8] bg-white rounded-[8px] p-1 inline-flex">
+          <button
+            onClick={() => setActiveTab('push')}
+            className={`px-4 py-2 rounded-[6px] text-sm font-medium transition-colors ${
+              activeTab === 'push'
+                ? 'bg-[#111111] text-white'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Push Notification
+          </button>
+          <button
+            onClick={() => setActiveTab('whatsapp')}
+            className={`px-4 py-2 rounded-[6px] text-sm font-medium transition-colors flex items-center gap-1.5 ${
+              activeTab === 'whatsapp'
+                ? 'bg-[#111111] text-white'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <MessageCircle size={14} />
+            WhatsApp
+          </button>
+        </div>
+      </div>
 
-        {/* Form Invio */}
-        <div>
-          {!planLoading && isFree ? (
-            <UpgradePrompt feature="Notifiche Push" requiredPlan="PRO" />
-          ) : (
-          <>
-          <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-            <h2 className="font-semibold text-base text-gray-900 mb-1">Invia Messaggio</h2>
-            <p className="text-gray-500 text-sm mb-5">
-              Il messaggio apparirà nella carta Google Wallet dei tuoi clienti
-            </p>
+      {/* Push Notification Tab */}
+      {activeTab === 'push' && (
+        <div className="grid lg:grid-cols-2 gap-8">
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Programma destinatario
-                </label>
-                <select
-                  value={selectedProgram}
-                  onChange={e => setSelectedProgram(e.target.value)}
-                  className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors bg-white"
-                >
-                  <option value="all">Tutti i programmi</option>
-                  {programs.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
+          {/* Form Invio */}
+          <div>
+            {!planLoading && isFree ? (
+              <UpgradePrompt feature="Notifiche Push" requiredPlan="PRO" />
+            ) : (
+            <>
+            <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+              <h2 className="font-semibold text-base text-gray-900 mb-1">Invia Messaggio</h2>
+              <p className="text-gray-500 text-sm mb-5">
+                Il messaggio apparira nella carta Google Wallet dei tuoi clienti
+              </p>
 
-              {tags.length > 0 && (
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Filtra per tag
+                    Programma destinatario
                   </label>
                   <select
-                    value={selectedTag}
-                    onChange={e => setSelectedTag(e.target.value)}
+                    value={selectedProgram}
+                    onChange={e => setSelectedProgram(e.target.value)}
                     className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors bg-white"
                   >
-                    <option value="all">Tutti i tag</option>
-                    {tags.map(tag => (
-                      <option key={tag.id} value={tag.id}>{tag.name}</option>
+                    <option value="all">Tutti i programmi</option>
+                    {programs.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Messaggio
-                </label>
-                <textarea
-                  value={message}
-                  onChange={e => setMessage(e.target.value)}
-                  placeholder="Es: Oggi -20% su tutto! Vieni a trovarci."
-                  rows={4}
-                  maxLength={200}
-                  className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors resize-none"
-                />
-                <p className="text-xs text-gray-400 text-right mt-1">{message.length}/200</p>
-              </div>
-
-              {/* Recipient count preview */}
-              <div className="bg-gray-50 border border-[#E8E8E8] rounded-[8px] px-4 py-3 flex items-center justify-between">
-                <span className="text-sm text-gray-700">
-                  {countLoading
-                    ? 'Calcolo destinatari...'
-                    : `${recipientCount} client${recipientCount === 1 ? 'e' : 'i'} ricever${recipientCount === 1 ? 'a' : 'anno'} questa notifica`
-                  }
-                </span>
-                {countLoading && (
-                  <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                {tags.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Filtra per tag
+                    </label>
+                    <select
+                      value={selectedTag}
+                      onChange={e => setSelectedTag(e.target.value)}
+                      className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors bg-white"
+                    >
+                      <option value="all">Tutti i tag</option>
+                      {tags.map(tag => (
+                        <option key={tag.id} value={tag.id}>{tag.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 )}
-              </div>
 
-              {sentCount !== null && (
-                <div className="bg-[#DCFCE7] border border-[#BBF7D0] rounded-[8px] p-4">
-                  <p className="text-[#16A34A] font-semibold text-sm">
-                    Notifica inviata a {sentCount} clienti!
-                  </p>
-                  <p className="text-[#15803D] text-xs mt-1">
-                    I clienti la vedranno nella loro carta Wallet nei prossimi minuti.
-                  </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Messaggio
+                  </label>
+                  <textarea
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    placeholder="Es: Oggi -20% su tutto! Vieni a trovarci."
+                    rows={4}
+                    maxLength={200}
+                    className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors resize-none"
+                  />
+                  <p className="text-xs text-gray-400 text-right mt-1">{message.length}/200</p>
                 </div>
-              )}
 
-              <button
-                onClick={handleSend}
-                disabled={sending || !message.trim() || recipientCount === 0 || countLoading}
-                className="w-full bg-[#111111] text-white py-3 rounded-[8px] text-sm font-semibold hover:bg-[#333333] disabled:opacity-50 transition-colors"
-              >
-                {sending ? 'Invio in corso...' : 'Invia Notifica'}
-              </button>
-            </div>
-          </div>
+                {/* Recipient count preview */}
+                <div className="bg-gray-50 border border-[#E8E8E8] rounded-[8px] px-4 py-3 flex items-center justify-between">
+                  <span className="text-sm text-gray-700">
+                    {countLoading
+                      ? 'Calcolo destinatari...'
+                      : `${recipientCount} client${recipientCount === 1 ? 'e' : 'i'} ricever${recipientCount === 1 ? 'a' : 'anno'} questa notifica`
+                    }
+                  </span>
+                  {countLoading && (
+                    <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                  )}
+                </div>
 
-          {/* Info */}
-          <div className="bg-gray-50 border border-[#E8E8E8] rounded-[12px] p-4">
-            <p className="font-medium text-gray-800 text-sm mb-2">Come funziona</p>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>Il messaggio appare nella carta Google Wallet</li>
-              <li>I clienti ricevono una notifica push sul telefono</li>
-              <li>L'aggiornamento avviene in 1-5 minuti</li>
-              <li>Puoi sovrascrivere il messaggio in qualsiasi momento</li>
-            </ul>
-          </div>
-          </>
-          )}
-        </div>
-
-        {/* Storia Notifiche */}
-        <div>
-          <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-            <h2 className="font-semibold text-base text-gray-900 mb-4">Cronologia Invii</h2>
-
-            {notifHistory.length === 0 ? (
-              <EmptyState
-                icon={Bell}
-                title="Nessuna notifica inviata"
-                description="Invia il primo messaggio ai tuoi clienti!"
-              />
-            ) : (
-              <div className="space-y-3">
-                {notifHistory.map(log => (
-                  <div key={log.id} className="border border-[#F0F0F0] rounded-[8px] p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-medium">
-                        {log.program_name}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {new Date(log.sent_at).toLocaleDateString('it-IT', {
-                          day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                    <p className="text-gray-800 text-sm">{log.message}</p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Inviata a {log.recipients} clienti
+                {sentCount !== null && (
+                  <div className="bg-[#DCFCE7] border border-[#BBF7D0] rounded-[8px] p-4">
+                    <p className="text-[#16A34A] font-semibold text-sm">
+                      Notifica inviata a {sentCount} clienti!
+                    </p>
+                    <p className="text-[#15803D] text-xs mt-1">
+                      I clienti la vedranno nella loro carta Wallet nei prossimi minuti.
                     </p>
                   </div>
-                ))}
+                )}
+
+                <button
+                  onClick={handleSend}
+                  disabled={sending || !message.trim() || recipientCount === 0 || countLoading}
+                  className="w-full bg-[#111111] text-white py-3 rounded-[8px] text-sm font-semibold hover:bg-[#333333] disabled:opacity-50 transition-colors"
+                >
+                  {sending ? 'Invio in corso...' : 'Invia Notifica'}
+                </button>
               </div>
+            </div>
+
+            {/* Info */}
+            <div className="bg-gray-50 border border-[#E8E8E8] rounded-[12px] p-4">
+              <p className="font-medium text-gray-800 text-sm mb-2">Come funziona</p>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>Il messaggio appare nella carta Google Wallet</li>
+                <li>I clienti ricevono una notifica push sul telefono</li>
+                <li>L'aggiornamento avviene in 1-5 minuti</li>
+                <li>Puoi sovrascrivere il messaggio in qualsiasi momento</li>
+              </ul>
+            </div>
+            </>
             )}
           </div>
 
-          {/* Messaggi correnti nel wallet */}
-          <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mt-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-            <h2 className="font-medium text-gray-800 text-sm mb-3">Messaggi Correnti nel Wallet</h2>
-            {programs.length === 0 ? (
-              <p className="text-gray-400 text-sm">Nessun programma</p>
-            ) : (
-              <div className="space-y-2">
-                {programs.map(p => (
-                  <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg">
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: p.primary_color }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">{p.name}</p>
+          {/* Storia Notifiche */}
+          <div>
+            <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+              <h2 className="font-semibold text-base text-gray-900 mb-4">Cronologia Invii</h2>
+
+              {notifHistory.length === 0 ? (
+                <EmptyState
+                  icon={Bell}
+                  title="Nessuna notifica inviata"
+                  description="Invia il primo messaggio ai tuoi clienti!"
+                />
+              ) : (
+                <div className="space-y-3">
+                  {notifHistory.map(log => (
+                    <div key={log.id} className="border border-[#F0F0F0] rounded-[8px] p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-medium">
+                          {log.program_name}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {new Date(log.sent_at).toLocaleDateString('it-IT', {
+                            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-gray-800 text-sm">{log.message}</p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Inviata a {log.recipients} clienti
+                      </p>
                     </div>
-                    <Link
-                      href={`/dashboard/programs/${p.id}`}
-                      className="text-xs text-gray-500 hover:text-gray-900 whitespace-nowrap transition-colors"
-                    >
-                      Vedi
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Messaggi correnti nel wallet */}
+            <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mt-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+              <h2 className="font-medium text-gray-800 text-sm mb-3">Messaggi Correnti nel Wallet</h2>
+              {programs.length === 0 ? (
+                <p className="text-gray-400 text-sm">Nessun programma</p>
+              ) : (
+                <div className="space-y-2">
+                  {programs.map(p => (
+                    <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg">
+                      <div
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: p.primary_color }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{p.name}</p>
+                      </div>
+                      <Link
+                        href={`/dashboard/programs/${p.id}`}
+                        className="text-xs text-gray-500 hover:text-gray-900 whitespace-nowrap transition-colors"
+                      >
+                        Vedi
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* WhatsApp Tab */}
+      {activeTab === 'whatsapp' && (
+        <>
+          {!planLoading && isFree ? (
+            <UpgradePrompt feature="WhatsApp Marketing" requiredPlan="PRO" />
+          ) : !isWaConnected ? (
+            <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-8 max-w-md shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                  <MessageCircle size={28} className="text-gray-400" />
+                </div>
+                <h2 className="text-base font-semibold text-gray-900 mb-2">
+                  WhatsApp non connesso
+                </h2>
+                <p className="text-sm text-gray-500 mb-5">
+                  Collega il tuo numero WhatsApp per inviare messaggi ai clienti direttamente su WhatsApp.
+                </p>
+                <Link
+                  href="/dashboard/settings/whatsapp"
+                  className="bg-[#111111] text-white px-5 py-2.5 rounded-[8px] text-sm font-semibold hover:bg-[#333333] transition-colors"
+                >
+                  Connetti WhatsApp nelle Impostazioni
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid lg:grid-cols-2 gap-8">
+              {/* WhatsApp Form */}
+              <div>
+                <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+                  <h2 className="font-semibold text-base text-gray-900 mb-1">Invia Messaggio WhatsApp</h2>
+                  <p className="text-gray-500 text-sm mb-5">
+                    Il messaggio arrivera direttamente su WhatsApp dei tuoi clienti
+                  </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Programma destinatario
+                      </label>
+                      <select
+                        value={waSelectedProgram}
+                        onChange={e => setWaSelectedProgram(e.target.value)}
+                        className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors bg-white"
+                      >
+                        <option value="all">Tutti i programmi</option>
+                        {programs.map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Rate limit info */}
+                    <div className={`rounded-[8px] px-4 py-3 border ${waDailyCount > 150 ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50 border-[#E8E8E8]'}`}>
+                      <span className={`text-sm ${waDailyCount > 150 ? 'text-yellow-700' : 'text-gray-700'}`}>
+                        Oggi: {waDailyCount}/200 messaggi inviati
+                        {waDailyCount > 150 && ' — attenzione, limite quasi raggiunto'}
+                      </span>
+                    </div>
+
+                    {/* WA Recipient count */}
+                    <div className="bg-gray-50 border border-[#E8E8E8] rounded-[8px] px-4 py-3 flex items-center justify-between">
+                      <span className="text-sm text-gray-700">
+                        {waCountLoading
+                          ? 'Calcolo destinatari...'
+                          : `${waRecipientCount} client${waRecipientCount === 1 ? 'e' : 'i'} con numero WhatsApp`
+                        }
+                      </span>
+                      {waCountLoading && (
+                        <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Messaggio
+                      </label>
+                      <textarea
+                        value={waMessage}
+                        onChange={e => setWaMessage(e.target.value)}
+                        placeholder="Es: Ciao! Oggi hai diritto a uno sconto speciale. Vieni a trovarci!"
+                        rows={4}
+                        maxLength={1000}
+                        className="w-full px-3 py-3 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none transition-colors resize-none"
+                      />
+                      <p className="text-xs text-gray-400 text-right mt-1">{waMessage.length}/1000</p>
+                    </div>
+
+                    {waSentCount !== null && (
+                      <div className="bg-[#DCFCE7] border border-[#BBF7D0] rounded-[8px] p-4">
+                        <p className="text-[#16A34A] font-semibold text-sm">
+                          Messaggio inviato a {waSentCount} clienti su WhatsApp!
+                        </p>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleSendWhatsApp}
+                      disabled={waSending || !waMessage.trim() || waRecipientCount === 0 || waCountLoading}
+                      className="w-full bg-[#111111] text-white py-3 rounded-[8px] text-sm font-semibold hover:bg-[#333333] disabled:opacity-50 transition-colors"
+                    >
+                      {waSending ? 'Invio in corso...' : 'Invia su WhatsApp'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Come funziona WhatsApp */}
+                <div className="bg-gray-50 border border-[#E8E8E8] rounded-[12px] p-4">
+                  <p className="font-medium text-gray-800 text-sm mb-2">Come funziona</p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>I messaggi arrivano direttamente su WhatsApp del cliente</li>
+                    <li>Solo i clienti con numero di telefono registrato vengono conteggiati</li>
+                    <li>Limite di 200 messaggi al giorno per evitare ban</li>
+                    <li>I messaggi vengono inviati in batch per garantire la consegna</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Cronologia (reuse push history) */}
+              <div>
+                <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+                  <h2 className="font-semibold text-base text-gray-900 mb-4">Cronologia Push</h2>
+                  {notifHistory.length === 0 ? (
+                    <EmptyState
+                      icon={Bell}
+                      title="Nessuna notifica inviata"
+                      description="Invia il primo messaggio ai tuoi clienti!"
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      {notifHistory.slice(0, 5).map(log => (
+                        <div key={log.id} className="border border-[#F0F0F0] rounded-[8px] p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-medium">
+                              {log.program_name}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {new Date(log.sent_at).toLocaleDateString('it-IT', {
+                                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-gray-800 text-sm">{log.message}</p>
+                          <p className="text-xs text-gray-400 mt-2">
+                            Inviata a {log.recipients} clienti
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Status connector link */}
+                <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-4 mt-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">WhatsApp connesso</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Oggi: {waDailyCount}/200 messaggi</p>
+                    </div>
+                    <Link
+                      href="/dashboard/settings/whatsapp"
+                      className="text-xs text-gray-500 hover:text-gray-900 transition-colors"
+                    >
+                      Gestisci
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }
