@@ -119,8 +119,13 @@ export default function JoinPage() {
     setSubmitting(true)
 
     try {
+      if (!program) {
+        setError('Errore interno: programma non trovato.')
+        setSubmitting(false)
+        return
+      }
       const merchantId = program.merchant_id || merchant?.id
-      if (!merchantId || !program) {
+      if (!merchantId) {
         setError('Errore interno: merchant non trovato.')
         setSubmitting(false)
         return
