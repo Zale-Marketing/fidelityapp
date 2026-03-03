@@ -18,6 +18,7 @@ type ProgramInfo = {
   subscription_period: string | null
   min_cashback_redeem: number | null
   daily_limit: number | null
+  merchant_id: string
 }
 
 type RewardItem = {
@@ -83,7 +84,7 @@ export default function JoinPage() {
         return
       }
 
-      setProgram(prog as ProgramInfo)
+      setProgram(prog)
 
       if (prog.program_type === 'stamps') {
         const { data: rewardsData } = await supabase
@@ -118,7 +119,7 @@ export default function JoinPage() {
     setSubmitting(true)
 
     try {
-      const merchantId = (program as any & { merchant_id: string }).merchant_id || merchant?.id
+      const merchantId = program.merchant_id || merchant?.id
       if (!merchantId || !program) {
         setError('Errore interno: merchant non trovato.')
         setSubmitting(false)
@@ -135,7 +136,7 @@ export default function JoinPage() {
           .select('id')
           .eq('merchant_id', merchantId)
           .eq('contact_email', email.toLowerCase().trim())
-          .single()
+          .maybeSingle()
 
         if (existingHolder) {
           cardHolderId = existingHolder.id
@@ -146,7 +147,7 @@ export default function JoinPage() {
             .select('id, scan_token')
             .eq('card_holder_id', cardHolderId)
             .eq('program_id', program.id)
-            .single()
+            .maybeSingle()
 
           if (existingCard) {
             // Ha già la carta - reindirizza direttamente

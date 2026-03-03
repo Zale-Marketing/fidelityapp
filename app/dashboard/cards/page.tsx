@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import MetricCard from '@/components/ui/MetricCard'
 import EmptyState from '@/components/ui/EmptyState'
 import UpgradePrompt from '@/components/ui/UpgradePrompt'
@@ -29,7 +30,7 @@ type CardRow = {
 type CardHolder = {
   id: string
   full_name: string | null
-  email: string | null
+  contact_email: string | null
   phone: string | null
 }
 
@@ -120,7 +121,7 @@ export default function CardsSegmentationPage() {
       const holderIds = [...new Set(rawCards.map(c => c.card_holder_id as string))]
       const { data: holders } = await supabase
         .from('card_holders')
-        .select('id, full_name, email, phone')
+        .select('id, full_name, contact_email, phone')
         .in('id', holderIds)
 
       const holderMap = new Map<string, CardHolder>()
@@ -216,7 +217,7 @@ export default function CardsSegmentationPage() {
       const saldo = c.stamp_count ?? c.current_stamps ?? c.points_balance ?? c.cashback_balance ?? c.total_spent ?? 0
       return [
         c.holder?.full_name || '',
-        c.holder?.email || '',
+        c.holder?.contact_email || '',
         c.holder?.phone || '',
         c.program_name || '',
         String(saldo),
@@ -421,10 +422,16 @@ export default function CardsSegmentationPage() {
                         />
                       </td>
                       <td className="px-4 py-3 font-medium text-gray-900">
-                        {card.holder?.full_name || '—'}
+                        <Link
+                          href={`/dashboard/cards/${card.id}`}
+                          className="hover:underline hover:text-[#111111]"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          {card.holder?.full_name || '—'}
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-gray-500">
-                        {card.holder?.email || '—'}
+                        {card.holder?.contact_email || '—'}
                       </td>
                       <td className="px-4 py-3 text-gray-600">
                         {card.program_name || '—'}
