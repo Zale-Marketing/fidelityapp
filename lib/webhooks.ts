@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export type WebhookEvent =
   | 'bollino_aggiunto'
-  | 'card_creata'
+  | 'carta_creata'
   | 'premio_riscattato'
   | 'nuovo_cliente'
 
