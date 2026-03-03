@@ -114,7 +114,7 @@ function BillingContent() {
         setPromoError(data.error)
       } else {
         const expires = new Date(data.expiresAt).toLocaleDateString('it-IT')
-        setPromoSuccess(`Piano PRO attivato! Accesso gratuito fino al ${expires}.`)
+        setPromoSuccess(`Piano BUSINESS attivato! Accesso gratuito fino al ${expires}.`)
         setPromoCode('')
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
@@ -125,6 +125,7 @@ function BillingContent() {
             if (merchantData) setMerchant(merchantData)
           }
         }
+        router.refresh()
       }
     } catch {
       setPromoError('Errore di connessione. Riprova.')
@@ -331,10 +332,10 @@ function BillingContent() {
       </div>
 
       {/* Codice Promo */}
-      {!isPro && (
+      {merchant?.plan !== 'BUSINESS' && (
         <div id="coupon" className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
           <h3 className="font-semibold text-gray-900 mb-1 text-sm">Hai un codice promo?</h3>
-          <p className="text-sm text-gray-500 mb-4">Inserisci il codice per attivare il piano PRO gratuitamente.</p>
+          <p className="text-sm text-gray-500 mb-4">Inserisci il codice per attivare il piano BUSINESS gratuitamente.</p>
           <div className="flex gap-3 flex-wrap">
             <input
               type="text"
