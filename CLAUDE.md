@@ -48,8 +48,10 @@ Merchant (bar, ristoranti, negozi) creano carte fedeltà; i clienti le salvano s
 | stripe_subscription_id | text | |
 | stripe_subscription_status | text | |
 | plan_expires_at | timestamptz | |
-| maytapi_product_id | text | ⚠️ SQL: `ADD COLUMN IF NOT EXISTS` — vedi MANUAL-ACTIONS.md |
-| maytapi_api_token | text | ⚠️ SQL: `ADD COLUMN IF NOT EXISTS` — vedi MANUAL-ACTIONS.md |
+| sendapp_instance_id | text | ID istanza SendApp Cloud |
+| sendapp_access_token | text | Token accesso SendApp Cloud |
+| sendapp_provider | text | `'cloud'` (default) |
+| sendapp_status | text | `'connected'`\|`'disconnected'` |
 | google_reviews_url | text | |
 | subscription_tier | text | `'free'`\|`'starter'`\|`'pro'`\|`'enterprise'` |
 | subscription_status | text | `'active'`\|`'canceled'`\|`'past_due'` |
@@ -222,6 +224,18 @@ Storico notifiche inviate. SQL di creazione in MANUAL-ACTIONS.md.
 | is_active | boolean | |
 | created_at | timestamptz | |
 
+### `whatsapp_logs`
+| Colonna | Tipo | Note |
+|---------|------|------|
+| id | uuid PK | |
+| merchant_id | uuid FK | → merchants |
+| to_phone | text | Numero normalizzato (es. 393331234567) |
+| message | text | |
+| status | text | `'sent'`\|`'failed'`\|`'received'` |
+| error | text | nullable |
+| event_type | text | `'bulk'`\|`'manual'`\|`'test'`\|`'incoming'`\|`'bollino_aggiunto'`\|`'benvenuto'`\|`'premio'` |
+| created_at | timestamptz | |
+
 ### `leads`
 | Colonna | Tipo |
 |---------|------|
@@ -296,6 +310,7 @@ components/
     └── UpgradePrompt.tsx
 
 lib/
+├── sendapp.ts                        # SendApp Cloud API (formatPhoneIT, sendTextMessage, sendWhatsAppToCustomer, ...)
 ├── supabase.ts                       # createClient()
 ├── types.ts                          # Tutti i tipi (fonte di verità per colonne)
 ├── google-wallet.ts                  # generateWalletLink, updateWalletCard, getHeroImageUrl
@@ -373,10 +388,13 @@ POST   /api/webhooks            { url, events[] } → { id, secret }
 PATCH  /api/webhooks/[id]       { is_active } → Endpoint
 DELETE /api/webhooks/[id]       → 204
 POST   /api/webhooks/dispatch   { merchantId, event, data } → dispatcha HMAC
-POST   /api/whatsapp/connect    {} → { status }
-PATCH  /api/whatsapp/connect    {} → disconnetti
-GET    /api/whatsapp/status     ?action=status|qr
-POST   /api/whatsapp/send       { to, message }
+POST   /api/whatsapp/connect    { instanceId, accessToken } → { status: 'connected' }
+PATCH  /api/whatsapp/connect    {} → disconnetti (svuota credenziali)
+GET    /api/whatsapp/status     ?action=qr → { qr: base64 } | ?action=status → { status, phone? }
+POST   /api/whatsapp/send       { to, message } → { success }
+POST   /api/whatsapp/test       { phone, message } → { success }
+POST   /api/whatsapp/incoming   webhook SendApp in entrata → logga in whatsapp_logs
+POST   /api/whatsapp/bulk       { message, segment, programId? } → { sent, failed, total }
 GET    /api/cron/birthday       cron job birthday bonus
 ```
 
@@ -512,7 +530,7 @@ const { data: rewards } = await supabase.from('rewards').select('*').eq('program
 - [x] WhatsApp marketing: Maytapi QR connect, invia messaggi, 200 msg/day limit
 - [x] Webhook integrations HMAC-SHA256 (piano BUSINESS)
 - [x] Birthday cron automation
-- [x] Credenziali Maytapi per-merchant (su merchants table)
+- [x] SendApp Cloud WhatsApp (replace Maytapi): connect/QR/disconnect/reconnect/reboot, bulk campagne con segmentazione, messaggi automatici (bollino/benvenuto/premio), whatsapp_logs, preview bolla, variabili {nome}{bollini}{premio}{link_carta}
 - [x] Soft delete carte individuali (deleted_at su cards)
 - [x] Settings → link a WhatsApp e Webhook sub-pages
 
