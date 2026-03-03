@@ -1,11 +1,212 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Program, Card, CardHolder, CustomerTag } from '@/lib/types'
 import { ArrowLeft, Pencil, Trash2, Plus, Share2, Copy, Send, Mail, Search, UserPlus, CreditCard, Check, X } from 'lucide-react'
+
+type NewCustomerData = {
+  full_name: string
+  contact_email: string
+  phone: string
+  birth_date: string
+  notes: string
+  marketing_consent: boolean
+  acquisition_source: string
+  selectedTags: string[]
+}
+
+type CustomerFormProps = {
+  createNewCustomer: boolean
+  customerSearch: string
+  setCustomerSearch: (v: string) => void
+  showCustomerDropdown: boolean
+  setShowCustomerDropdown: (v: boolean) => void
+  selectedCustomer: CardHolder | null
+  setSelectedCustomer: (v: CardHolder | null) => void
+  filteredCustomers: CardHolder[]
+  selectCustomer: (c: CardHolder) => void
+  toggleNewCustomer: () => void
+  newCustomer: NewCustomerData
+  setNewCustomer: (v: NewCustomerData) => void
+  tags: CustomerTag[]
+  toggleTagInForm: (tagId: string) => void
+}
+
+function CustomerForm({
+  createNewCustomer,
+  customerSearch,
+  setCustomerSearch,
+  showCustomerDropdown,
+  setShowCustomerDropdown,
+  selectedCustomer,
+  setSelectedCustomer,
+  filteredCustomers,
+  selectCustomer,
+  toggleNewCustomer,
+  newCustomer,
+  setNewCustomer,
+  tags,
+  toggleTagInForm,
+}: CustomerFormProps) {
+  return (
+    <div className="space-y-4">
+      {!createNewCustomer && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+            <Search size={14} />
+            Cerca Cliente Esistente
+          </label>
+          <input
+            type="text"
+            value={customerSearch}
+            onChange={(e) => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); setSelectedCustomer(null) }}
+            onFocus={() => setShowCustomerDropdown(true)}
+            placeholder="Digita nome, email o telefono..."
+            className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none"
+            autoComplete="off"
+          />
+
+          {showCustomerDropdown && customerSearch && (
+            <div className="mt-1 bg-white border border-[#E0E0E0] rounded-[8px] shadow-lg max-h-48 overflow-y-auto z-10 relative">
+              {filteredCustomers.length === 0 ? (
+                <p className="p-3 text-gray-500 text-sm">Nessun cliente trovato</p>
+              ) : (
+                filteredCustomers.map(customer => (
+                  <button
+                    key={customer.id}
+                    type="button"
+                    onClick={() => selectCustomer(customer)}
+                    className="w-full p-3 text-left hover:bg-[#F9F9F9] flex items-center gap-3"
+                  >
+                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                      <span className="text-gray-600 font-semibold text-sm">
+                        {customer.full_name?.charAt(0).toUpperCase() || '?'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{customer.full_name || 'Anonimo'}</p>
+                      <p className="text-xs text-gray-500">{customer.contact_email || customer.phone || ''}</p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+
+          {selectedCustomer && (
+            <div className="mt-2 p-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-[8px] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Check size={14} className="text-[#16A34A]" />
+                <span className="font-medium text-sm">{selectedCustomer.full_name}</span>
+                {selectedCustomer.contact_email && (
+                  <span className="text-xs text-gray-500">({selectedCustomer.contact_email})</span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => { setSelectedCustomer(null); setCustomerSearch('') }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center gap-4">
+        <div className="flex-1 h-px bg-[#E8E8E8]"></div>
+        <span className="text-gray-400 text-xs">oppure</span>
+        <div className="flex-1 h-px bg-[#E8E8E8]"></div>
+      </div>
+
+      <button
+        type="button"
+        onClick={toggleNewCustomer}
+        className={`w-full p-4 rounded-[8px] border-2 border-dashed transition-all flex items-center justify-center gap-2 text-sm font-medium ${
+          createNewCustomer
+            ? 'border-[#111111] bg-[#F9F9F9] text-gray-900'
+            : 'border-[#E0E0E0] text-gray-500 hover:border-[#111111] hover:text-gray-900'
+        }`}
+      >
+        {createNewCustomer ? <Check size={16} /> : <UserPlus size={16} />}
+        {createNewCustomer ? 'Creando nuovo cliente...' : 'Crea Nuovo Cliente'}
+      </button>
+
+      {createNewCustomer && (
+        <div className="space-y-3 p-4 bg-[#F9F9F9] border border-[#E8E8E8] rounded-[8px]">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo *</label>
+            <input type="text" value={newCustomer.full_name} onChange={(e) => setNewCustomer({...newCustomer, full_name: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none" placeholder="Mario Rossi"/>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" value={newCustomer.contact_email} onChange={(e) => setNewCustomer({...newCustomer, contact_email: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none" placeholder="email@esempio.com"/>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+              <input type="tel" value={newCustomer.phone} onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none" placeholder="+39 333 1234567"/>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data di Nascita</label>
+            <input type="date" value={newCustomer.birth_date} onChange={(e) => setNewCustomer({...newCustomer, birth_date: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none"/>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Come ci ha conosciuto?</label>
+            <select value={newCustomer.acquisition_source} onChange={(e) => setNewCustomer({...newCustomer, acquisition_source: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none">
+              <option value="">-- Seleziona --</option>
+              <option value="Passaparola">Passaparola</option>
+              <option value="Instagram">Instagram</option>
+              <option value="Facebook">Facebook</option>
+              <option value="Google">Google</option>
+              <option value="TikTok">TikTok</option>
+              <option value="Volantino">Volantino</option>
+              <option value="Passante">Passante</option>
+              <option value="Altro">Altro</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+            <textarea value={newCustomer.notes} onChange={(e) => setNewCustomer({...newCustomer, notes: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none" rows={2} placeholder="Note aggiuntive..."/>
+          </div>
+
+          {tags.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tag</label>
+              <div className="flex flex-wrap gap-2">
+                {tags.map(tag => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleTagInForm(tag.id)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${newCustomer.selectedTags.includes(tag.id) ? 'ring-2 ring-offset-1' : 'opacity-60 hover:opacity-100'}`}
+                    style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                  >
+                    {newCustomer.selectedTags.includes(tag.id) ? '+ ' : ''}{tag.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <label className="flex items-center gap-3 cursor-pointer p-3 bg-white border border-[#E8E8E8] rounded-[8px]">
+            <input type="checkbox" checked={newCustomer.marketing_consent} onChange={(e) => setNewCustomer({...newCustomer, marketing_consent: e.target.checked})} className="w-4 h-4 rounded"/>
+            <span className="text-sm text-gray-700">Consenso comunicazioni marketing (GDPR)</span>
+          </label>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function ProgramDetailPage() {
   const [program, setProgram] = useState<Program | null>(null)
@@ -47,7 +248,7 @@ export default function ProgramDetailPage() {
   const router = useRouter()
   const params = useParams()
   const programId = params.id as string
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     loadProgram()
@@ -333,162 +534,6 @@ export default function ProgramDetailPage() {
     navigator.clipboard.writeText(createdCard.link)
     alert('Link copiato!')
   }
-
-  const CustomerForm = () => (
-    <div className="space-y-4">
-      {!createNewCustomer && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
-            <Search size={14} />
-            Cerca Cliente Esistente
-          </label>
-          <input
-            type="text"
-            value={customerSearch}
-            onChange={(e) => { setCustomerSearch(e.target.value); setShowCustomerDropdown(true); setSelectedCustomer(null) }}
-            onFocus={() => setShowCustomerDropdown(true)}
-            placeholder="Digita nome, email o telefono..."
-            className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none"
-            autoComplete="off"
-          />
-
-          {showCustomerDropdown && customerSearch && (
-            <div className="mt-1 bg-white border border-[#E0E0E0] rounded-[8px] shadow-lg max-h-48 overflow-y-auto z-10 relative">
-              {filteredCustomers.length === 0 ? (
-                <p className="p-3 text-gray-500 text-sm">Nessun cliente trovato</p>
-              ) : (
-                filteredCustomers.map(customer => (
-                  <button
-                    key={customer.id}
-                    type="button"
-                    onClick={() => selectCustomer(customer)}
-                    className="w-full p-3 text-left hover:bg-[#F9F9F9] flex items-center gap-3"
-                  >
-                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-gray-600 font-semibold text-sm">
-                        {customer.full_name?.charAt(0).toUpperCase() || '?'}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{customer.full_name || 'Anonimo'}</p>
-                      <p className="text-xs text-gray-500">{customer.contact_email || customer.phone || ''}</p>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-
-          {selectedCustomer && (
-            <div className="mt-2 p-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-[8px] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Check size={14} className="text-[#16A34A]" />
-                <span className="font-medium text-sm">{selectedCustomer.full_name}</span>
-                {selectedCustomer.contact_email && (
-                  <span className="text-xs text-gray-500">({selectedCustomer.contact_email})</span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => { setSelectedCustomer(null); setCustomerSearch('') }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="flex items-center gap-4">
-        <div className="flex-1 h-px bg-[#E8E8E8]"></div>
-        <span className="text-gray-400 text-xs">oppure</span>
-        <div className="flex-1 h-px bg-[#E8E8E8]"></div>
-      </div>
-
-      <button
-        type="button"
-        onClick={toggleNewCustomer}
-        className={`w-full p-4 rounded-[8px] border-2 border-dashed transition-all flex items-center justify-center gap-2 text-sm font-medium ${
-          createNewCustomer
-            ? 'border-[#111111] bg-[#F9F9F9] text-gray-900'
-            : 'border-[#E0E0E0] text-gray-500 hover:border-[#111111] hover:text-gray-900'
-        }`}
-      >
-        {createNewCustomer ? <Check size={16} /> : <UserPlus size={16} />}
-        {createNewCustomer ? 'Creando nuovo cliente...' : 'Crea Nuovo Cliente'}
-      </button>
-
-      {createNewCustomer && (
-        <div className="space-y-3 p-4 bg-[#F9F9F9] border border-[#E8E8E8] rounded-[8px]">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo *</label>
-            <input type="text" value={newCustomer.full_name} onChange={(e) => setNewCustomer({...newCustomer, full_name: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none" placeholder="Mario Rossi"/>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" value={newCustomer.contact_email} onChange={(e) => setNewCustomer({...newCustomer, contact_email: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none" placeholder="email@esempio.com"/>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
-              <input type="tel" value={newCustomer.phone} onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none" placeholder="+39 333 1234567"/>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Data di Nascita</label>
-            <input type="date" value={newCustomer.birth_date} onChange={(e) => setNewCustomer({...newCustomer, birth_date: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none"/>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Come ci ha conosciuto?</label>
-            <select value={newCustomer.acquisition_source} onChange={(e) => setNewCustomer({...newCustomer, acquisition_source: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none">
-              <option value="">-- Seleziona --</option>
-              <option value="Passaparola">Passaparola</option>
-              <option value="Instagram">Instagram</option>
-              <option value="Facebook">Facebook</option>
-              <option value="Google">Google</option>
-              <option value="TikTok">TikTok</option>
-              <option value="Volantino">Volantino</option>
-              <option value="Passante">Passante</option>
-              <option value="Altro">Altro</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
-            <textarea value={newCustomer.notes} onChange={(e) => setNewCustomer({...newCustomer, notes: e.target.value})} className="w-full px-3 py-2.5 border border-[#E0E0E0] rounded-[8px] text-sm focus:border-[#111111] focus:outline-none" rows={2} placeholder="Note aggiuntive..."/>
-          </div>
-
-          {tags.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Tag</label>
-              <div className="flex flex-wrap gap-2">
-                {tags.map(tag => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() => toggleTagInForm(tag.id)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${newCustomer.selectedTags.includes(tag.id) ? 'ring-2 ring-offset-1' : 'opacity-60 hover:opacity-100'}`}
-                    style={{ backgroundColor: tag.color + '20', color: tag.color }}
-                  >
-                    {newCustomer.selectedTags.includes(tag.id) ? '+ ' : ''}{tag.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <label className="flex items-center gap-3 cursor-pointer p-3 bg-white border border-[#E8E8E8] rounded-[8px]">
-            <input type="checkbox" checked={newCustomer.marketing_consent} onChange={(e) => setNewCustomer({...newCustomer, marketing_consent: e.target.checked})} className="w-4 h-4 rounded"/>
-            <span className="text-sm text-gray-700">Consenso comunicazioni marketing (GDPR)</span>
-          </label>
-        </div>
-      )}
-    </div>
-  )
 
   if (loading) {
     return (
@@ -830,7 +875,22 @@ export default function ProgramDetailPage() {
             </div>
 
             <div className="p-6">
-              <CustomerForm />
+              <CustomerForm
+                createNewCustomer={createNewCustomer}
+                customerSearch={customerSearch}
+                setCustomerSearch={setCustomerSearch}
+                showCustomerDropdown={showCustomerDropdown}
+                setShowCustomerDropdown={setShowCustomerDropdown}
+                selectedCustomer={selectedCustomer}
+                setSelectedCustomer={setSelectedCustomer}
+                filteredCustomers={filteredCustomers}
+                selectCustomer={selectCustomer}
+                toggleNewCustomer={toggleNewCustomer}
+                newCustomer={newCustomer}
+                setNewCustomer={setNewCustomer}
+                tags={tags}
+                toggleTagInForm={toggleTagInForm}
+              />
             </div>
 
             <div className="p-6 border-t border-[#F0F0F0] flex gap-3">
@@ -866,7 +926,22 @@ export default function ProgramDetailPage() {
             </div>
 
             <div className="p-6">
-              <CustomerForm />
+              <CustomerForm
+                createNewCustomer={createNewCustomer}
+                customerSearch={customerSearch}
+                setCustomerSearch={setCustomerSearch}
+                showCustomerDropdown={showCustomerDropdown}
+                setShowCustomerDropdown={setShowCustomerDropdown}
+                selectedCustomer={selectedCustomer}
+                setSelectedCustomer={setSelectedCustomer}
+                filteredCustomers={filteredCustomers}
+                selectCustomer={selectCustomer}
+                toggleNewCustomer={toggleNewCustomer}
+                newCustomer={newCustomer}
+                setNewCustomer={setNewCustomer}
+                tags={tags}
+                toggleTagInForm={toggleTagInForm}
+              />
             </div>
 
             <div className="p-6 border-t border-[#F0F0F0] flex gap-3">
