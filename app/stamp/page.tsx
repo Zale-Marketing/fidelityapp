@@ -129,11 +129,6 @@ export default function StampPage() {
     setMessage('Cerco la carta...')
 
     try {
-      let token = code
-      if (code.includes('/c/')) {
-        token = code.split('/c/')[1]?.split('?')[0] || code
-      }
-
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Non autenticato')
 
@@ -145,18 +140,41 @@ export default function StampPage() {
 
       if (!profile) throw new Error('Profilo non trovato')
 
-      const { data: card, error: cardError } = await supabase
-        .from('cards')
-        .select(`
-          *,
-          programs (*),
-          card_holders (*)
-        `)
-        .eq('scan_token', token)
-        .eq('merchant_id', profile.merchant_id)
-        .single()
+      const cardSelect = `*, programs (*), card_holders (*)`
+      let card: any = null
 
-      if (cardError || !card) {
+      if (code.includes('/c/')) {
+        // URL formato https://.../c/TOKEN — estrai il token e cerca per scan_token
+        const token = code.split('/c/')[1]?.split('?')[0] || code
+        const { data } = await supabase
+          .from('cards')
+          .select(cardSelect)
+          .eq('scan_token', token)
+          .eq('merchant_id', profile.merchant_id)
+          .single()
+        card = data
+      } else {
+        // Prova prima per cardId (UUID diretto), poi fallback per scan_token
+        const { data: byId } = await supabase
+          .from('cards')
+          .select(cardSelect)
+          .eq('id', code.trim())
+          .eq('merchant_id', profile.merchant_id)
+          .single()
+        if (byId) {
+          card = byId
+        } else {
+          const { data: byToken } = await supabase
+            .from('cards')
+            .select(cardSelect)
+            .eq('scan_token', code.trim())
+            .eq('merchant_id', profile.merchant_id)
+            .single()
+          card = byToken
+        }
+      }
+
+      if (!card) {
         throw new Error('Carta non trovata o non appartiene a questo negozio')
       }
 
