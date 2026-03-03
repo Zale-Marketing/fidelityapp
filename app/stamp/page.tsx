@@ -646,7 +646,15 @@ export default function StampPage() {
           card_id: card.id,
           card_holder_id: card.card_holder_id,
           program_id: card.program_id,
-          reward_description: program.reward_description || program.reward_text,
+          merchant_id: card.merchant_id,
+          reward: {
+            name: program.reward_description || program.reward_text || 'Premio',
+            stamps_required: program.stamps_required,
+          },
+          card: {
+            stamp_count: 0,
+            previous_stamp_count: currentStamps,
+          },
         },
       }),
     }).catch(console.error)
@@ -710,7 +718,15 @@ export default function StampPage() {
           card_id: card.id,
           card_holder_id: card.card_holder_id,
           program_id: card.program_id,
-          reward_description: program.reward_description || program.reward_text,
+          merchant_id: card.merchant_id,
+          reward: {
+            name: program.reward_description || program.reward_text || 'Sconto',
+            stamps_required: program.stamps_required,
+          },
+          card: {
+            stamp_count: newBalance,
+            previous_stamp_count: currentPoints,
+          },
         },
       }),
     }).catch(console.error)
