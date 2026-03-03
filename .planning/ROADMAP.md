@@ -207,7 +207,11 @@ Plans:
   2. Merchant elimina o disabilita un webhook endpoint dalla stessa pagina senza contattare il supporto
   3. Ogni volta che un cliente guadagna un bollino, il sistema invia un POST firmato HMAC-SHA256 all'URL configurato entro 5 secondi
   4. Tool esterno (es. Zapier, Make) riceve il payload e può verificare la firma con il secret del merchant
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — SQL migration doc (MANUAL-ACTIONS.md) + lib/webhooks.ts HMAC helper + CRUD API routes + public dispatch route
+- [ ] 11-02-PLAN.md — /dashboard/settings/webhooks UI (BUSINESS plan gated) + wire triggerWebhook into 4 event origins
 
 ### Phase 12: Advanced Analytics + CSV Export
 **Goal**: Merchant vede trend reali di engagement con grafici recharts e può esportare i dati clienti in CSV (solo PRO/BUSINESS)
@@ -247,5 +251,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Engagement Automation | 0/2 | Planned | - |
 | 9. Business Tools | 0/3 | Planned | - |
 | 10. WhatsApp Marketing | 2/2 | Complete | 2026-03-03 |
-| 11. Webhook Integrations | 0/? | Not started | - |
+| 11. Webhook Integrations | 0/2 | Planned | - |
 | 12. Advanced Analytics + CSV Export | 0/? | Not started | - |
