@@ -618,9 +618,9 @@ export default function StampPage() {
   async function redeemStampsReward() {
     if (!cardData) return
     
-    const { card, program } = cardData
+    const { card, program, customer } = cardData
     const currentStamps = card.current_stamps || card.stamp_count || 0
-    
+
     if (!confirm(`Riscattare il premio "${program.reward_description || program.reward_text || 'Premio'}"?\n\nI bollini verranno azzerati.`)) return
 
     const { error } = await supabase
