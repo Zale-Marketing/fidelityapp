@@ -132,16 +132,16 @@
 
 ### ANALYTICS — Analytics Avanzata
 
-- [ ] **ANALYTICS-01**: Pagina /dashboard/analytics mostra totale clienti attivi con trend ultimi 30 giorni
-- [ ] **ANALYTICS-02**: Grafico a barre bollini/punti assegnati per giorno (ultimi 30gg) con recharts
-- [ ] **ANALYTICS-03**: Tasso di ritorno — % clienti che tornano entro 30gg dalla prima visita
-- [ ] **ANALYTICS-04**: Totale premi riscattati (da stamp_transactions type='redeem')
-- [ ] **ANALYTICS-05**: Grafico a torta segmenti clienti (attivi/dormienti/persi) con recharts
+- [x] **ANALYTICS-01**: Pagina /dashboard/analytics mostra totale clienti attivi con trend ultimi 30 giorni
+- [x] **ANALYTICS-02**: Grafico a barre bollini/punti assegnati per giorno (ultimi 30gg) con recharts
+- [x] **ANALYTICS-03**: Tasso di ritorno — % clienti che tornano entro 30gg dalla prima visita
+- [x] **ANALYTICS-04**: Totale premi riscattati (da stamp_transactions type='redeem')
+- [x] **ANALYTICS-05**: Grafico a torta segmenti clienti (attivi/dormienti/persi) con recharts
 
 ### CSV2 — Export CSV Avanzato
 
-- [ ] **CSV2-01**: Pulsante "Esporta CSV" in /dashboard/cards con dati: nome, email, telefono, piano, bollini/punti attuali, ultima visita, data iscrizione
-- [ ] **CSV2-02**: Export CSV disponibile solo per piano PRO e BUSINESS (UpgradePrompt per FREE)
+- [x] **CSV2-01**: Pulsante "Esporta CSV" in /dashboard/cards con dati: nome, email, telefono, piano, bollini/punti attuali, ultima visita, data iscrizione
+- [x] **CSV2-02**: Export CSV disponibile solo per piano PRO e BUSINESS (UpgradePrompt per FREE)
 
 ---
 
@@ -215,13 +215,13 @@
 | WH-02 | Phase 11 — Webhook Integrations | Pending |
 | WH-03 | Phase 11 — Webhook Integrations | Pending |
 | WH-04 | Phase 11 — Webhook Integrations | Pending |
-| ANALYTICS-01 | Phase 12 — Advanced Analytics + CSV Export | Pending |
-| ANALYTICS-02 | Phase 12 — Advanced Analytics + CSV Export | Pending |
-| ANALYTICS-03 | Phase 12 — Advanced Analytics + CSV Export | Pending |
-| ANALYTICS-04 | Phase 12 — Advanced Analytics + CSV Export | Pending |
-| ANALYTICS-05 | Phase 12 — Advanced Analytics + CSV Export | Pending |
-| CSV2-01 | Phase 12 — Advanced Analytics + CSV Export | Pending |
-| CSV2-02 | Phase 12 — Advanced Analytics + CSV Export | Pending |
+| ANALYTICS-01 | Phase 12 — Advanced Analytics + CSV Export | Complete |
+| ANALYTICS-02 | Phase 12 — Advanced Analytics + CSV Export | Complete |
+| ANALYTICS-03 | Phase 12 — Advanced Analytics + CSV Export | Complete |
+| ANALYTICS-04 | Phase 12 — Advanced Analytics + CSV Export | Complete |
+| ANALYTICS-05 | Phase 12 — Advanced Analytics + CSV Export | Complete |
+| CSV2-01 | Phase 12 — Advanced Analytics + CSV Export | Complete |
+| CSV2-02 | Phase 12 — Advanced Analytics + CSV Export | Complete |
 
 **Coverage:**
 - v2 requirements: 47 total

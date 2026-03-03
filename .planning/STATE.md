@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Redesign Completo
-status: unknown
-last_updated: "2026-03-03T01:33:41.890Z"
+status: complete
+last_updated: "2026-03-03T02:30:00.000Z"
 progress:
-  total_phases: 11
-  completed_phases: 11
-  total_plans: 26
-  completed_plans: 26
+  total_phases: 12
+  completed_phases: 12
+  total_plans: 28
+  completed_plans: 28
 ---
 
 ---
@@ -44,20 +44,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** Un cassiere italiano inquadra il QR del cliente e in 3 secondi il Google Wallet si aggiorna — senza app, senza attrito, senza spiegazioni.
-**Current focus:** Phase 11 — Webhook Integrations
+**Current focus:** Milestone v2.0 COMPLETE
 
 ## Current Position
 
-Phase: 10 — WhatsApp Marketing (complete) → next: Phase 11
+Phase: 12 — Advanced Analytics + CSV Export (complete) — LAST PHASE of v2.0
 Plan: — (all plans complete)
-Status: Phase 10 complete — all WA requirements done (WA-01..WA-05)
-Last activity: 2026-03-03 — Completed 10-02-PLAN.md (WhatsApp send API + notifications tab)
+Status: Phase 12 complete — all ANALYTICS and CSV2 requirements done (ANALYTICS-01..05, CSV2-01..02)
+Last activity: 2026-03-03 — Completed 12-01-PLAN.md (recharts analytics) + 12-02-PLAN.md (CSV export)
 
 ## Progress Bar
 
 ```
-v2.0: [ ] Phase 6  [ ] Phase 7  [ ] Phase 8  [ ] Phase 9  [ ] Phase 10  [ ] Phase 11  [ ] Phase 12
-       0/7 phases complete
+v2.0: [x] Phase 6  [x] Phase 7  [ ] Phase 8  [ ] Phase 9  [x] Phase 10  [x] Phase 11  [x] Phase 12
+       5/7 phases complete (Phases 8+9 deferred — see Pending Todos)
 ```
 
 ## Phase Map (v2.0)
@@ -111,8 +111,9 @@ v2.0: [ ] Phase 6  [ ] Phase 7  [ ] Phase 8  [ ] Phase 9  [ ] Phase 10  [ ] Phas
 
 ## Session Continuity
 
-Next action: Run `/gsd:plan-phase 11` to generate execution plans for Phase 11: Webhook Integrations
+MILESTONE v2.0 COMPLETE — All planned phases (6, 7, 10, 11, 12) are complete.
+Phases 8 and 9 were deferred (see Pending Todos and Blockers sections).
 
-Plan 10-01 complete (2026-03-03): SQL migration docs + /api/whatsapp/connect + /api/whatsapp/status + settings page
-Plan 10-02 complete (2026-03-03): /api/whatsapp/send (rate limit + normalization) + WhatsApp tab in notifications
-Phase 10 fully complete — all 5 WhatsApp requirements shipped
+Plan 12-01 complete (2026-03-03): recharts installed + analytics page upgraded (5 new analytics features)
+Plan 12-02 complete (2026-03-03): CSV export with usePlan gating + UpgradePrompt for FREE merchants
+Phase 12 fully complete — all ANALYTICS-01..05 + CSV2-01..02 requirements shipped
