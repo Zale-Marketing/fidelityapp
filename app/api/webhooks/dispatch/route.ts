@@ -154,6 +154,8 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const { merchantId, event, data } = body
 
+  console.log('[dispatch] POST ricevuto — event:', event, '| merchantId:', merchantId)
+
   if (!merchantId || !event) {
     return NextResponse.json({ error: 'merchantId e event sono obbligatori' }, { status: 400 })
   }
@@ -174,8 +176,8 @@ export async function POST(request: NextRequest) {
     enrichedData = data ?? {}
   }
 
-  // Fire-and-forget
-  triggerWebhook(merchantId, event as WebhookEvent, enrichedData).catch(console.error)
+  // Awaited — su Vercel serverless il fire-and-forget viene killato prima del completamento
+  await triggerWebhook(merchantId, event as WebhookEvent, enrichedData)
 
   return NextResponse.json({ ok: true })
 }

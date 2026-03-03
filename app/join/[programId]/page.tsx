@@ -242,6 +242,7 @@ export default function JoinPage() {
         }).catch(console.error)
       }
 
+      console.log('[join] dispatchWebhook — merchantId:', merchantId, '| program.merchant_id:', program.merchant_id)
       dispatchWebhook('nuovo_cliente', {
         card_holder_id: cardHolderId,
         full_name: fullName.trim(),

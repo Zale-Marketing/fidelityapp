@@ -158,6 +158,7 @@ export async function POST(request: NextRequest) {
       const walletLink = await generateWalletLink(walletData as any)
       console.log('=== WALLET LINK GENERATED ===')
 
+      console.log('[wallet] triggerWebhook carta_creata — merchantId:', card.merchant_id)
       // Fire-and-forget webhook — do NOT await
       triggerWebhook(card.merchant_id, 'carta_creata', {
         merchant: { id: card.merchant_id },
