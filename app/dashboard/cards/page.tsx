@@ -316,7 +316,7 @@ export default function CardsSegmentationPage() {
             ) : (
               <button
                 onClick={() => {
-                  window.location.href = '/dashboard/upgrade'
+                  window.location.href = '/dashboard/billing'
                 }}
                 className="flex items-center gap-2 border border-[#E0E0E0] text-gray-500 px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#F5F5F5] transition-colors"
                 title="Disponibile nel piano PRO"

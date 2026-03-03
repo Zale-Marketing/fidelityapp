@@ -19,7 +19,7 @@ export default function UpgradePrompt({ feature, requiredPlan = 'PRO' }: Upgrade
         {feature} e disponibile nel piano {requiredPlan}. Aggiorna per sbloccarla.
       </p>
       <Link
-        href="/dashboard/upgrade"
+        href="/dashboard/billing"
         className="inline-block bg-[#111111] text-white px-6 py-3 rounded-[8px] font-semibold text-sm hover:bg-[#333333] transition-colors"
       >
         Vedi Piani e Prezzi

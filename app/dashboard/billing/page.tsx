@@ -320,19 +320,19 @@ function BillingContent() {
             <li className="flex items-center gap-2"><Check size={16} className="text-[#16A34A] flex-shrink-0" /> White-label</li>
           </ul>
           <div className="mt-6">
-            <Link
-              href="/dashboard/upgrade"
+            <a
+              href="#coupon"
               className="block w-full bg-[#111111] text-white py-3 rounded-[8px] text-sm font-semibold hover:bg-[#333333] transition-colors text-center"
             >
               Attiva BUSINESS
-            </Link>
+            </a>
           </div>
         </div>
       </div>
 
       {/* Codice Promo */}
       {!isPro && (
-        <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <div id="coupon" className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
           <h3 className="font-semibold text-gray-900 mb-1 text-sm">Hai un codice promo?</h3>
           <p className="text-sm text-gray-500 mb-4">Inserisci il codice per attivare il piano PRO gratuitamente.</p>
           <div className="flex gap-3 flex-wrap">
