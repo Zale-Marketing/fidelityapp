@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Html5Qrcode } from 'html5-qrcode'
 
-type ScanMode = 'ready' | 'scanning' | 'manual' | 'processing' | 'success' | 'error' | 'input_amount' | 'reward_ready'
+type ScanMode = 'ready' | 'scanning' | 'manual' | 'processing' | 'success' | 'error' | 'input_amount' | 'reward_ready' | 'intermediate_reward'
 
 type CardData = {
   card: any
@@ -22,6 +22,7 @@ export default function StampPage() {
   const [amount, setAmount] = useState('')
   const [processing, setProcessing] = useState(false)
   const [showActivateSubscription, setShowActivateSubscription] = useState(false)
+  const [intermediateReward, setIntermediateReward] = useState<any>(null)
   const [idempotencyKey, setIdempotencyKey] = useState('')
   const idempotencyKeyRef = useRef('')
   const scannerRef = useRef<Html5Qrcode | null>(null)
@@ -38,7 +39,7 @@ export default function StampPage() {
 
   // Auto-reset after success or non-subscription error — STAMP-04
   useEffect(() => {
-    if (mode === 'success') {
+    if (mode === 'success' || mode === 'intermediate_reward') {
       const timer = setTimeout(() => {
         resetScanner().then(() => startScanner())
       }, 3000)
@@ -258,17 +259,33 @@ export default function StampPage() {
       console.error('Errore log transazione:', txError)
     }
 
+    // Carica premi intermedi del programma
+    const { data: rewards } = await supabase
+      .from('rewards')
+      .select('*')
+      .eq('program_id', program.id)
+      .eq('is_active', true)
+      .order('stamps_required', { ascending: true })
+
     // 🆕 AGGIORNA WALLET
     await updateWallet(card.id)
 
     const customerName = customer?.full_name || customer?.email || cardData?.customer?.full_name || ''
-    
+
     if (newStamps >= program.stamps_required) {
       setMode('reward_ready')
       setMessage(`🎉 PREMIO COMPLETATO!${customerName ? `\n\n👤 ${customerName}` : ''}\n\n${newStamps}/${program.stamps_required} bollini`)
     } else {
-      setMode('success')
-      setMessage(`+1 bollino!${customerName ? `\n\n👤 ${customerName}` : ''}\n\n${newStamps}/${program.stamps_required} bollini`)
+      // Controlla se è stato raggiunto esattamente un premio intermedio
+      const reachedReward = rewards?.find((r: any) => r.stamps_required === newStamps) || null
+      if (reachedReward) {
+        setIntermediateReward(reachedReward)
+        setMode('intermediate_reward')
+        setMessage(`${customerName ? `👤 ${customerName}\n\n` : ''}${newStamps}/${program.stamps_required} bollini`)
+      } else {
+        setMode('success')
+        setMessage(`+1 bollino!${customerName ? `\n\n👤 ${customerName}` : ''}\n\n${newStamps}/${program.stamps_required} bollini`)
+      }
     }
   }
 
@@ -745,6 +762,7 @@ export default function StampPage() {
     setShowActivateSubscription(false)
     setIdempotencyKey('')
     idempotencyKeyRef.current = ''
+    setIntermediateReward(null)
   }
 
   function getTypeInfo(type: string) {
@@ -990,6 +1008,21 @@ export default function StampPage() {
               )}
             </div>
             <button onClick={resetScanner} className="w-full mt-4 py-3 text-gray-500 hover:text-gray-700">← Scansiona un'altra carta</button>
+          </div>
+        )}
+
+        {mode === 'intermediate_reward' && intermediateReward && (
+          <div className="fixed inset-0 bg-green-500 flex flex-col items-center justify-center p-8 text-center z-50">
+            <div className="w-28 h-28 bg-white/20 rounded-full flex items-center justify-center mb-6">
+              <span className="text-5xl">🎁</span>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-3">Premio Intermedio!</h2>
+            <p className="text-white text-2xl font-bold mb-2">{intermediateReward.name}</p>
+            {intermediateReward.description && (
+              <p className="text-white/80 text-lg mb-4">{intermediateReward.description}</p>
+            )}
+            <p className="text-white/90 text-xl whitespace-pre-line mb-8">{message}</p>
+            <p className="text-white/60 text-sm">Reset automatico in corso...</p>
           </div>
         )}
 
