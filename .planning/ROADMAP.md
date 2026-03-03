@@ -27,7 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 8: Engagement Automation** - Segment dormant customers and automate birthday notifications
 - [ ] **Phase 9: Business Tools** - Collect Google reviews post-redemption and gate features behind Free/Pro/Business plans
 - [x] **Phase 10: WhatsApp Marketing** - Connect Maytapi, send WhatsApp messages to customers from the notifications tab (completed 2026-03-03)
-- [x] **Phase 11: Webhook Integrations** - Let merchants connect external tools via signed webhooks (completed 2026-03-03)
+- [x] **Phase 11: Webhook Integrations** - Let merchants connect external tools via signed webhooks (completed 2026-03-03)
 - [ ] **Phase 12: Advanced Analytics + CSV Export** - Recharts dashboards with return rates, segment pie charts, and PRO-gated CSV export
 
 ## Phase Details
@@ -223,7 +223,11 @@ Plans:
   3. Merchant legge il tasso di ritorno: la percentuale di clienti tornati entro 30 giorni dalla prima visita
   4. Merchant vede un grafico a torta recharts che mostra la distribuzione Attivi / Dormienti / Persi
   5. Merchant PRO clicca "Esporta CSV" in /dashboard/cards e scarica il file con nome, email, telefono, piano, saldo e ultima visita — merchant FREE vede l'UpgradePrompt
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 12-01-PLAN.md — Install recharts + upgrade analytics/page.tsx (3 new KPIs + BarChart + PieChart)
+- [ ] 12-02-PLAN.md — CSV export in cards/page.tsx (Blob download + usePlan gating + UpgradePrompt for FREE)
 
 ---
 
@@ -252,4 +256,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Business Tools | 0/3 | Planned | - |
 | 10. WhatsApp Marketing | 2/2 | Complete | 2026-03-03 |
 | 11. Webhook Integrations | 0/2 | Complete    | 2026-03-03 |
-| 12. Advanced Analytics + CSV Export | 0/? | Not started | - |
+| 12. Advanced Analytics + CSV Export | 0/2 | Planned | - |
