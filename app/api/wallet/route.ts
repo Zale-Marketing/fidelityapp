@@ -5,7 +5,7 @@ import { triggerWebhook } from '@/lib/webhooks'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function POST(request: NextRequest) {
@@ -160,10 +160,24 @@ export async function POST(request: NextRequest) {
 
       // Fire-and-forget webhook — do NOT await
       triggerWebhook(card.merchant_id, 'carta_creata', {
-        card_id: card.id,
-        program_id: card.program_id,
-        merchant_id: card.merchant_id,
-        card_holder_name: customer?.full_name || null,
+        merchant: { id: card.merchant_id },
+        card: {
+          id: card.id,
+          scan_token: card.scan_token ?? null,
+          wallet_provider: card.wallet_provider ?? null,
+          created_at: card.created_at ?? null,
+        },
+        card_holder: customer ? {
+          id: customer.id,
+          full_name: customer.full_name ?? null,
+          email: customer.contact_email ?? null,
+          phone: customer.contact_phone ?? customer.phone ?? null,
+        } : null,
+        program: {
+          id: program.id,
+          name: program.name,
+          type: program.program_type,
+        },
       }).catch(console.error)
 
       return NextResponse.json({ walletLink })

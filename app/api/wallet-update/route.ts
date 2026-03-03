@@ -5,7 +5,7 @@ import { triggerWebhook } from '@/lib/webhooks'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function POST(request: NextRequest) {
@@ -144,16 +144,52 @@ export async function POST(request: NextRequest) {
       customerEmail: customer?.email,
     } as any)
 
-    // Temporaneamente await per debug — vedere log Vercel
     try {
+      const stampCount = card.current_stamps ?? card.stamp_count ?? 0
+      const stampsRequired = program.stamps_required ?? 10
       await triggerWebhook(card.merchant_id, 'bollino_aggiunto', {
-        card_id: card.id,
-        program_id: card.program_id,
-        card_holder_id: card.card_holder_id,
-        program_type: program.program_type,
-        new_stamp_count: card.current_stamps || card.stamp_count || 0,
-        new_points_balance: card.points_balance || 0,
-        new_cashback_balance: card.cashback_balance || 0,
+        merchant: { id: card.merchant_id },
+        card: {
+          id: card.id,
+          scan_token: card.scan_token ?? null,
+          stamp_count: stampCount,
+          points_balance: card.points_balance ?? null,
+          cashback_balance: card.cashback_balance ?? null,
+          current_tier: card.current_tier ?? null,
+          status: card.status ?? null,
+          wallet_provider: card.wallet_provider ?? null,
+          created_at: card.created_at ?? null,
+        },
+        card_holder: customer ? {
+          id: customer.id,
+          full_name: customer.full_name ?? null,
+          email: customer.contact_email ?? null,
+          phone: customer.contact_phone ?? customer.phone ?? null,
+          birth_date: customer.birth_date ?? null,
+          marketing_consent: customer.marketing_consent ?? null,
+          acquisition_source: customer.acquisition_source ?? null,
+          member_since: customer.created_at ?? null,
+          last_visit: customer.last_visit ?? null,
+        } : null,
+        program: {
+          id: program.id,
+          name: program.name,
+          type: program.program_type,
+          stamps_required: stampsRequired,
+          reward_description: program.reward_description ?? null,
+          primary_color: program.primary_color ?? null,
+        },
+        stats: {
+          stamps_remaining: Math.max(0, stampsRequired - stampCount),
+          reward_ready: stampCount >= stampsRequired,
+          percent_complete: Math.round((stampCount / stampsRequired) * 100),
+        },
+        rewards: (rewards ?? []).map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          stamps_required: r.stamps_required,
+          reward_type: r.reward_type ?? null,
+        })),
       })
       console.log('[webhook] triggerWebhook completato')
     } catch (e) {
