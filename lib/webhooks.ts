@@ -24,6 +24,8 @@ export async function triggerWebhook(
   event: WebhookEvent,
   data: Record<string, unknown>
 ): Promise<void> {
+  console.log(`[webhook] triggerWebhook START — merchantId=${merchantId} event=${event}`)
+
   const { data: endpoints, error } = await supabase
     .from('webhook_endpoints')
     .select('id, url, secret')
@@ -31,7 +33,16 @@ export async function triggerWebhook(
     .eq('is_active', true)
     .contains('events', [event])
 
-  if (error || !endpoints || endpoints.length === 0) return
+  if (error) {
+    console.error(`[webhook] Errore query endpoint: ${error.message}`)
+    return
+  }
+  if (!endpoints || endpoints.length === 0) {
+    console.log(`[webhook] Nessun endpoint attivo trovato per merchantId=${merchantId} event=${event}`)
+    return
+  }
+
+  console.log(`[webhook] ${endpoints.length} endpoint trovati: ${endpoints.map((e: { url: string }) => e.url).join(', ')}`)
 
   const payload: WebhookPayload = {
     event,
@@ -41,6 +52,7 @@ export async function triggerWebhook(
   }
 
   const body = JSON.stringify(payload)
+  console.log(`[webhook] Payload: ${body}`)
 
   await Promise.allSettled(
     endpoints.map(async (endpoint: { id: string; url: string; secret: string }) => {
@@ -48,17 +60,23 @@ export async function triggerWebhook(
         .update(body)
         .digest('hex')
 
-      await fetch(endpoint.url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-FidelityApp-Signature': `sha256=${signature}`,
-          'X-FidelityApp-Event': event,
-          'User-Agent': 'FidelityApp-Webhooks/1.0',
-        },
-        body,
-        signal: AbortSignal.timeout(5000),
-      })
+      console.log(`[webhook] Invio POST → ${endpoint.url}`)
+      try {
+        const res = await fetch(endpoint.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-FidelityApp-Signature': `sha256=${signature}`,
+            'X-FidelityApp-Event': event,
+            'User-Agent': 'FidelityApp-Webhooks/1.0',
+          },
+          body,
+          signal: AbortSignal.timeout(5000),
+        })
+        console.log(`[webhook] Risposta da ${endpoint.url} → status ${res.status}`)
+      } catch (err) {
+        console.error(`[webhook] Errore fetch verso ${endpoint.url}:`, err)
+      }
     })
   )
 }
