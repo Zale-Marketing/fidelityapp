@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Target, Users, Bell, BarChart2, CreditCard, Settings, ScanLine } from 'lucide-react'
+import { Home, Target, Users, Layers, Bell, BarChart2, CreditCard, Settings, ScanLine } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: Home, label: 'Dashboard' },
   { href: '/dashboard/programs', icon: Target, label: 'Programmi' },
   { href: '/dashboard/customers', icon: Users, label: 'Clienti' },
+  { href: '/dashboard/cards', icon: Layers, label: 'Carte' },
   { href: '/dashboard/notifications', icon: Bell, label: 'Notifiche' },
   { href: '/dashboard/analytics', icon: BarChart2, label: 'Analytics' },
   { href: '/dashboard/billing', icon: CreditCard, label: 'Abbonamento' },
