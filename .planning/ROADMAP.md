@@ -192,7 +192,11 @@ Plans:
   2. Merchant vede il tab "WhatsApp" accanto a "Push Notification" in /dashboard/notifications
   3. Merchant seleziona destinatari e invia un messaggio WhatsApp — il messaggio arriva sul telefono del cliente entro 60 secondi
   4. Merchant che supera i 200 messaggi giornalieri vede un errore esplicito e non può inviare altri messaggi fino al giorno successivo
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — SQL migration doc (MANUAL-ACTIONS.md) + /api/whatsapp/connect + /api/whatsapp/status + /dashboard/settings/whatsapp page
+- [ ] 10-02-PLAN.md — /api/whatsapp/send with rate limiting + WhatsApp tab in /dashboard/notifications
 
 ### Phase 11: Webhook Integrations
 **Goal**: Merchant tecnico può ricevere eventi di FidelityApp in qualsiasi sistema esterno tramite webhook firmati
@@ -242,6 +246,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Design System v2 | 0/4 | Planned | - |
 | 8. Engagement Automation | 0/2 | Planned | - |
 | 9. Business Tools | 0/3 | Planned | - |
-| 10. WhatsApp Marketing | 0/? | Not started | - |
+| 10. WhatsApp Marketing | 0/2 | Planned | - |
 | 11. Webhook Integrations | 0/? | Not started | - |
 | 12. Advanced Analytics + CSV Export | 0/? | Not started | - |
