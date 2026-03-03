@@ -7,6 +7,11 @@ import Link from 'next/link'
 import MetricCard from '@/components/ui/MetricCard'
 import EmptyState from '@/components/ui/EmptyState'
 import { BarChart2, Users, TrendingUp, CreditCard, Plus, Stamp, Star, Coins, Crown, RefreshCw } from 'lucide-react'
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts'
 
 type DayStat = {
   date: string
@@ -46,6 +51,16 @@ export default function AnalyticsPage() {
   const [totalStampsMonth, setTotalStampsMonth] = useState(0)
   const [totalRewardsMonth, setTotalRewardsMonth] = useState(0)
   const [newCardsMonth, setNewCardsMonth] = useState(0)
+
+  // ANALYTICS-01: active customers with trend
+  const [activeCount, setActiveCount] = useState(0)
+  const [trend, setTrend] = useState<number | null>(null)
+  // ANALYTICS-03: return rate
+  const [returnRate, setReturnRate] = useState<number | null>(null)
+  // ANALYTICS-04: all-time rewards redeemed
+  const [totalRewardsAllTime, setTotalRewardsAllTime] = useState(0)
+  // ANALYTICS-05: segment distribution for pie chart
+  const [segCounts, setSegCounts] = useState({ active: 0, dormant: 0, lost: 0 })
 
   const [programStats, setProgramStats] = useState<ProgramStat[]>([])
   const [timeline, setTimeline] = useState<DayStat[]>([])
@@ -156,6 +171,90 @@ export default function AnalyticsPage() {
 
     setTimeline(Array.from(dayMap.values()))
 
+    // ANALYTICS-01: active customers with 30-day trend
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString().split('T')[0]
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000).toISOString().split('T')[0]
+    const todayStr = now.toISOString().split('T')[0]
+
+    const [
+      { count: activeNow },
+      { count: activePrev },
+    ] = await Promise.all([
+      supabase.from('cards')
+        .select('*', { count: 'exact', head: true })
+        .eq('merchant_id', mid)
+        .gte('last_use_date', thirtyDaysAgo)
+        .lte('last_use_date', todayStr),
+      supabase.from('cards')
+        .select('*', { count: 'exact', head: true })
+        .eq('merchant_id', mid)
+        .gte('last_use_date', sixtyDaysAgo)
+        .lt('last_use_date', thirtyDaysAgo),
+    ])
+    setActiveCount(activeNow || 0)
+    const trendVal = (activePrev && activePrev > 0)
+      ? Math.round((((activeNow || 0) - activePrev) / activePrev) * 100)
+      : null
+    setTrend(trendVal)
+
+    // ANALYTICS-03: return rate from stamp_transactions
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 86400000).toISOString()
+    const { data: txData } = await supabase
+      .from('stamp_transactions')
+      .select('card_id, created_at')
+      .eq('merchant_id', mid)
+      .eq('type', 'add')
+      .gte('created_at', ninetyDaysAgo)
+      .order('created_at', { ascending: true })
+
+    const byCard = new Map<string, Date[]>()
+    txData?.forEach(tx => {
+      const dates = byCard.get(tx.card_id) || []
+      dates.push(new Date(tx.created_at))
+      byCard.set(tx.card_id, dates)
+    })
+    let returned = 0
+    let eligible = 0
+    byCard.forEach(dates => {
+      if (dates.length < 2) return
+      eligible++
+      const diffDays = (dates[1].getTime() - dates[0].getTime()) / 86400000
+      if (diffDays <= 30) returned++
+    })
+    setReturnRate(eligible > 0 ? Math.round((returned / eligible) * 100) : null)
+
+    // ANALYTICS-04: all-time rewards redeemed
+    const { count: allTimeRewards } = await supabase
+      .from('stamp_transactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('merchant_id', mid)
+      .in('type', ['redeem'])
+    const { count: allTimeRewards2 } = await supabase
+      .from('stamp_transactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('merchant_id', mid)
+      .in('transaction_type', ['reward_redeemed', 'points_redeemed', 'cashback_redeem'])
+    setTotalRewardsAllTime((allTimeRewards || 0) + (allTimeRewards2 || 0))
+
+    // ANALYTICS-05: customer segment distribution for pie chart
+    const todayForSeg = now.toISOString().split('T')[0]
+    const thirtyAgoForSeg = new Date(now.getTime() - 30 * 86400000).toISOString().split('T')[0]
+    const ninetyAgoForSeg = new Date(now.getTime() - 90 * 86400000).toISOString().split('T')[0]
+
+    const [
+      { count: segActive },
+      { count: segDormant },
+      { count: segLost },
+    ] = await Promise.all([
+      supabase.from('cards').select('*', { count: 'exact', head: true })
+        .eq('merchant_id', mid).gte('last_use_date', thirtyAgoForSeg),
+      supabase.from('cards').select('*', { count: 'exact', head: true })
+        .eq('merchant_id', mid).gte('last_use_date', ninetyAgoForSeg).lt('last_use_date', thirtyAgoForSeg),
+      supabase.from('cards').select('*', { count: 'exact', head: true })
+        .eq('merchant_id', mid).lt('last_use_date', ninetyAgoForSeg),
+    ])
+    setSegCounts({ active: segActive || 0, dormant: segDormant || 0, lost: segLost || 0 })
+
     const { data: progs } = await supabase
       .from('programs')
       .select('id, name, program_type, primary_color')
@@ -202,9 +301,6 @@ export default function AnalyticsPage() {
     setLoading(false)
   }
 
-  const maxStamps = Math.max(...timeline.map(d => d.stamps), 1)
-  const maxCards = Math.max(...timeline.map(d => d.new_cards), 1)
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -219,7 +315,7 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Analytics</h1>
-          <p className="text-sm text-gray-500 mt-1">Statistiche del programma fedeltà</p>
+          <p className="text-sm text-gray-500 mt-1">Statistiche del programma fedelta</p>
         </div>
         {/* Periodo */}
         <div className="flex gap-2">
@@ -239,18 +335,42 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      {/* KPI Cards Row 1: existing 4 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <MetricCard label="Card Totali" value={totalCards} icon={<CreditCard size={20} />} />
         <MetricCard label="Clienti" value={totalCustomers} icon={<Users size={20} />} />
         <MetricCard label="Nuove Card (mese)" value={newCardsMonth} icon={<Plus size={20} />} />
         <MetricCard label="Timbri (mese)" value={totalStampsMonth} icon={<TrendingUp size={20} />} />
+      </div>
+
+      {/* KPI Cards Row 2: new analytics KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* ANALYTICS-01: active customers with trend */}
+        <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <p className="text-sm text-gray-500 mb-1">Clienti Attivi (30gg)</p>
+          <p className="text-2xl font-bold text-gray-900">{activeCount}</p>
+          {trend !== null && (
+            <p className={`text-xs mt-1 font-medium ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {trend >= 0 ? '+' : ''}{trend}% vs mese scorso
+            </p>
+          )}
+          {trend === null && <p className="text-xs mt-1 text-gray-400">Nessun dato mese scorso</p>}
+        </div>
+        {/* ANALYTICS-03: return rate */}
+        <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <p className="text-sm text-gray-500 mb-1">Tasso di Ritorno</p>
+          <p className="text-2xl font-bold text-gray-900">{returnRate !== null ? `${returnRate}%` : '—'}</p>
+          <p className="text-xs mt-1 text-gray-400">Tornati entro 30gg</p>
+        </div>
+        {/* ANALYTICS-04: all-time rewards */}
+        <MetricCard label="Premi Riscattati (totale)" value={totalRewardsAllTime} icon={<BarChart2 size={20} />} />
+        {/* existing: Premi (mese) */}
         <MetricCard label="Premi (mese)" value={totalRewardsMonth} icon={<BarChart2 size={20} />} />
       </div>
 
-      {/* Grafico Timbri nel tempo */}
+      {/* ANALYTICS-02: recharts BarChart replacing manual div chart */}
       <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-        <h2 className="font-semibold text-base text-gray-900 mb-4">Attività nel tempo</h2>
+        <h2 className="font-semibold text-base text-gray-900 mb-4">Timbri / Punti per giorno</h2>
 
         {timeline.every(d => d.stamps === 0 && d.new_cards === 0) ? (
           <EmptyState
@@ -259,49 +379,62 @@ export default function AnalyticsPage() {
             description="Nessun dato per il periodo selezionato"
           />
         ) : (
-          <div className="space-y-4">
-            <div className="flex gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#111111]" />
-                <span className="text-gray-600">Timbri / Punti</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#16A34A]" />
-                <span className="text-gray-600">Nuove Card</span>
-              </div>
-            </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={timeline} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                tickFormatter={(v: string) => {
+                  const d = new Date(v)
+                  return `${d.getDate()}/${d.getMonth() + 1}`
+                }}
+                interval={period === '30d' ? 4 : period === '7d' ? 0 : 14}
+              />
+              <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} allowDecimals={false} />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E8E8E8', boxShadow: 'none' }}
+                labelFormatter={(label) => new Date(String(label)).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
+              />
+              <Bar dataKey="stamps" fill="#111111" radius={[4, 4, 0, 0]} maxBarSize={20} name="Timbri / Punti" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
 
-            <div className="flex items-end gap-1 h-40 overflow-x-auto pb-2">
-              {timeline.map((day) => {
-                const stampH = maxStamps > 0 ? Math.round((day.stamps / maxStamps) * 120) : 0
-                const cardH = maxCards > 0 ? Math.round((day.new_cards / maxCards) * 120) : 0
-                const label = new Date(day.date).toLocaleDateString('it-IT', {
-                  day: '2-digit',
-                  month: period === '90d' ? 'short' : '2-digit'
-                })
-
-                return (
-                  <div key={day.date} className="flex flex-col items-center gap-1 flex-shrink-0" style={{ minWidth: period === '90d' ? '8px' : '20px' }}>
-                    <div className="flex items-end gap-px h-32">
-                      <div
-                        className="w-2 bg-[#111111] rounded-t transition-all"
-                        style={{ height: stampH || 1, minHeight: day.stamps > 0 ? 4 : 0 }}
-                        title={`${day.stamps} timbri`}
-                      />
-                      <div
-                        className="w-2 bg-[#16A34A] rounded-t transition-all"
-                        style={{ height: cardH || 1, minHeight: day.new_cards > 0 ? 4 : 0 }}
-                        title={`${day.new_cards} nuove card`}
-                      />
-                    </div>
-                    {period !== '90d' && (
-                      <p className="text-gray-400" style={{ fontSize: '10px' }}>{label}</p>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+      {/* ANALYTICS-05: PieChart for customer segment distribution */}
+      <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <h2 className="font-semibold text-base text-gray-900 mb-4">Distribuzione Clienti</h2>
+        {(segCounts.active + segCounts.dormant + segCounts.lost) === 0 ? (
+          <EmptyState icon={Users} title="Nessun cliente" description="Nessun dato di attivita cliente disponibile" />
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie
+                data={[
+                  { name: 'Attivi', value: segCounts.active, color: '#16A34A' },
+                  { name: 'Dormienti', value: segCounts.dormant, color: '#F59E0B' },
+                  { name: 'Persi', value: segCounts.lost, color: '#DC2626' },
+                ]}
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                dataKey="value"
+              >
+                {[
+                  { name: 'Attivi', value: segCounts.active, color: '#16A34A' },
+                  { name: 'Dormienti', value: segCounts.dormant, color: '#F59E0B' },
+                  { name: 'Persi', value: segCounts.lost, color: '#DC2626' },
+                ].map((entry, i) => (
+                  <Cell key={i} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E8E8E8', boxShadow: 'none' }}
+              />
+              <Legend iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+            </PieChart>
+          </ResponsiveContainer>
         )}
       </div>
 
