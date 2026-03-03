@@ -23,6 +23,9 @@ export default function ProgramDetailPage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
+  const [showDeleteCardModal, setShowDeleteCardModal] = useState(false)
+  const [cardToDelete, setCardToDelete] = useState<Card | null>(null)
+  const [deletingCard, setDeletingCard] = useState(false)
   const [cardToAssign, setCardToAssign] = useState<Card | null>(null)
   const [createdCard, setCreatedCard] = useState<{ card: Card, holder: CardHolder | null, link: string } | null>(null)
 
@@ -83,6 +86,7 @@ export default function ProgramDetailPage() {
       .from('cards')
       .select(`*, card_holder:card_holders(*)`)
       .eq('program_id', programId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
     if (cardsData) setCards(cardsData as any)
@@ -203,6 +207,7 @@ export default function ProgramDetailPage() {
       setDeleteLoading(false)
       return
     }
+    router.refresh()
     router.push('/dashboard/programs')
   }
 
@@ -221,7 +226,22 @@ export default function ProgramDetailPage() {
       setDeleteLoading(false)
       return
     }
+    router.refresh()
     router.push('/dashboard/programs')
+  }
+
+  async function softDeleteCard(card: Card) {
+    setDeletingCard(true)
+    const { error } = await supabase
+      .from('cards')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', card.id)
+    if (!error) {
+      setCards(prev => prev.filter(c => c.id !== card.id))
+      setShowDeleteCardModal(false)
+      setCardToDelete(null)
+    }
+    setDeletingCard(false)
   }
 
   async function createCard() {
@@ -780,6 +800,14 @@ export default function ProgramDetailPage() {
                       >
                         Apri
                       </Link>
+
+                      <button
+                        onClick={() => { setCardToDelete(card); setShowDeleteCardModal(true) }}
+                        className="border border-[#FEE2E2] text-[#DC2626] hover:bg-[#FEE2E2]/50 p-1.5 rounded-[8px] transition-colors"
+                        title="Elimina carta"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -994,6 +1022,34 @@ export default function ProgramDetailPage() {
             >
               Annulla
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Elimina Carta */}
+      {showDeleteCardModal && cardToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[12px] shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Elimina carta</h3>
+            <p className="text-gray-600 text-sm mb-6">
+              Sei sicuro? La carta di <strong>{cardToDelete.card_holder?.full_name || 'cliente anonimo'}</strong> verrà archiviata.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDeleteCardModal(false); setCardToDelete(null) }}
+                disabled={deletingCard}
+                className="flex-1 border border-[#E0E0E0] text-gray-700 py-2.5 rounded-[8px] text-sm hover:bg-[#F5F5F5] disabled:opacity-50"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={() => softDeleteCard(cardToDelete)}
+                disabled={deletingCard}
+                className="flex-1 bg-[#DC2626] text-white py-2.5 rounded-[8px] text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingCard ? 'Eliminazione...' : 'Elimina'}
+              </button>
+            </div>
           </div>
         </div>
       )}
