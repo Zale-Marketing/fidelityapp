@@ -154,3 +154,52 @@ After running, verify:
 3. Confirm values 'free', 'pro', and 'business' are all accepted by the constraint
 
 **Status:** PENDING — verify column exists and 'business' value is accepted before Phase 9 executes.
+
+---
+
+## Phase 10: WhatsApp Marketing
+
+### SQL — Add Maytapi columns to merchants table (WA-01)
+
+Go to: Supabase Dashboard > SQL Editor, then run:
+
+```sql
+-- Phase 10: WhatsApp Marketing — Add Maytapi columns to merchants
+ALTER TABLE merchants
+  ADD COLUMN IF NOT EXISTS maytapi_phone_id text,
+  ADD COLUMN IF NOT EXISTS maytapi_session_status text DEFAULT 'inactive',
+  ADD COLUMN IF NOT EXISTS maytapi_daily_count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS maytapi_last_reset_date date;
+```
+
+After running, verify:
+1. Go to Supabase Dashboard → Table Editor → merchants
+2. Check that four columns appear:
+   - `maytapi_phone_id` (type: text, nullable)
+   - `maytapi_session_status` (type: text, default: 'inactive')
+   - `maytapi_daily_count` (type: integer, default: 0)
+   - `maytapi_last_reset_date` (type: date, nullable)
+3. Existing rows should have NULL in maytapi_phone_id — that is correct
+
+**Status:** PENDING — must run before any /api/whatsapp/* routes will work correctly.
+
+---
+
+### Vercel — Add Maytapi environment variables (WA-02)
+
+The WhatsApp integration uses Maytapi as the provider. You need to:
+
+1. Create an account at https://console.maytapi.com
+2. Go to Settings → Token to find your PRODUCT_ID and API_TOKEN
+3. Add to Vercel Dashboard → Project Settings → Environment Variables:
+   - Name: `MAYTAPI_PRODUCT_ID`
+     Value: your Product ID from Maytapi console
+     Environments: Production, Preview, Development
+   - Name: `MAYTAPI_API_TOKEN`
+     Value: your API Token from Maytapi console
+     Environments: Production, Preview, Development
+4. Redeploy the project after adding both variables
+
+**Why needed:** All /api/whatsapp/* routes call the Maytapi API using these credentials. Without them, all WhatsApp functionality will return 500 errors.
+
+**Status:** PENDING — required before any WhatsApp functionality works.
