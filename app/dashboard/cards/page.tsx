@@ -5,7 +5,9 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import MetricCard from '@/components/ui/MetricCard'
 import EmptyState from '@/components/ui/EmptyState'
-import { CreditCard, Send, X } from 'lucide-react'
+import UpgradePrompt from '@/components/ui/UpgradePrompt'
+import { usePlan } from '@/lib/hooks/usePlan'
+import { CreditCard, Send, X, Download } from 'lucide-react'
 
 type Segment = 'all' | 'active' | 'dormant' | 'lost'
 
@@ -17,6 +19,11 @@ type CardRow = {
   status: string
   card_holder_id: string | null
   program_id: string | null
+  stamp_count: number | null
+  current_stamps: number | null
+  points_balance: number | null
+  cashback_balance: number | null
+  total_spent: number | null
 }
 
 type CardHolder = {
@@ -71,6 +78,8 @@ export default function CardsSegmentationPage() {
   const [sending, setSending] = useState(false)
   const [sentCount, setSentCount] = useState<number | null>(null)
 
+  const { isFree, isPro, loading: planLoading } = usePlan()
+
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -95,7 +104,7 @@ export default function CardsSegmentationPage() {
       // Fetch active cards with card_holder assigned
       const { data: rawCards } = await supabase
         .from('cards')
-        .select('id, last_use_date, updated_at, created_at, status, card_holder_id, program_id')
+        .select('id, last_use_date, updated_at, created_at, status, card_holder_id, program_id, stamp_count, current_stamps, points_balance, cashback_balance, total_spent')
         .eq('merchant_id', merchantId)
         .eq('status', 'active')
         .not('card_holder_id', 'is', null)
@@ -199,6 +208,39 @@ export default function CardsSegmentationPage() {
     segmentedCards.length > 0 &&
     segmentedCards.every(c => selectedIds.has(c.id))
 
+  // CSV Export (CSV2-01)
+  function exportCSV() {
+    const headers = ['Nome', 'Email', 'Telefono', 'Programma', 'Saldo', 'Ultima visita', 'Iscrizione']
+    const rows = cards.map(c => {
+      // Pick the most relevant balance based on what is non-null
+      const saldo = c.stamp_count ?? c.current_stamps ?? c.points_balance ?? c.cashback_balance ?? c.total_spent ?? 0
+      return [
+        c.holder?.full_name || '',
+        c.holder?.email || '',
+        c.holder?.phone || '',
+        c.program_name || '',
+        String(saldo),
+        c.last_use_date || c.created_at.split('T')[0],
+        c.created_at.split('T')[0],
+      ]
+    })
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+
+    // \uFEFF = UTF-8 BOM — required for Italian accented characters in Excel on Windows
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `clienti-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   // Bulk send
   async function handleBulkSend() {
     if (!notifMessage.trim()) return
@@ -242,23 +284,48 @@ export default function CardsSegmentationPage() {
   return (
     <div className="min-h-screen bg-[#F5F5F5] p-6">
       {/* Page Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <CreditCard size={28} className="text-[#111111]" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Carte</h1>
-            <p className="text-sm text-gray-500">Gestisci e segmenta i clienti per attività</p>
+            <p className="text-sm text-gray-500">Gestisci e segmenta i clienti per attivita</p>
           </div>
         </div>
-        {selectedIds.size > 0 && (
-          <button
-            onClick={() => setShowSendModal(true)}
-            className="flex items-center gap-2 bg-[#111111] text-white px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#333333] transition-colors"
-          >
-            <Send size={16} />
-            Invia a {selectedIds.size} client{selectedIds.size === 1 ? 'e' : 'i'}
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {selectedIds.size > 0 && (
+            <button
+              onClick={() => setShowSendModal(true)}
+              className="flex items-center gap-2 bg-[#111111] text-white px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#333333] transition-colors"
+            >
+              <Send size={16} />
+              Invia a {selectedIds.size} client{selectedIds.size === 1 ? 'e' : 'i'}
+            </button>
+          )}
+          {!planLoading && (
+            isPro ? (
+              <button
+                onClick={exportCSV}
+                disabled={cards.length === 0}
+                className="flex items-center gap-2 border border-[#E0E0E0] text-gray-700 px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#F5F5F5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Download size={16} />
+                Esporta CSV
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  window.location.href = '/dashboard/upgrade'
+                }}
+                className="flex items-center gap-2 border border-[#E0E0E0] text-gray-500 px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#F5F5F5] transition-colors"
+                title="Disponibile nel piano PRO"
+              >
+                <Download size={16} />
+                Esporta CSV
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       {/* Sent success banner */}
@@ -276,10 +343,17 @@ export default function CardsSegmentationPage() {
       {/* Metric Cards */}
       <div className="grid grid-cols-2 gap-4 mb-6 lg:grid-cols-4">
         <MetricCard label="Tutti" value={counts.all} />
-        <MetricCard label="Attivi (≤30 gg)" value={counts.active} />
+        <MetricCard label="Attivi (<=30 gg)" value={counts.active} />
         <MetricCard label="Dormienti (31-90 gg)" value={counts.dormant} />
         <MetricCard label="Persi (>90 gg)" value={counts.lost} />
       </div>
+
+      {/* CSV2-02: UpgradePrompt block for FREE merchants */}
+      {!planLoading && isFree && (
+        <div className="mb-6">
+          <UpgradePrompt feature="Esportazione CSV dei tuoi clienti" requiredPlan="PRO" />
+        </div>
+      )}
 
       {/* Segment Tabs */}
       <div className="flex gap-2 mb-4 flex-wrap">
@@ -327,7 +401,7 @@ export default function CardsSegmentationPage() {
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Email</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Programma</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Segmento</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Ultima attività</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Ultima attivita</th>
                 </tr>
               </thead>
               <tbody>
