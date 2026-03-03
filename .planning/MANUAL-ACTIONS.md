@@ -94,3 +94,63 @@ Vercel Cron is only available on Vercel Pro plan (not Hobby). If the project is 
 - Upgrade to Vercel Pro to enable automatic daily execution at 09:00 UTC
 
 **Status:** PENDING — verify Vercel plan and upgrade if needed.
+
+---
+
+## Phase 9: Business Tools
+
+### SQL — Add google_reviews_url to programs table (REVIEW-01)
+
+Go to: Supabase Dashboard > SQL Editor, then run:
+
+```sql
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS google_reviews_url text;
+```
+
+After running, verify:
+1. Go to Supabase Dashboard → Table Editor → programs
+2. Check that the column "google_reviews_url" appears (type: text, nullable)
+3. Existing rows should have NULL in google_reviews_url — that is correct
+
+**Status:** PENDING — must be run before Plan 09-02 deploys form changes.
+
+---
+
+### SQL — Verify/add plan column on merchants table (PLAN-01)
+
+Go to: Supabase Dashboard > SQL Editor, then run the following to verify the column exists:
+
+```sql
+-- Verify column exists:
+SELECT column_name, data_type, column_default
+FROM information_schema.columns
+WHERE table_name = 'merchants' AND column_name = 'plan';
+```
+
+If the column does not appear, add it:
+
+```sql
+-- Add if missing:
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS plan text DEFAULT 'free';
+```
+
+Also check for a CHECK constraint that might block the 'business' value:
+
+```sql
+SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname LIKE '%merchants%plan%';
+```
+
+If a constraint exists that does not include 'business', replace it:
+
+```sql
+-- Replace constraint_name with the actual name found above
+ALTER TABLE merchants DROP CONSTRAINT constraint_name;
+ALTER TABLE merchants ADD CONSTRAINT merchants_plan_check CHECK (plan IN ('free', 'pro', 'business'));
+```
+
+After running, verify:
+1. Go to Supabase Dashboard → Table Editor → merchants
+2. Check that the column "plan" appears (type: text, default: 'free')
+3. Confirm values 'free', 'pro', and 'business' are all accepted by the constraint
+
+**Status:** PENDING — verify column exists and 'business' value is accepted before Phase 9 executes.
