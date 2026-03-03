@@ -242,3 +242,45 @@ After running, verify:
 3. Confirm RLS is enabled (green shield icon on the table)
 
 **Status:** PENDING — must be executed before Phase 11 webhook CRUD API and UI can function.
+
+---
+
+## Phase 13: SendApp WhatsApp Integration (v3.0)
+
+### SQL — SendApp migration (SENDAPP-01, LOG-01)
+
+**Status: COMPLETED manually on 2026-03-03**
+
+The following SQL was already executed in Supabase:
+
+```sql
+-- Add SendApp columns to merchants
+ALTER TABLE merchants
+  ADD COLUMN IF NOT EXISTS sendapp_instance_id text,
+  ADD COLUMN IF NOT EXISTS sendapp_access_token text,
+  ADD COLUMN IF NOT EXISTS sendapp_provider text DEFAULT 'cloud',
+  ADD COLUMN IF NOT EXISTS sendapp_status text DEFAULT 'disconnected';
+
+-- Remove Maytapi columns (replaced by SendApp)
+ALTER TABLE merchants
+  DROP COLUMN IF EXISTS maytapi_product_id,
+  DROP COLUMN IF EXISTS maytapi_api_token;
+
+-- Create WhatsApp logs table
+CREATE TABLE IF NOT EXISTS whatsapp_logs (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  merchant_id uuid NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+  to_phone text NOT NULL,
+  message text,
+  status text DEFAULT 'sent',
+  error text,
+  event_type text,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_merchant ON whatsapp_logs(merchant_id);
+ALTER TABLE whatsapp_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Merchants manage own whatsapp logs" ON whatsapp_logs
+  FOR ALL USING (merchant_id IN (SELECT merchant_id FROM profiles WHERE id = auth.uid()));
+```
+
+**Verified:** columns `sendapp_instance_id`, `sendapp_access_token`, `sendapp_provider`, `sendapp_status` on merchants; table `whatsapp_logs` with RLS; columns `maytapi_product_id` and `maytapi_api_token` removed.
