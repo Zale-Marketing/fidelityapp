@@ -54,9 +54,10 @@ export default function LeadForm() {
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">Telefono</label>
+        <label className="text-sm font-medium text-gray-700">Telefono *</label>
         <input
           type="tel"
+          required
           value={form.phone}
           onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
           placeholder="+39 333 1234567"
