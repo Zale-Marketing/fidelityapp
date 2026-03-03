@@ -176,7 +176,12 @@ Plans:
   3. Merchant FREE che tenta di creare un secondo programma vede l'UpgradePrompt invece del form
   4. Merchant FREE che tenta di usare push notifications, WhatsApp o segmentazione vede l'UpgradePrompt con CTA alla pagina upgrade
   5. Merchant apre /dashboard/upgrade e vede il confronto Free/Pro/Business con prezzi (€0 / €39 / €99 al mese)
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — SQL migrations (MANUAL-ACTIONS.md) + usePlan() hook + UpgradePrompt component (foundation)
+- [ ] 09-02-PLAN.md — Google Reviews: google_reviews_url field in programs new/edit forms + review banner in /c/[token]
+- [ ] 09-03-PLAN.md — /dashboard/upgrade pricing page (Free/Pro/Business) + PLAN-05 feature gating on programs/new and notifications
 
 ### Phase 10: WhatsApp Marketing
 **Goal**: Merchant connette il proprio numero WhatsApp tramite Maytapi e invia messaggi di marketing ai clienti dalla dashboard
@@ -236,7 +241,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Critical Fixes v2 | 2/2 | Complete   | 2026-03-02 |
 | 7. Design System v2 | 0/4 | Planned | - |
 | 8. Engagement Automation | 0/2 | Planned | - |
-| 9. Business Tools | 0/? | Not started | - |
+| 9. Business Tools | 0/3 | Planned | - |
 | 10. WhatsApp Marketing | 0/? | Not started | - |
 | 11. Webhook Integrations | 0/? | Not started | - |
 | 12. Advanced Analytics + CSV Export | 0/? | Not started | - |
