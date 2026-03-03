@@ -216,16 +216,20 @@ export default function ProgramDetailPage() {
     if (deleteConfirmName !== program.name) return
     setDeleteLoading(true)
     setDeleteError('')
-    await supabase.from('stamp_transactions').delete().eq('program_id', program.id)
-    await supabase.from('rewards').delete().eq('program_id', program.id)
-    await supabase.from('tiers').delete().eq('program_id', program.id)
-    await supabase.from('cards').delete().eq('program_id', program.id)
-    const { error } = await supabase.from('programs').delete().eq('id', program.id).eq('merchant_id', merchantId)
-    if (error) {
-      setDeleteError("Errore durante l'eliminazione. Riprova.")
+
+    const res = await fetch(`/api/programs/${program.id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ merchantId }),
+    })
+
+    if (!res.ok) {
+      const data = await res.json()
+      setDeleteError(data.error || "Errore durante l'eliminazione. Riprova.")
       setDeleteLoading(false)
       return
     }
+
     router.refresh()
     router.push('/dashboard/programs')
   }
