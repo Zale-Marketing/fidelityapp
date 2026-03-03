@@ -134,7 +134,7 @@ export default function JoinPage() {
           .from('card_holders')
           .select('id')
           .eq('merchant_id', merchantId)
-          .eq('email', email.toLowerCase().trim())
+          .eq('contact_email', email.toLowerCase().trim())
           .single()
 
         if (existingHolder) {
@@ -166,7 +166,7 @@ export default function JoinPage() {
           .insert({
             merchant_id: merchantId,
             full_name: fullName.trim(),
-            email: email ? email.toLowerCase().trim() : null,
+            contact_email: email ? email.toLowerCase().trim() : null,
             phone: phone ? phone.trim() : null,
             birth_date: birthDate || null,
           })
