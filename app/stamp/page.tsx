@@ -154,20 +154,24 @@ export default function StampPage() {
           .single()
         card = data
       } else {
-        // Prova prima per cardId (UUID diretto), poi fallback per scan_token
-        const { data: byId } = await supabase
-          .from('cards')
-          .select(cardSelect)
-          .eq('id', code.trim())
-          .eq('merchant_id', profile.merchant_id)
-          .single()
-        if (byId) {
+        const trimmed = code.trim()
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)
+
+        if (isUUID) {
+          const { data: byId } = await supabase
+            .from('cards')
+            .select(cardSelect)
+            .eq('id', trimmed)
+            .eq('merchant_id', profile.merchant_id)
+            .single()
           card = byId
-        } else {
+        }
+
+        if (!card) {
           const { data: byToken } = await supabase
             .from('cards')
             .select(cardSelect)
-            .eq('scan_token', code.trim())
+            .eq('scan_token', trimmed)
             .eq('merchant_id', profile.merchant_id)
             .single()
           card = byToken
