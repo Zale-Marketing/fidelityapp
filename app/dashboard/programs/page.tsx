@@ -47,19 +47,27 @@ export default function ProgramsPage() {
 
     const { data: programsData } = await supabase
       .from('programs')
-      .select(`
-        *,
-        cards:cards(count)
-      `)
+      .select('*')
       .eq('merchant_id', profile.merchant_id)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
-    if (programsData) {
-      setPrograms(programsData.map(p => ({
-        ...p,
-        cards_count: p.cards?.[0]?.count || 0
-      })))
+    if (programsData && programsData.length > 0) {
+      const programIds = programsData.map(p => p.id)
+      const { data: cardRows } = await supabase
+        .from('cards')
+        .select('program_id')
+        .in('program_id', programIds)
+        .is('deleted_at', null)
+
+      const countMap = new Map<string, number>()
+      for (const c of cardRows || []) {
+        if (c.program_id) countMap.set(c.program_id, (countMap.get(c.program_id) || 0) + 1)
+      }
+
+      setPrograms(programsData.map(p => ({ ...p, cards_count: countMap.get(p.id) || 0 })))
+    } else if (programsData) {
+      setPrograms([])
     }
 
     setLoading(false)
