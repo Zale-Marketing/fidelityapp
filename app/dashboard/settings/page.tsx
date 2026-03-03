@@ -181,10 +181,10 @@ export default function SettingsPage() {
         <div className="flex justify-between items-center">
           <div>
             <p className="text-2xl font-bold text-gray-900">
-              {merchant?.plan === 'PRO' ? 'PRO' : 'FREE'}
+              {(merchant?.plan || 'FREE').toUpperCase()}
             </p>
             <p className="text-gray-500 text-sm mt-1">
-              {merchant?.plan === 'PRO' ? 'Programmi illimitati' : 'Fino a 5 programmi'}
+              {(merchant?.plan || 'free').toLowerCase() !== 'free' ? 'Programmi illimitati' : 'Fino a 5 programmi'}
             </p>
           </div>
           <Link

@@ -60,7 +60,9 @@ function BillingContent() {
     loadData()
   }, [router, supabase])
 
-  const isPro = merchant?.plan === 'PRO'
+  const planLower = (merchant?.plan || '').toLowerCase()
+  const isPro = planLower === 'pro' || planLower === 'business'
+  const isBusiness = planLower === 'business'
   const subStatus = merchant?.stripe_subscription_status
 
   const handleUpgrade = async (plan: 'PRO_MONTHLY' | 'PRO_YEARLY') => {
@@ -203,7 +205,7 @@ function BillingContent() {
             <p className="text-gray-500 text-sm">Piano attuale</p>
             <div className="flex items-center gap-3 mt-1">
               <p className="text-3xl font-bold text-gray-900">
-                {isPro ? 'PRO' : 'FREE'}
+                {isBusiness ? 'BUSINESS' : isPro ? 'PRO' : 'FREE'}
               </p>
               {isPro && <StatusBadge variant="active" />}
             </div>
@@ -332,7 +334,7 @@ function BillingContent() {
       </div>
 
       {/* Codice Promo */}
-      {merchant?.plan !== 'BUSINESS' && (
+      {!isBusiness && (
         <div id="coupon" className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
           <h3 className="font-semibold text-gray-900 mb-1 text-sm">Hai un codice promo?</h3>
           <p className="text-sm text-gray-500 mb-4">Inserisci il codice per attivare il piano BUSINESS gratuitamente.</p>
