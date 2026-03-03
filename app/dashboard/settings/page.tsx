@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { MessageCircle, Zap } from 'lucide-react'
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<any>(null)
@@ -191,6 +192,44 @@ export default function SettingsPage() {
             className="border border-[#E0E0E0] text-gray-700 px-4 py-2.5 rounded-[8px] text-sm font-medium hover:bg-[#F5F5F5] transition-colors"
           >
             Gestisci Piano
+          </Link>
+        </div>
+      </div>
+
+      {/* Integrazioni */}
+      <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <h2 className="text-base font-semibold text-gray-900 mb-4">Integrazioni</h2>
+        <div className="space-y-3">
+          <Link
+            href="/dashboard/settings/whatsapp"
+            className="flex items-center justify-between p-4 border border-[#E8E8E8] rounded-[8px] hover:bg-[#F9F9F9] transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-[8px] bg-green-50 flex items-center justify-center">
+                <MessageCircle size={18} className="text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">WhatsApp Marketing</p>
+                <p className="text-xs text-gray-500">Connetti il tuo numero e invia messaggi</p>
+              </div>
+            </div>
+            <span className="text-gray-400 text-sm">›</span>
+          </Link>
+
+          <Link
+            href="/dashboard/settings/webhooks"
+            className="flex items-center justify-between p-4 border border-[#E8E8E8] rounded-[8px] hover:bg-[#F9F9F9] transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-[8px] bg-indigo-50 flex items-center justify-center">
+                <Zap size={18} className="text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Webhook</p>
+                <p className="text-xs text-gray-500">Ricevi eventi in tempo reale nel tuo sistema</p>
+              </div>
+            </div>
+            <span className="text-gray-400 text-sm">›</span>
           </Link>
         </div>
       </div>
