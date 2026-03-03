@@ -160,7 +160,11 @@ Plans:
   2. Merchant seleziona tutti i clienti "Dormienti" con un checkbox e invia una notifica push o WhatsApp al gruppo in bulk
   3. Cliente si iscrive via /join/[programId] e vede il campo data di nascita opzionale nel form
   4. Il cron job gira ogni giorno alle 09:00 UTC e invia "Tanti auguri [Nome]! Oggi hai un regalo speciale che ti aspetta." a ogni cliente che compie gli anni
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — /dashboard/cards segmentation page with Tutti/Attivi/Dormienti/Persi tabs, bulk checkbox, bulk send via /api/send-notification + Sidebar "Carte" link
+- [ ] 08-02-PLAN.md — Birthday automation: MANUAL-ACTIONS.md SQL doc, birth_date field in /join form, /api/cron/birthday route, vercel.json cron schedule
 
 ### Phase 9: Business Tools
 **Goal**: Il merchant raccoglie recensioni Google dopo ogni riscatto e il sistema applica limiti di piano in modo trasparente
@@ -231,7 +235,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 6. Critical Fixes v2 | 2/2 | Complete   | 2026-03-02 |
 | 7. Design System v2 | 0/4 | Planned | - |
-| 8. Engagement Automation | 0/? | Not started | - |
+| 8. Engagement Automation | 0/2 | Planned | - |
 | 9. Business Tools | 0/? | Not started | - |
 | 10. WhatsApp Marketing | 0/? | Not started | - |
 | 11. Webhook Integrations | 0/? | Not started | - |
