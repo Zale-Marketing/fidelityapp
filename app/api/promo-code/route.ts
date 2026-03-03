@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     .eq('id', merchantId)
     .single()
 
-  if (merchant?.plan === 'BUSINESS' && merchant?.plan_expires_at) {
+  if (merchant?.plan === 'business' && merchant?.plan_expires_at) {
     const expires = new Date(merchant.plan_expires_at)
     if (expires > new Date()) {
       return NextResponse.json({ error: 'Hai già un piano BUSINESS attivo' }, { status: 400 })
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabase
     .from('merchants')
-    .update({ plan: 'BUSINESS', plan_expires_at: expiresAt.toISOString() })
+    .update({ plan: 'business', plan_expires_at: expiresAt.toISOString() })
     .eq('id', merchantId)
 
   if (error) {
