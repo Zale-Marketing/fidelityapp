@@ -296,7 +296,11 @@ Plans:
   4. Dashboard mostra in evidenza: rating medio, percentuale recensioni positive e negative, trend rispetto alle ultime 30gg
   5. Merchant con WhatsApp connesso e alert abilitati riceve un messaggio WhatsApp per ogni nuova recensione negativa o ad alta urgenza, con rating, nome autore, estratto testo e link alla dashboard
   6. Merchant può abilitare o disabilitare gli alert WhatsApp direttamente dalla pagina impostazioni OCIO
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 16-01-PLAN.md — PATCH API reply_status + WhatsApp alert in ocio-ai-analyzer + campo alert_whatsapp_number in settings
+- [ ] 16-02-PLAN.md — Dashboard OCIO completa: KPI + ComposedChart + lista recensioni filtrata + modal analisi AI
 
 ---
 
