@@ -1,4 +1,4 @@
-import { logger, schedules } from "@trigger.dev/sdk/v3"
+import { logger, schedules, tasks } from "@trigger.dev/sdk/v3"
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { ApifyClient } from "apify-client"
 
@@ -159,6 +159,17 @@ export const ocioReviewScraper = schedules.task({
       try {
         await scrapeForMerchant(merchantId, googleMapsUrl, supabase)
         successCount++
+        // Avvia analisi AI per questo merchant (fire-and-forget)
+        try {
+          await tasks.trigger("ocio-ai-analyzer", { merchantId })
+          logger.log("ocio-ai-analyzer triggered", { merchantId })
+        } catch (triggerErr) {
+          // Non bloccare lo scraper se il trigger fallisce
+          logger.error("failed to trigger ocio-ai-analyzer", {
+            merchantId,
+            error: triggerErr instanceof Error ? triggerErr.message : String(triggerErr),
+          })
+        }
       } catch (err) {
         failCount++
         logger.error("merchant scrape failed", {
