@@ -16,53 +16,68 @@ export function formatPhoneIT(phone: string): string | null {
   return null
 }
 
-// ─── API Calls ────────────────────────────────────────────────────────────────
+// ─── HTTP helpers ─────────────────────────────────────────────────────────────
 
-async function sendappGet(path: string): Promise<any> {
-  const res = await fetch(`${SENDAPP_BASE}${path}`)
+async function assertJson(res: Response, label: string): Promise<any> {
   const contentType = res.headers.get('content-type') || ''
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`SendApp ${path} → ${res.status}: ${text}`)
+    throw new Error(`SendApp ${label} → ${res.status}: ${text.substring(0, 200)}`)
   }
   if (!contentType.includes('application/json')) {
     const text = await res.text().catch(() => '')
-    throw new Error(`SendApp returned non-JSON response (${res.status}): ${text.substring(0, 200)}`)
+    throw new Error(`SendApp ${label} returned non-JSON (${res.status}): ${text.substring(0, 200)}`)
   }
   return res.json()
 }
 
+async function sendappGet(path: string): Promise<any> {
+  const res = await fetch(`${SENDAPP_BASE}${path}`)
+  return assertJson(res, path)
+}
+
+async function sendappPost(path: string, body: Record<string, unknown>): Promise<any> {
+  const res = await fetch(`${SENDAPP_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  return assertJson(res, path)
+}
+
+// ─── API Calls ────────────────────────────────────────────────────────────────
+
 export async function createInstance(accessToken: string): Promise<{ instance_id: string }> {
-  return sendappGet(`/create-instance?access_token=${encodeURIComponent(accessToken)}`)
+  return sendappGet(`/create_instance?access_token=${encodeURIComponent(accessToken)}`)
 }
 
 export async function getQRCode(instanceId: string, accessToken: string): Promise<{ qr: string }> {
   return sendappGet(
-    `/get-qr-code?instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
+    `/get_qrcode?instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
   )
 }
 
 export async function getInstanceStatus(instanceId: string, accessToken: string): Promise<{ status: string; phone?: string }> {
   return sendappGet(
-    `/get-status?instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
+    `/get_status?instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
   )
 }
 
 export async function setWebhook(instanceId: string, accessToken: string, webhookUrl: string): Promise<any> {
   return sendappGet(
-    `/set-webhook?webhook_url=${encodeURIComponent(webhookUrl)}&enable=true&instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
+    `/set_webhook?webhook_url=${encodeURIComponent(webhookUrl)}&enable=true&instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
   )
 }
 
 export async function rebootInstance(instanceId: string, accessToken: string): Promise<any> {
   return sendappGet(
-    `/reboot-instance?instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
+    `/reboot?instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
   )
 }
 
 export async function resetInstance(instanceId: string, accessToken: string): Promise<any> {
   return sendappGet(
-    `/reset-instance?instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
+    `/reset_instance?instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
   )
 }
 
@@ -78,9 +93,7 @@ export async function sendTextMessage(
   instanceId: string,
   accessToken: string
 ): Promise<any> {
-  return sendappGet(
-    `/send-message?number=${encodeURIComponent(number)}&type=text&message=${encodeURIComponent(message)}&instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
-  )
+  return sendappPost('/send', { number, type: 'text', message, instance_id: instanceId, access_token: accessToken })
 }
 
 export async function sendMediaMessage(
@@ -90,9 +103,7 @@ export async function sendMediaMessage(
   instanceId: string,
   accessToken: string
 ): Promise<any> {
-  return sendappGet(
-    `/send-message?number=${encodeURIComponent(number)}&type=media&message=${encodeURIComponent(message)}&media_url=${encodeURIComponent(mediaUrl)}&instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`
-  )
+  return sendappPost('/send', { number, type: 'media', message, media_url: mediaUrl, instance_id: instanceId, access_token: accessToken })
 }
 
 export async function sendGroupText(
@@ -101,21 +112,7 @@ export async function sendGroupText(
   instanceId: string,
   accessToken: string
 ): Promise<any> {
-  const res = await fetch(`${SENDAPP_BASE}/send-group-message`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ group_id: groupId, type: 'text', message, instance_id: instanceId, access_token: accessToken }),
-  })
-  const ct1 = res.headers.get('content-type') || ''
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`SendApp send-group-message → ${res.status}: ${text}`)
-  }
-  if (!ct1.includes('application/json')) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`SendApp returned non-JSON response (${res.status}): ${text.substring(0, 200)}`)
-  }
-  return res.json()
+  return sendappPost('/send_group', { group_id: groupId, type: 'text', message, instance_id: instanceId, access_token: accessToken })
 }
 
 export async function sendGroupMedia(
@@ -125,21 +122,7 @@ export async function sendGroupMedia(
   instanceId: string,
   accessToken: string
 ): Promise<any> {
-  const res = await fetch(`${SENDAPP_BASE}/send-group-message`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ group_id: groupId, type: 'media', message, media_url: mediaUrl, instance_id: instanceId, access_token: accessToken }),
-  })
-  const ct2 = res.headers.get('content-type') || ''
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`SendApp send-group-message → ${res.status}: ${text}`)
-  }
-  if (!ct2.includes('application/json')) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`SendApp returned non-JSON response (${res.status}): ${text.substring(0, 200)}`)
-  }
-  return res.json()
+  return sendappPost('/send_group', { group_id: groupId, type: 'media', message, media_url: mediaUrl, instance_id: instanceId, access_token: accessToken })
 }
 
 // ─── High-level helper ────────────────────────────────────────────────────────
@@ -147,11 +130,6 @@ export async function sendGroupMedia(
 /**
  * Carica le credenziali SendApp del merchant dal DB, invia un messaggio,
  * e logga il risultato in whatsapp_logs.
- *
- * @param merchantId  UUID del merchant
- * @param toPhone     Numero telefono del destinatario (qualsiasi formato)
- * @param message     Testo del messaggio
- * @param eventType   Tipo evento per il log (es. 'bollino_aggiunto', 'benvenuto', 'premio')
  */
 export async function sendWhatsAppToCustomer(
   merchantId: string,

@@ -70,11 +70,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Sessione WhatsApp non attiva' }, { status: 400 })
     }
 
-    // DEBUG: probe URL SendApp API — rimuovere dopo verifica
-    const probeRes = await fetch('https://app.sendapp.cloud/api/send-message?number=test&type=text&message=test&instance_id=test&access_token=test')
-    const probeText = await probeRes.text()
-    console.log('[sendapp probe] status:', probeRes.status, 'body:', probeText.substring(0, 500))
-
     await sendTextMessage(
       normalizedPhone,
       (body.message as string).trim(),
