@@ -1,200 +1,225 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-03-02
+**Analysis Date:** 2026-03-04
 
 ## Naming Patterns
 
 **Files:**
-- Pages: `page.tsx` (Next.js App Router convention), always `page.tsx` inside route folders
-- API routes: `route.ts` or `route.tsx` (when returning JSX/ImageResponse)
-- Library modules: camelCase - `google-wallet.ts`, `supabase.ts`, `types.ts`
-- Dynamic route folders: bracket notation `[id]`, `[token]`, `[programId]`
-- Folders: kebab-case (`wallet-image`, `wallet-update`, `stripe-checkout`)
-
-**React Components (exported defaults):**
-- PascalCase with `Page` suffix: `DashboardPage`, `LoginPage`, `StampPage`, `NotificationsPage`, `AnalyticsPage`
-- Customer-facing pages: `CustomerCardPage` (`app/c/[token]/page.tsx`)
-- No dedicated `components/` folder - all components are page-level
+- React page components: `page.tsx` inside route directories (e.g., `app/dashboard/programs/page.tsx`)
+- API route handlers: `route.ts` inside API directories (e.g., `app/api/wallet/route.ts`)
+- Library files: camelCase (e.g., `lib/sendapp.ts`, `lib/whatsapp-automations.ts`)
+- Reusable components: PascalCase (e.g., `components/ui/EmptyState.tsx`, `components/dashboard/Sidebar.tsx`)
+- Custom hooks: camelCase with `use` prefix in `lib/hooks/` (e.g., `lib/hooks/usePlan.ts`)
 
 **Functions:**
-- camelCase for all functions: `loadDashboard`, `handleLogin`, `addStamp`, `generateWalletLink`, `sanitizeId`
-- `load*` prefix for data fetching functions: `loadDashboard()`, `loadPrograms()`, `loadAnalytics()`
-- `handle*` prefix for event handlers: `handleLogin`, `handleManualSubmit`, `handleAmountSubmit`, `handleSend`
-- `add*` prefix for mutation functions: `addStamp`, `addPoints`, `addCashback`, `addTierSpend`
-- `generate*` prefix for factory/builder functions: `generateWalletLink`, `generateStampsLayout`, `generatePointsLayout`
-- `get*` prefix for pure helper functions: `getPrivateKey`, `getCurrentTier`, `getNextTier`, `getTypeIcon`, `getTypeInfo`
+- React components: PascalCase (e.g., `ProgramsPage`, `EmptyState`, `Sidebar`)
+- Async data loaders in components: camelCase descriptive (e.g., `loadPrograms`, `loadData`, `loadMerchantStatus`)
+- Event handlers in components: `handle` prefix (e.g., `handleSoftDelete`, `handleLogin`)
+- Library helpers: camelCase (e.g., `formatPhoneIT`, `sendTextMessage`, `interpolate`)
+- API route handlers: named exports matching HTTP method (e.g., `export async function POST(...)`, `export async function GET(...)`)
 
-**Variables and State:**
-- camelCase throughout: `merchantId`, `cardData`, `scanToken`, `programType`
-- Boolean state uses descriptive names: `loading`, `sending`, `walletLoading`, `processing`
-- Typed state uses angle brackets: `useState<DashboardStats>({...})`, `useState<Program[]>([])`
+**Variables:**
+- camelCase throughout TypeScript (e.g., `merchantId`, `cardHolder`, `stampCount`)
+- Boolean flags: descriptive (e.g., `waConnected`, `isPro`, `chatbotEnabled`, `testLoading`)
+- Loading states: `loading` / `saving` / `exporting` pattern
 
 **Types:**
-- PascalCase for all type declarations: `Program`, `Card`, `CardHolder`, `WalletCardData`, `ProgramType`
-- Local page-scoped types defined inline at top of file: `DashboardStats`, `RecentActivity`, `ScanMode`, `CardData`
-- Shared types in `lib/types.ts` (exported): `Merchant`, `Profile`, `Program`, `Reward`, `Card`, `StampTransaction`
-- Input types use `Input` suffix: `CreateProgramInput`, `CreateRewardInput`, `CreateCardHolderInput`
-- Stats types use `Stats` suffix: `MerchantStats`, `ProgramStats`
+- `type` keyword preferred over `interface` for local component types (e.g., `type ScanMode = ...`, `type CardData = ...`)
+- `interface` used when explicitly props-based (e.g., `interface EmptyStateProps`, `interface UpgradePromptProps`)
+- Types in components are co-located at the top of the file, before the component function
+- Shared domain types live in `lib/types.ts` as the source of truth
+- Union string literals for enums (e.g., `'stamps' | 'points' | 'cashback' | 'tiers' | 'subscription'`)
 
 **Database / Supabase:**
-- Table names: snake_case plural - `cards`, `programs`, `card_holders`, `stamp_transactions`
-- Column names: snake_case - `merchant_id`, `card_holder_id`, `created_at`, `stamp_count`
-- Always use `cards` (NOT `loyalty_cards`)
-
-**Constants:**
-- SCREAMING_SNAKE_CASE for module-level constants: `PROGRAM_TYPE_INFO`, `TYPE_ICONS`, `WIDTH`, `HEIGHT`
-- Object record constants: `Record<string, { icon: string, name: string }>`
+- Table names: snake_case plural (e.g., `card_holders`, `stamp_transactions`)
+- Column names: snake_case (e.g., `contact_email`, `sendapp_instance_id`, `deleted_at`)
 
 ## Code Style
 
 **Formatting:**
-- No Prettier config file present - no enforced formatter beyond editor defaults
-- Single quotes for strings (consistent across all files)
-- No semicolons (TypeScript files follow Next.js default: no semicolons in most files)
+- No Prettier configured — formatting is informal/manual
+- Single quotes for strings in TypeScript/JavaScript (`'use client'`, `'#111111'`)
+- No semicolons at end of statements (semi-free style throughout lib/ files)
 - 2-space indentation
-- Arrow functions for callbacks, `async function` declarations for named async functions
 
 **Linting:**
-- ESLint with `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`
+- ESLint 9 with `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`
 - Config: `eslint.config.mjs`
-- TypeScript strict mode enabled (`"strict": true` in `tsconfig.json`)
-- No custom ESLint rules beyond Next.js defaults
+- Ignores: `.next/`, `out/`, `build/`
+- No custom rules beyond next defaults
+
+**TypeScript:**
+- `strict: true` in `tsconfig.json`
+- Non-null assertions (`!`) used freely on env vars (e.g., `process.env.SUPABASE_SERVICE_ROLE_KEY!`)
+- `any` used in Google Wallet lib (`lib/google-wallet.ts`) and in some component-local variables for Supabase join responses
+- `err: any` in catch blocks (e.g., `catch (err: any) { error = err?.message ?? String(err) }`)
+- `catch { }` (no binding) used when error is intentionally ignored
 
 ## Import Organization
 
 **Order (observed pattern):**
-1. React/Next.js framework imports: `'use client'` directive (top of file), then `import { useState } from 'react'`
-2. Next.js specific: `useRouter`, `useParams`, `Link`, `NextRequest`, `NextResponse`, `ImageResponse`
-3. Internal lib imports: `import { createClient } from '@/lib/supabase'`
-4. Type imports: `import type { Program } from '@/lib/types'`
-5. Third-party: `import { Html5Qrcode } from 'html5-qrcode'`, `import Stripe from 'stripe'`
+1. Framework imports (`'next/server'`, `'react'`, `'next/navigation'`, `'next/link'`)
+2. Third-party packages (`'@supabase/supabase-js'`, `'stripe'`, `'lucide-react'`)
+3. Internal lib imports (`'@/lib/supabase'`, `'@/lib/types'`, `'@/lib/sendapp'`)
+4. Internal component imports (`'@/components/ui/EmptyState'`, `'@/components/dashboard/Sidebar'`)
 
 **Path Aliases:**
 - `@/*` maps to project root (configured in `tsconfig.json`)
-- Use `@/lib/supabase` and `@/lib/types` for internal imports
-- API routes import Supabase directly from `@supabase/supabase-js` (not `@/lib/supabase`) for service role client
+- All internal imports use `@/` prefix (e.g., `import { createClient } from '@/lib/supabase'`)
 
-**Client vs Server Supabase:**
+## Supabase Client Usage
+
+**Client-side (browser — all dashboard pages):**
 ```typescript
-// Client-side pages ('use client') - use lib/supabase.ts wrapper
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'  // uses @supabase/ssr createBrowserClient
 const supabase = createClient()
+```
 
-// Server-side API routes - instantiate directly with service role key
+**Server-side (API routes — uses service role):**
+```typescript
 import { createClient } from '@supabase/supabase-js'
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!  // or ANON_KEY for public routes
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
+```
+Some API routes instantiate the client inline at module scope (e.g., `app/api/wallet/route.ts`), while others wrap it in a `getSupabase()` factory function (e.g., `app/api/whatsapp/incoming/route.ts`, `app/api/whatsapp/send/route.ts`). Both patterns are acceptable.
+
+**Soft delete — always filter:**
+```typescript
+.is('deleted_at', null)           // filter active records
+.update({ deleted_at: new Date().toISOString() })  // archive
 ```
 
 ## Error Handling
 
-**Supabase Queries:**
-```typescript
-// Standard pattern - destructure error, check before using data
-const { data: card, error: cardError } = await supabase
-  .from('cards')
-  .select('*')
-  .eq('id', cardId)
-  .single()
+**API Routes:**
+- Outer `try/catch` wraps the entire handler body; returns `NextResponse.json({ error: '...' }, { status: 500 })` on unhandled errors
+- Webhook endpoints (SendApp, Stripe) always return HTTP 200 to prevent retry loops, even on errors
+- Nested try/catch used for optional sub-operations (e.g., wallet generation, webhook dispatch, AI calls) so failures don't abort the primary response
+- Validation errors return 400 with Italian-language error messages
+- Auth errors return 401
 
-if (cardError || !card) {
-  return NextResponse.json({ error: 'Card non trovata' }, { status: 404 })
+**Pattern:**
+```typescript
+export async function POST(req: NextRequest) {
+  try {
+    // ... handler logic
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('[route-name] error:', err)
+    return NextResponse.json({ error: 'Errore interno del server' }, { status: 500 })
+  }
 }
 ```
 
-**API Routes:**
-- Wrap handler body in `try/catch`
-- Return `NextResponse.json({ error: error.message }, { status: 500 })` on catch
-- Use typed `error: any` in catch blocks: `catch (error: any)`
-- Validate required params early with 400 responses
-
-**Client-side Pages:**
-- Use `useState` for error strings: `const [error, setError] = useState('')`
-- Display inline: `{error && <p className="text-red-500 text-sm">{error}</p>}`
-- `alert()` for imperative confirmations and quick error feedback (common pattern in stamp/page.tsx)
-- `confirm()` for destructive actions (redeem, cashback reset)
-- `try/catch` inside async event handlers with `setMode('error')` / `setMessage(err.message)`
-
-**Throwing vs Returning:**
-- In page-level async functions, `throw error` to propagate to outer try/catch
-- In API routes, always `return NextResponse.json(...)` never throw
+**Client Components:**
+- Error state stored in `useState<string | null>(null)` (e.g., `const [error, setError] = useState('')`)
+- Errors displayed inline in the UI
+- No global error boundary in use
 
 ## Logging
 
-**Framework:** `console` (native - no logging library)
+**Framework:** `console` (no structured logging library)
 
 **Patterns:**
-- Debug sections marked with `=== DEBUG ===` pattern: `console.log('=== DEBUG ATTIVITÀ ===')`
-- Development logs left in production code (not stripped) - see `app/dashboard/page.tsx` lines 121-122 and `app/api/wallet/route.ts` lines 131-132
-- Success log in client: `console.log('✅ Wallet aggiornato')`
-- Error log: `console.error('Errore:', error)` or `console.error('Errore aggiornamento wallet:', error)`
+- `console.error('[route-name] error:', err)` — prefixed with route identifier in brackets
+- `console.log('=== SECTION ===')` — uppercase triple-equals markers for major debug sections (found in `app/api/wallet/route.ts`)
+- `console.warn(...)` — for non-fatal issues (e.g., phone normalization failures)
+- Debug-level `console.log` left in production code (wallet route has JSON.stringify logs)
+- Error logging includes contextual identifiers (e.g., merchant ID, phone number)
 
 ## Comments
 
 **When to Comment:**
-- Section dividers with `// ========== SECTION NAME ==========` for long functions
-- Emoji-prefixed inline comments for clarity: `// 🆕 AGGIORNA WALLET`, `// ⚠️ ATTENZIONE`
-- Short explanatory comments for non-obvious logic: `// Ignore` in catch blocks for scanner stop
-- Italian language throughout (project is Italian-language)
+- JSDoc-style `/** ... */` used for exported library functions in `lib/` (e.g., `lib/sendapp.ts`, `lib/whatsapp-automations.ts`)
+- Inline `// comment` used for section separators within long files (e.g., `// ─── Phone normalization ───`)
+- Route files use comment before export to describe method and payload (e.g., `// POST — { to: string, message: string }`)
+- Page references in comments (e.g., `// Auto-start camera immediately after auth — STAMP-01`) linking to planning phase codes
 
-**JSDoc/TSDoc:** Not used. No JSDoc annotations anywhere in the codebase.
+**JSDoc example:**
+```typescript
+/**
+ * Carica le credenziali SendApp del merchant dal DB, invia un messaggio,
+ * e logga il risultato in whatsapp_logs.
+ */
+export async function sendWhatsAppToCustomer(...)
+```
 
 ## Function Design
 
-**Size:** Functions tend to be long (50-200+ lines), especially in page files. `StampPage` contains all logic inline. No extraction into smaller helpers except in `lib/google-wallet.ts`.
+**Size:** Functions are typically 20–80 lines; longer handlers (100–250 lines) exist in complex pages like `app/stamp/page.tsx` and `app/api/whatsapp/incoming/route.ts`
 
-**Parameters:**
-- Explicit typed parameters when function is exported or defined at module level
-- `any` used liberally for Supabase results passed between functions: `async function addStamp(card: any, program: any, customer?: any)`
-- Optional parameters trailing with `?`
+**Parameters:** Direct destructuring from request body (no schema validation library like Zod); manual type checks with `typeof` guards
 
 **Return Values:**
-- API routes always return `NextResponse.json()`
-- Client async functions use state setters for results rather than returning values
-- Pure helper functions return typed values: `function getCurrentTier(totalSpent: number): Tier | null`
+- API routes always return `NextResponse.json(...)` with explicit status codes
+- Library functions return `Promise<void>` for fire-and-forget operations, typed return values for data-returning functions
+- Null coalescing used heavily: `card?.current_stamps ?? card?.stamp_count ?? 0`
 
 ## Module Design
 
 **Exports:**
-- One default export per file (the page component or API handler)
-- Named exports from `lib/` modules: `export function createClient()`, `export async function generateWalletLink()`, `export async function updateWalletCard()`
-- Types exported from `lib/types.ts` individually
+- Named exports for library functions (e.g., `export function formatPhoneIT(...)`, `export async function sendTextMessage(...)`)
+- Default exports for React components and Next.js pages (e.g., `export default function ProgramsPage()`)
+- Named `export async function POST/GET/PATCH/DELETE` for API route handlers
 
-**Barrel Files:** Not used. No `index.ts` barrel files anywhere.
+**Barrel Files:**
+- Not used; all imports reference specific file paths directly
 
-## TypeScript Usage
+## React Component Patterns
 
-**Type Assertions:**
-- `as any` used frequently for Supabase query results with relational joins: `(profile.merchants as any)?.name`
-- `as any` cast passed to functions: `generateWalletLink(walletData as any)`
-- Inline type casting on card fields: `(card as any).cashback_balance`
-- `!` non-null assertion on env vars: `process.env.NEXT_PUBLIC_SUPABASE_URL!`
+**'use client' directive:**
+- All interactive dashboard pages include `'use client'` at the top
+- Layout files (`app/dashboard/layout.tsx`) are Server Components (no directive)
+- Public pages (`app/page.tsx`) are Server Components
 
-**Type Guards:**
-- Null checks via optional chaining: `card?.scan_token`, `customer?.full_name`
-- Fallback with `||`: `card.current_stamps || card.stamp_count || 0`
+**Data loading pattern:**
+```typescript
+const [data, setData] = useState<Type[]>([])
+const [loading, setLoading] = useState(true)
 
-## UI Patterns
+useEffect(() => {
+  loadData()
+}, [])
 
-**Loading States:**
-- Spinner: `<div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full"></div>`
-- Full-screen centered wrapper: `<div className="min-h-screen bg-gray-50 flex items-center justify-center">`
+async function loadData() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) { router.push('/login'); return }
+  // ... fetch and setData
+  setLoading(false)
+}
+```
 
-**Color System (Tailwind):**
-- Primary brand: `indigo-600`, `indigo-700` for hover
-- Success: `green-500`, `green-600`
-- Warning: `yellow-500`, `amber-500`
-- Error: `red-500`, `red-600`
-- Neutral backgrounds: `gray-50` (page), `gray-100` (subtle), `white` (cards)
+**Loading spinner pattern:**
+```typescript
+if (loading) {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin w-8 h-8 border-4 border-[#111111] border-t-transparent rounded-full" />
+    </div>
+  )
+}
+```
 
-**Satori / ImageResponse Rules (app/api/wallet-image/route.tsx):**
-- Every `<div>` with multiple children MUST have `display: 'flex'`
-- Use CSS shapes (circles via `borderRadius: '50%'`) instead of emoji
-- No special Unicode characters
-- Inline styles only (no Tailwind classes)
+**Post-mutation navigation:**
+```typescript
+router.refresh()   // invalidate Next.js App Router cache
+router.push('/dashboard/programs')
+```
+
+## Tailwind CSS Patterns
+
+**Design tokens (hardcoded, not CSS variables):**
+- Background sidebar: `bg-[#111111]`
+- Card border: `border-[#E8E8E8]`
+- Card border radius: `rounded-[12px]` or `rounded-xl`
+- Button border radius: `rounded-[8px]`
+- Primary button: `bg-[#111111] text-white hover:bg-[#333333]`
+- Page background: `bg-[#F5F5F5]`
+
+**No Tailwind config file** — using Tailwind CSS 4 with PostCSS (`@tailwindcss/postcss`)
 
 ---
 
-*Convention analysis: 2026-03-02*
+*Convention analysis: 2026-03-04*

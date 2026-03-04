@@ -1,167 +1,200 @@
 # Architecture
 
-**Analysis Date:** 2026-03-02
+**Analysis Date:** 2026-03-04
 
 ## Pattern Overview
 
-**Overall:** Full-stack Next.js monolith with App Router (no separate backend server)
+**Overall:** Monolithic Next.js SaaS — App Router with co-located API routes, no separate backend service
 
 **Key Characteristics:**
-- All pages and API routes co-located in `app/` directory using Next.js App Router conventions
-- No middleware layer or dedicated server — API routes in `app/api/` act as the backend
-- Two distinct user surfaces: **merchant dashboard** (authenticated) and **customer-facing public pages** (unauthenticated)
-- External integrations (Google Wallet, Stripe) are encapsulated in `lib/` and called from API routes
-- Database access pattern: client-side pages call Supabase directly via browser client; API routes use service-role client for privileged operations
-- One Edge Runtime route (`app/api/wallet-image/route.tsx`) for low-latency image generation; all other routes use Node.js runtime
+- Single Next.js application serves both merchant dashboard and customer-facing pages
+- All API logic lives in `app/api/` as Next.js Route Handlers
+- Supabase is the only database — used directly from both client components and server routes
+- No shared API abstraction layer — pages query Supabase directly using the browser client
+- Two Supabase client modes: browser client (anon key) in Client Components, service role client in API routes
 
 ## Layers
 
-**Public Landing & Auth:**
-- Purpose: Marketing homepage, merchant login/register, onboarding wizard
-- Location: `app/page.tsx`, `app/login/page.tsx`, `app/register/page.tsx`, `app/onboarding/page.tsx`
-- Contains: Client components with Supabase auth calls
-- Depends on: `lib/supabase.ts`
-- Used by: New and returning merchants
+**Public Customer Layer:**
+- Purpose: Zero-auth pages for end customers to join programs and view cards
+- Location: `app/join/[programId]/`, `app/c/[token]/`
+- Contains: Client Components, direct Supabase queries with anon key
+- Depends on: Supabase anon client, `/api/wallet`, `/api/whatsapp/automated`
+- Used by: End customers (no authentication required)
 
-**Merchant Dashboard (Protected):**
-- Purpose: Merchant management UI — programs, customers, analytics, billing, notifications, settings
+**Auth Layer:**
+- Purpose: Merchant registration, login, onboarding
+- Location: `app/register/`, `app/login/`, `app/onboarding/`
+- Contains: Client Components, Supabase Auth calls
+- Depends on: `lib/supabase.ts` (browser client)
+- Used by: Merchants registering or logging in
+
+**Merchant Dashboard Layer:**
+- Purpose: Authenticated merchant management interface
 - Location: `app/dashboard/`
-- Contains: All `'use client'` pages; auth gate via `supabase.auth.getUser()` at component mount
-- Depends on: `lib/supabase.ts` (browser client), Next.js navigation
+- Contains: Client Components with `'use client'` directive, `useEffect`-based data loading
+- Depends on: `lib/supabase.ts`, `lib/hooks/usePlan.ts`, `components/dashboard/`
 - Used by: Authenticated merchants
 
-**Customer-Facing Public Pages:**
-- Purpose: Card display for end customers (no merchant auth required), program enrollment, QR scanner for merchants
-- Location: `app/c/[token]/page.tsx`, `app/join/[programId]/page.tsx`, `app/stamp/page.tsx`
-- Contains: `'use client'` pages; `app/c/[token]` polls Supabase every 5 seconds for live updates
-- Depends on: `lib/supabase.ts` (browser client with anon key)
-- Used by: End customers (card holders)
-
-**API Routes (Server-Side Business Logic):**
-- Purpose: All server-side operations requiring service-role DB access or external API calls
+**API Routes Layer:**
+- Purpose: Server-side actions, external service integration, webhook handling
 - Location: `app/api/`
-- Contains: Next.js Route Handlers (`route.ts` / `route.tsx`)
-- Depends on: `lib/google-wallet.ts`, Stripe SDK, Supabase service-role client
-- Used by: Frontend pages via `fetch()`
+- Contains: Next.js Route Handlers (Node runtime by default, Edge for `wallet-image`)
+- Depends on: `lib/google-wallet.ts`, `lib/sendapp.ts`, `lib/whatsapp-automations.ts`, `lib/webhooks.ts`
+- Used by: Client Components (fetch calls), external services (Stripe, SendApp webhooks), Vercel Cron
 
-**Shared Library:**
-- Purpose: Reusable clients, business logic, and type definitions
+**Library Layer:**
+- Purpose: Shared utilities, external service clients, type definitions
 - Location: `lib/`
-- Contains: Supabase browser client factory, Google Wallet JWT generation + PATCH update, shared TypeScript types
-- Depends on: External SDKs (`jsonwebtoken`, `google-auth-library`, `@supabase/ssr`)
-- Used by: Pages (browser client), API routes (wallet functions)
+- Contains: Service wrappers, typed helpers, React hooks
+- Depends on: External SDKs (`jsonwebtoken`, `google-auth-library`, `stripe`)
+- Used by: API routes and dashboard pages
+
+**Component Layer:**
+- Purpose: Reusable UI pieces
+- Location: `components/`
+- Contains: Dashboard layout components (`Sidebar.tsx`), generic UI (`EmptyState`, `MetricCard`, `StatusBadge`, `UpgradePrompt`), public page components (`LeadForm`)
+- Depends on: `lib/supabase.ts`, `lib/hooks/usePlan.ts`
+- Used by: All page components
 
 ## Data Flow
 
-**Customer Card Enrollment (Self-Service):**
+**Customer Card Registration Flow:**
 
 1. Customer visits `app/join/[programId]/page.tsx`
-2. Page loads program + merchant from Supabase (anon key)
-3. Customer submits name/email/phone form
-4. Page checks for existing `card_holder` by email; creates new if not found
-5. Page inserts new row into `cards` with a `crypto.randomUUID()` scan token
-6. Customer is redirected to `/c/{scan_token}`
+2. Page queries Supabase directly for program + merchant data (anon key)
+3. Customer submits form → page inserts `card_holders` + `cards` records to Supabase
+4. Fire-and-forget: page calls `POST /api/webhooks/dispatch` and `POST /api/whatsapp/automated`
+5. Customer redirected to `app/c/[token]/page.tsx` where card auto-refreshes every 5 seconds
 
-**Stamp/Points Transaction (Merchant Scans QR):**
+**Stamp/Points Update Flow:**
 
-1. Merchant opens `app/stamp/page.tsx`; auth checked via `supabase.auth.getUser()`
-2. `Html5Qrcode` library scans QR code; decoded text is a `scan_token` or URL containing one
-3. Page looks up card by `scan_token` filtered to merchant's `merchant_id` (prevents cross-merchant access)
-4. Based on `program.program_type`, page directly updates `cards` table and inserts into `stamp_transactions`
-5. Page calls `POST /api/wallet-update` with `cardId` to trigger Google Wallet PATCH update
-6. `/api/wallet-update` calls `updateWalletCard()` from `lib/google-wallet.ts`, which PATCHes the hero image URL (with fresh timestamp for cache-busting)
+1. Merchant opens `app/stamp/page.tsx`, scans customer QR code
+2. Page reads card by `scan_token`, shows customer data
+3. Merchant confirms → page updates `cards` + inserts `stamp_transactions` in Supabase directly
+4. Page calls `POST /api/wallet-update { cardId }` to sync Google Wallet
+5. `wallet-update` route calls `updateWalletCard()` in `lib/google-wallet.ts`
+6. Google fetches `GET /api/wallet-image?cardId=&color=&t=` (Edge Runtime) to refresh hero image
 
-**Google Wallet Card Creation:**
+**Google Wallet Creation Flow:**
 
-1. Customer clicks "Aggiungi a Google Wallet" on `app/c/[token]/page.tsx`
-2. Page calls `POST /api/wallet` with `cardId`
-3. `app/api/wallet/route.ts` loads card + program + merchant + card_holder from Supabase
-4. Calls `generateWalletLink()` from `lib/google-wallet.ts`
-5. `generateWalletLink()` builds a `loyaltyClass` + `loyaltyObject` payload and signs a JWT with the service account private key
-6. Hero image URL points to `GET /api/wallet-image?cardId=...&t={timestamp}` (Edge Runtime)
-7. Returns `https://pay.google.com/gp/v/save/{JWT}` — customer is opened to Google's save flow
+1. Customer on `/c/[token]` presses "Aggiungi a Google Wallet"
+2. `POST /api/wallet { cardId }` called (with `NEXT_PUBLIC_INTERNAL_API_SECRET` Bearer token)
+3. Route fetches card + program + merchant + rewards from Supabase (service role)
+4. `generateWalletLink()` in `lib/google-wallet.ts` builds JWT with loyaltyClass + loyaltyObject
+5. JWT signed with Google service account private key → URL returned
+6. Route fires `triggerWebhook()` for `carta_creata` event (BUSINESS plan merchants)
+7. Customer redirected to `https://pay.google.com/gp/v/save/{JWT}`
 
-**Dynamic Wallet Hero Image Generation:**
+**WhatsApp Incoming Flow:**
 
-1. Google Wallet (or browser) requests `GET /api/wallet-image?cardId=...&t=...`
-2. Edge function fetches `cards` + `programs` from Supabase (service-role key)
-3. Fetches `rewards` in a separate query (nested queries not supported in Edge)
-4. Renders a React JSX tree using `ImageResponse` / Satori (1032×336px)
-5. Returns PNG with `Cache-Control: no-cache` headers
+1. SendApp calls `POST /api/whatsapp/incoming` with message payload
+2. Route resolves merchant by `instance_id`, logs incoming to `whatsapp_logs`
+3. Route resolves `card_holder` and `card` for the sender's phone number
+4. If `ai_chatbot_enabled=false`: keyword matching → static response
+5. If `ai_chatbot_enabled=true`: loads conversation history from `whatsapp_conversations`, calls OpenAI/Anthropic API, updates conversation record
+6. Response sent via `sendTextMessage()` in `lib/sendapp.ts`, logged to `whatsapp_logs`
+
+**Stripe Billing Flow:**
+
+1. Merchant clicks upgrade on `app/dashboard/billing/page.tsx`
+2. `POST /api/stripe-checkout` creates Stripe Checkout session with `merchant_id` in metadata
+3. Stripe sends events to `POST /api/stripe-webhook`
+4. Webhook verifies signature, updates `merchants.plan` and `merchants.stripe_subscription_status`
 
 **State Management:**
-- No global state manager (no Redux, Zustand, or Context)
-- State is local `useState` inside each page component
-- Data is fetched on mount via `useEffect` directly from Supabase
-- Auth state is checked imperatively on each protected page (no middleware-based route protection)
+- No global client state manager (no Redux, Zustand, etc.)
+- Each dashboard page manages its own local state with `useState` + `useEffect`
+- Authentication state: Supabase session cookie managed by `@supabase/ssr`
+- Plan state: `usePlan()` hook in `lib/hooks/usePlan.ts` — fetches on mount per component
 
 ## Key Abstractions
 
-**`WalletCardData` (type):**
-- Purpose: Unified data shape passed to both `generateWalletLink()` and `updateWalletCard()`
-- Examples: `lib/google-wallet.ts` lines 32–86
-- Pattern: Single fat object covering all 5 program types; fields are optional per type
+**`lib/google-wallet.ts`:**
+- Purpose: All Google Wallet interactions — JWT generation and PATCH updates
+- Examples: `generateWalletLink()`, `updateWalletCard()`, `getAuthClient()`
+- Pattern: Functions export pure-ish operations; private key loaded from env at runtime
 
-**`createClient()` (factory function):**
-- Purpose: Instantiates a Supabase browser client using public env vars
-- Examples: `lib/supabase.ts`
-- Pattern: Called at the top of each page component — `const supabase = createClient()`
+**`lib/sendapp.ts`:**
+- Purpose: SendApp Cloud WhatsApp API wrapper
+- Examples: `sendTextMessage()`, `sendWhatsAppToCustomer()`, `formatPhoneIT()`
+- Pattern: Low-level HTTP helpers (`sendappGet`, `sendappPost`) + high-level `sendWhatsAppToCustomer()` that loads merchant credentials from DB
 
-**API routes as integration adapters:**
-- Purpose: Isolate external service calls (Google Wallet JWT signing, Stripe Checkout) from client code
-- Examples: `app/api/wallet/route.ts`, `app/api/stripe-checkout/route.ts`
-- Pattern: Route receives `cardId` or `merchantId`, loads full context from DB, calls lib function, returns result
+**`lib/whatsapp-automations.ts`:**
+- Purpose: Template-based automated WhatsApp messages triggered by business events
+- Examples: `sendAutomatedMessage()`, `interpolate()`, `DEFAULT_TEMPLATES`
+- Pattern: Loads custom template from `whatsapp_automations` table, falls back to `DEFAULT_TEMPLATES`; interpolates `{variable}` placeholders
 
-**Program types as a discriminated union:**
-- Purpose: Single `program_type` field drives all branching logic across stamp, scan, wallet-image, and card-display pages
-- Values: `'stamps' | 'points' | 'cashback' | 'tiers' | 'subscription' | 'missions'`
-- Pattern: `switch (programType)` in `app/api/wallet-image/route.tsx`; `if/else if` chains in `app/stamp/page.tsx`
+**`lib/webhooks.ts`:**
+- Purpose: HMAC-SHA256 signed webhook dispatch to merchant-configured endpoints
+- Examples: `triggerWebhook(merchantId, event, data)`
+- Pattern: Queries active endpoints for merchant+event, signs payload, fires `Promise.allSettled` to all endpoints
+
+**`lib/hooks/usePlan.ts`:**
+- Purpose: React hook for plan-gating UI in dashboard
+- Examples: `{ isFree, isPro, isBusiness, loading }`
+- Pattern: Reads `merchants.plan` via authenticated Supabase query; `isPro` is true for both PRO and BUSINESS
+
+**`lib/types.ts`:**
+- Purpose: Single source of truth for TypeScript types matching DB schema
+- Pattern: Plain type aliases (not interfaces), optional relations appended as `?` fields
 
 ## Entry Points
 
-**Root Landing Page:**
+**`app/page.tsx`:**
 - Location: `app/page.tsx`
-- Triggers: Any unauthenticated visitor to `/`
-- Responsibilities: Marketing copy, links to `/login` and `/register`
+- Triggers: GET `/` — public marketing page
+- Responsibilities: Landing page with LeadForm
 
-**Root Layout:**
-- Location: `app/layout.tsx`
-- Triggers: Wraps every page in the app
-- Responsibilities: Sets HTML lang, loads Geist fonts, applies global CSS
-
-**Customer Card Page:**
-- Location: `app/c/[token]/page.tsx`
-- Triggers: QR code scan by customer, or direct link
-- Responsibilities: Renders live card state for all program types; initiates Google Wallet add flow; polls every 5 seconds
-
-**Stamp Scanner:**
-- Location: `app/stamp/page.tsx`
-- Triggers: Merchant navigates to `/stamp` from dashboard
-- Responsibilities: Camera-based QR scan, manual code fallback, transaction recording for all program types, Google Wallet update trigger
-
-**Wallet Image Generator (Edge):**
+**`app/api/wallet-image/route.tsx`:**
 - Location: `app/api/wallet-image/route.tsx`
-- Triggers: Google Wallet server fetching hero image; browser previews
-- Responsibilities: Generates 1032×336px PNG using Satori/ImageResponse; separate DB query for rewards (edge limitation)
+- Triggers: GET `/api/wallet-image?cardId=&color=&t=` — called by Google Wallet servers
+- Responsibilities: Generates 1032x336px PNG hero image for wallet cards (Edge Runtime, Satori)
+
+**`app/stamp/page.tsx`:**
+- Location: `app/stamp/page.tsx`
+- Triggers: Merchant navigates to `/stamp`
+- Responsibilities: QR scanner (html5-qrcode), stamp/point/cashback/subscription processing, wallet update trigger, WhatsApp automation trigger
+
+**`app/api/whatsapp/incoming/route.ts`:**
+- Location: `app/api/whatsapp/incoming/route.ts`
+- Triggers: POST from SendApp Cloud webhook
+- Responsibilities: Route incoming WhatsApp messages to keyword handler or AI chatbot; always returns 200
+
+**`app/api/stripe-webhook/route.ts`:**
+- Location: `app/api/stripe-webhook/route.ts`
+- Triggers: POST from Stripe with verified signature
+- Responsibilities: Update `merchants.plan` + subscription status based on Stripe events
+
+**`app/api/cron/birthday/route.ts`:**
+- Location: `app/api/cron/birthday/route.ts`
+- Triggers: Vercel Cron at 09:00 daily (configured in `vercel.json`)
+- Responsibilities: Find card_holders with today's birthday, send WhatsApp messages
 
 ## Error Handling
 
-**Strategy:** Per-component try/catch; API routes return `NextResponse.json({ error: message }, { status: N })`
+**Strategy:** Loose — most errors are logged to `console.error` and return JSON error responses; no centralized error tracking
 
 **Patterns:**
-- Dashboard pages: errors typically silently fail or set a local `error` state string rendered inline
-- API routes: structured `{ error: string }` JSON responses with appropriate HTTP status codes
-- Google Wallet update errors (404 = card not yet in wallet) are swallowed silently — non-blocking
-- Stripe routes return `503` when env vars are missing, with an informative message
-- The `wallet-image` Edge route returns plain text `'Card not found'` with 404 (not JSON)
+- API routes: try/catch wrapping entire handler body; return `NextResponse.json({ error: ... }, { status: N })`
+- WhatsApp incoming webhook: always returns `{ received: true }` with 200, even on errors, to satisfy SendApp
+- Google Wallet update: 404 errors from Google silently ignored (card not yet in wallet); other errors logged as warnings
+- Client pages: local `useState` for error strings displayed inline
+- Fire-and-forget calls: `.catch(console.error)` on webhook dispatch and WhatsApp automation calls from `join/` page
 
 ## Cross-Cutting Concerns
 
-**Logging:** `console.log` / `console.error` only — no structured logging framework
-**Validation:** Minimal — required fields checked in API routes (`if (!cardId)`); form validation via HTML `required` attributes
-**Authentication:** Supabase Auth; checked imperatively at component mount via `supabase.auth.getUser()` with redirect to `/login`; no Next.js middleware protecting routes; API routes do not verify auth tokens (rely on `merchant_id` scoping for data isolation)
-**Plan Enforcement:** Free plan limit (max 5 programs) checked in `app/dashboard/programs/new/page.tsx` before allowing program creation
+**Logging:** `console.log` / `console.error` throughout; no structured logging framework; logs visible in Vercel function logs
 
----
+**Validation:** Minimal — mainly null/undefined checks inline; no Zod or validation library; form validation via HTML5 `required` + `type` attributes
 
-*Architecture analysis: 2026-03-02*
+**Authentication:**
+- Dashboard pages: check `supabase.auth.getUser()` in `useEffect`, redirect to `/login` if null
+- API routes: Bearer token check using `INTERNAL_API_SECRET` env var (only on `/api/wallet`)
+- No middleware-level auth guard; each page/route handles its own auth check
+- Supabase Row Level Security handles data isolation at the DB level
+
+**Plan Gating:**
+- `usePlan()` hook returns `{ isFree, isPro, isBusiness }` for UI gating
+- Hard limits (e.g., max 5 programs for FREE) enforced inline in page components
+- WhatsApp features conditioned on `isPro && waConnected` in `Sidebar.tsx` and settings pages

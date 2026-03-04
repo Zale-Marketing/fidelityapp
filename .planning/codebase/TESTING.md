@@ -1,152 +1,107 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-03-02
+**Analysis Date:** 2026-03-04
 
 ## Test Framework
 
-**Runner:** None installed
+**Runner:** None configured
 
-No test framework is present in this codebase. `package.json` contains no test dependencies (no Jest, Vitest, Playwright, Cypress, or any testing library). There are no test config files (`jest.config.*`, `vitest.config.*`, `playwright.config.*`). The `scripts` section has no `test` command.
+No test runner (Jest, Vitest, Playwright, Cypress) is installed or configured in this project. The `package.json` contains no test dependencies and no `test` script.
 
-**Test Files:** Zero test files found (no `*.test.*` or `*.spec.*` files anywhere in the project).
+**Assertion Library:** None
 
 **Run Commands:**
 ```bash
 # No test commands available
-# Current scripts:
-npm run dev     # Development server
-npm run build   # Production build
-npm run start   # Start production server
-npm run lint    # ESLint only
+# package.json scripts: dev, build, start, lint only
+npm run lint    # Only automated quality check available
 ```
 
-## Manual Test Utilities
+## Test File Organization
 
-**`test-wallet.js`** at project root (`C:\Users\Zanni\fidelityapp\test-wallet.js`) — a one-off Node.js script for manually testing Google Wallet link generation. Not a test suite, not automated.
+**Location:** No test files exist in the project source
+
+There are zero `.test.ts`, `.test.tsx`, `.spec.ts`, or `.spec.tsx` files outside of `node_modules`. No `__tests__` directories exist in the project source.
+
+**Naming:** Not applicable — no tests
+
+**Structure:** Not applicable
+
+## Test Structure
+
+No test suites exist. The project has no testing infrastructure.
+
+## Mocking
+
+**Framework:** None
+
+No mocking library is configured or used.
+
+## Fixtures and Factories
+
+**Test Data:** None
+
+No fixture files, factory functions, or seed data utilities exist for testing purposes.
+
+**Location:** Not applicable
 
 ## Coverage
 
-**Requirements:** None — no coverage tooling configured.
+**Requirements:** None enforced
 
-**Current state:** 0% automated test coverage. The codebase has no unit tests, integration tests, or end-to-end tests.
+No coverage thresholds or reporting configured.
 
-## What Exists Instead
+## Test Types
 
-**TypeScript as safety net:**
-- `"strict": true` in `tsconfig.json` provides compile-time type checking
-- `noEmit: true` means build will fail on type errors
-- ESLint with `eslint-config-next/core-web-vitals` catches common React/Next.js issues
+**Unit Tests:** None
 
-**Manual testing approach:**
-- Debug `console.log` statements left in production code for manual inspection
-- Debug sections marked `=== DEBUG ATTIVITÀ ===`, `=== WALLET DATA ===` in `app/dashboard/page.tsx` and `app/api/wallet/route.ts`
-- `alert()` and `confirm()` for runtime feedback in `app/stamp/page.tsx`
+**Integration Tests:** None
 
-## Areas That Would Benefit From Tests First
+**E2E Tests:** None — no Playwright, Cypress, or similar framework installed
 
-When tests are added to this project, these are the critical areas by risk level:
+## Manual Testing Approach
 
-**High Priority - Core Business Logic:**
-- Stamp/points/cashback calculation in `app/stamp/page.tsx` functions: `addStamp`, `addPoints`, `addCashback`, `addTierSpend`, `useSubscription`
-- Idempotency key generation: `${card.id}-${Date.now()}` (not truly idempotent — collisions possible)
-- Tier level assignment logic in `addTierSpend`
-- Cashback/points balance arithmetic
+While automated tests are absent, the codebase includes one in-product manual testing tool:
 
-**High Priority - API Routes:**
-- `app/api/wallet/route.ts` — Google Wallet link generation
-- `app/api/wallet-update/route.ts` — Wallet card update
-- `app/api/stripe-checkout/route.ts` — Stripe checkout session creation
-- `app/api/stripe-webhook/route.ts` — Stripe webhook event handling
+**AI Chatbot Test UI** (`app/dashboard/settings/whatsapp-ai/page.tsx`):
+- Provides a live chat interface in the dashboard to simulate WhatsApp AI chatbot responses
+- Calls `POST /api/whatsapp/ai-test` with `Authorization: Bearer {session.access_token}`
+- Displays conversation thread with user/assistant bubbles
+- Tests the real AI provider (OpenAI or Anthropic) configured by the merchant
 
-**Medium Priority - Data Layer:**
-- Supabase query patterns (would need mocking)
-- Auth redirect flows (login/register/onboarding)
+**Webhook Dispatch** (`app/api/webhooks/dispatch/route.ts`):
+- Can be called manually with `{ merchantId, event, data }` to test webhook delivery
 
-**Lower Priority:**
-- UI rendering (no component library means components are large page files)
+## What Would Need Testing (Not Currently Tested)
 
-## Recommended Test Setup (When Adding Tests)
+The following critical paths have no test coverage:
 
-Based on the existing tech stack (Next.js 16, React 19, TypeScript), the recommended approach:
+**High-risk untested logic:**
+- `lib/sendapp.ts` — `formatPhoneIT()` phone normalization (pure function, easy to unit test)
+- `lib/whatsapp-automations.ts` — `interpolate()` template variable substitution (pure function)
+- `app/api/wallet/route.ts` — Google Wallet JWT generation
+- `app/api/stripe-webhook/route.ts` — plan upgrade/downgrade logic based on Stripe events
+- `app/api/whatsapp/incoming/route.ts` — command routing and AI fallback logic (250+ lines)
+- Soft delete filtering (`deleted_at IS NULL`) consistency across all queries
 
-**Framework:** Vitest (compatible with Next.js App Router, fast, ESM-native)
+**If tests were to be added, the recommended approach would be:**
+1. Install Vitest (compatible with Next.js + TypeScript, no extra config needed)
+2. Unit test pure functions in `lib/` first (`formatPhoneIT`, `interpolate`)
+3. Integration test API routes using `next-test-api-route-handler` or MSW
+4. E2E test critical user flows (join program, stamp card, add to wallet) with Playwright
+
+## Linting as Quality Gate
+
+The only automated code quality enforcement is ESLint:
 
 ```bash
-npm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @testing-library/jest-dom
+npm run lint    # Runs: eslint (on all project files)
 ```
 
-**Config file location:** `vitest.config.ts` at project root
+Config: `eslint.config.mjs` uses `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`.
 
-**Test file placement pattern:** Co-located with source files
-```
-app/
-├── stamp/
-│   ├── page.tsx
-│   └── page.test.ts      # test stamp logic
-lib/
-├── google-wallet.ts
-└── google-wallet.test.ts # test JWT generation, sanitizeId, etc.
-```
-
-**Mocking Supabase:**
-```typescript
-// Mock pattern needed for all page/API tests
-vi.mock('@/lib/supabase', () => ({
-  createClient: () => ({
-    auth: { getUser: vi.fn() },
-    from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn(),
-      insert: vi.fn(),
-      update: vi.fn(),
-    }))
-  })
-}))
-```
-
-**Example test for pure logic (no setup needed):**
-```typescript
-// lib/google-wallet.test.ts
-import { describe, it, expect } from 'vitest'
-
-describe('sanitizeId', () => {
-  it('removes hyphens and truncates to 32 chars', () => {
-    const uuid = '550e8400-e29b-41d4-a716-446655440000'
-    const result = sanitizeId(uuid)
-    expect(result).not.toContain('-')
-    expect(result.length).toBeLessThanOrEqual(32)
-  })
-})
-```
-
-**Example test for stamp calculation:**
-```typescript
-// Tests for the points calculation logic in stamp/page.tsx
-describe('addPoints calculation', () => {
-  it('calculates points earned from euros spent', () => {
-    const eurosPerPoint = 2
-    const amountSpent = 10
-    const pointsEarned = Math.floor(amountSpent / eurosPerPoint)
-    expect(pointsEarned).toBe(5)
-  })
-})
-```
-
-## Notes on Testability
-
-**Current barriers to testing:**
-
-1. **Large monolithic page components** — `app/stamp/page.tsx` (930 lines) mixes UI, business logic, and data fetching. Business logic functions (`addStamp`, `addPoints`, etc.) are defined inside the component and cannot be imported/tested in isolation.
-
-2. **Heavy Supabase coupling** — All data operations call Supabase directly. No service layer or repository pattern to mock at a boundary.
-
-3. **`any` type overuse** — 53 occurrences of `: any` across 13 files. Type-unsafe code is harder to test reliably.
-
-4. **`Date.now()` in idempotency keys** — `idempotency_key: \`${card.id}-${Date.now()}\`` makes deterministic testing impossible without mocking `Date`.
-
-5. **`alert()` / `confirm()` calls** — Browser globals used for confirmations in `app/stamp/page.tsx` require browser environment or mocking in tests.
+TypeScript strict mode (`"strict": true` in `tsconfig.json`) provides compile-time type checking as an additional quality gate, run implicitly during `next build`.
 
 ---
 
-*Testing analysis: 2026-03-02*
+*Testing analysis: 2026-03-04*

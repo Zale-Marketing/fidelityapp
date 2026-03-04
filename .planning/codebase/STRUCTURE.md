@@ -1,201 +1,258 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-03-02
+**Analysis Date:** 2026-03-04
 
 ## Directory Layout
 
 ```
 fidelityapp/
-├── app/                        # Next.js App Router — all pages and API routes
-│   ├── api/                    # Server-side API route handlers
-│   │   ├── stamps-image/       # Legacy canvas-based stamp image generator
-│   │   ├── stripe-checkout/    # Creates Stripe Checkout session
-│   │   ├── stripe-portal/      # Opens Stripe Customer Portal
-│   │   ├── stripe-webhook/     # Handles Stripe webhook events
-│   │   ├── wallet/             # Generates Google Wallet save link (JWT)
-│   │   ├── wallet-image/       # Dynamic hero image for Wallet (Edge Runtime)
-│   │   └── wallet-update/      # PATCHes existing Wallet card (Google API)
-│   ├── c/[token]/              # Public customer card page (no auth required)
-│   ├── dashboard/              # Merchant admin area (auth required)
-│   │   ├── analytics/          # KPI charts and timeline stats
-│   │   ├── billing/            # Stripe subscription management
-│   │   ├── customers/          # CRM — customer list and detail pages
+├── app/                        # Next.js App Router — pages and API routes
+│   ├── page.tsx                # Landing page (public)
+│   ├── login/                  # Merchant auth
+│   ├── register/               # Merchant registration
+│   ├── onboarding/             # Post-registration wizard (4 steps)
+│   ├── stamp/                  # QR scanner for merchant staff (mobile-first)
+│   ├── c/[token]/              # Customer card public page (auto-refresh 5s)
+│   ├── join/[programId]/       # Customer self-enrollment form
+│   ├── dashboard/              # Authenticated merchant dashboard
+│   │   ├── layout.tsx          # Sidebar + main layout wrapper
+│   │   ├── page.tsx            # Overview stats
+│   │   ├── analytics/          # KPI charts (recharts)
+│   │   ├── billing/            # Stripe plan management
+│   │   ├── cards/              # Card segmentation + CSV export
+│   │   │   └── [id]/           # Individual card detail
+│   │   ├── customers/          # CRM — card holders + tags + CSV
 │   │   │   └── [id]/           # Individual customer detail
-│   │   ├── notifications/      # Send Google Wallet push messages
-│   │   ├── programs/           # Loyalty program management
-│   │   │   ├── [id]/           # Program detail view
-│   │   │   │   └── edit/       # Program edit form (restricted fields)
-│   │   │   └── new/            # Multi-step program creation wizard
-│   │   └── settings/           # Merchant account settings
-│   ├── join/[programId]/       # Public program enrollment form (no auth)
-│   ├── login/                  # Merchant login page
-│   ├── onboarding/             # Post-registration 4-step wizard
-│   ├── register/               # Merchant registration page
-│   ├── stamp/                  # QR scanner for adding stamps/points
-│   ├── globals.css             # Global Tailwind CSS imports
-│   ├── layout.tsx              # Root HTML layout (fonts, body)
-│   └── page.tsx                # Marketing landing page
-├── lib/                        # Shared utilities and type definitions
-│   ├── google-wallet.ts        # generateWalletLink(), updateWalletCard(), WalletCardData type
-│   ├── supabase.ts             # createClient() — browser Supabase client factory
-│   └── types.ts                # All shared TypeScript types (Merchant, Program, Card, etc.)
-├── public/                     # Static assets served directly
-├── BLOCCO.md                   # Active blockers and workarounds log
-├── CLAUDE.md                   # Project instructions for Claude
+│   │   ├── notifications/      # Google Wallet push notifications
+│   │   ├── programs/           # Loyalty program CRUD
+│   │   │   ├── new/            # Program creation wizard
+│   │   │   └── [id]/           # Program detail + delete
+│   │   │       └── edit/       # Program edit
+│   │   ├── settings/           # Account + integration settings
+│   │   │   ├── webhooks/       # Webhook endpoints (BUSINESS plan)
+│   │   │   ├── whatsapp/       # SendApp QR connect
+│   │   │   ├── whatsapp-ai/    # AI chatbot config + test chat (PRO)
+│   │   │   └── whatsapp-automations/ # Automation templates (PRO)
+│   │   └── upgrade/            # Upgrade CTA page
+│   └── api/                    # API Route Handlers
+│       ├── cron/birthday/      # Vercel Cron birthday automation
+│       ├── programs/[id]/      # PATCH/DELETE programs
+│       ├── promo-code/         # Promo code endpoint
+│       ├── send-notification/  # Google Wallet push bulk send
+│       ├── stamps-image/       # Static stamp image
+│       ├── stripe-checkout/    # Create Stripe Checkout session
+│       ├── stripe-portal/      # Stripe self-service portal
+│       ├── stripe-webhook/     # Handle Stripe events
+│       ├── submit-lead/        # Save lead from landing page
+│       ├── wallet/             # Generate Google Wallet link (JWT)
+│       ├── wallet-image/       # Hero image for wallet (Edge Runtime)
+│       ├── wallet-update/      # PATCH wallet card after stamp
+│       └── webhooks/           # CRUD webhook endpoints + dispatch
+│           ├── [id]/           # PATCH/DELETE single endpoint
+│           └── dispatch/       # Fire HMAC-signed webhook
+│       └── whatsapp/           # WhatsApp integration routes
+│           ├── ai-test/        # Test AI chatbot response (auth)
+│           ├── automated/      # Send automated message (no auth)
+│           ├── bulk/           # Bulk WhatsApp campaign
+│           ├── connect/        # Connect/disconnect SendApp
+│           ├── incoming/       # Webhook from SendApp (chatbot)
+│           ├── send/           # Manual send (auth)
+│           ├── status/         # SendApp connection status + QR
+│           └── test/           # Test send (auth)
+├── components/                 # Reusable React components
+│   ├── LeadForm.tsx            # Landing page contact form
+│   ├── dashboard/
+│   │   └── Sidebar.tsx         # Fixed left nav (dynamic WA items)
+│   └── ui/
+│       ├── EmptyState.tsx      # Empty state placeholder
+│       ├── MetricCard.tsx      # KPI number card
+│       ├── StatusBadge.tsx     # Colored status pill
+│       └── UpgradePrompt.tsx   # Plan upgrade CTA block
+├── lib/                        # Shared utilities and service clients
+│   ├── google-wallet.ts        # Google Wallet JWT generation + PATCH
+│   ├── hooks/
+│   │   └── usePlan.ts          # React hook: { isFree, isPro, isBusiness }
+│   ├── sendapp.ts              # SendApp Cloud WhatsApp API wrapper
+│   ├── supabase.ts             # Supabase browser client factory
+│   ├── types.ts                # TypeScript types (source of truth)
+│   ├── wallet-helpers.ts       # Helpers for wallet text modules
+│   ├── webhooks.ts             # HMAC-SHA256 webhook dispatcher
+│   └── whatsapp-automations.ts # Template-based automated WA messages
+├── public/                     # Static assets
+├── supabase/
+│   └── migrations/             # SQL migration files
+├── trigger/                    # Trigger.dev job definitions (WIP)
+├── trigger.config.ts           # Trigger.dev config
+├── vercel.json                 # Vercel Cron config (birthday at 09:00 daily)
+├── next.config.ts              # Next.js config (minimal)
+├── tsconfig.json               # TypeScript config
+├── tailwind.config (inline)    # Tailwind CSS 4 — config in CSS
+├── CLAUDE.md                   # Project source-of-truth (read this first)
+├── MANUAL-ACTIONS.md           # SQL to run manually in Supabase
 ├── PROGRESSO.md                # Session progress log
-├── eslint.config.mjs           # ESLint configuration
-├── next.config.ts              # Next.js configuration (minimal, no custom settings)
-├── package.json                # Dependencies
-├── postcss.config.mjs          # PostCSS / Tailwind CSS config
-├── test-wallet.js              # Ad-hoc manual wallet test script
-└── tsconfig.json               # TypeScript configuration
+└── BLOCCO.md                   # Active blockers log
 ```
 
 ## Directory Purposes
 
-**`app/api/`:**
-- Purpose: All server-side logic requiring service-role DB access or external API calls
-- Contains: One `route.ts` or `route.tsx` per endpoint folder
-- Key files: `app/api/wallet/route.ts`, `app/api/wallet-image/route.tsx`, `app/api/stripe-checkout/route.ts`
+**`app/` (pages and API routes):**
+- Purpose: All Next.js App Router routes — both UI pages and server-side API handlers
+- Contains: Page components, layout files, route handlers
+- Key files: `app/page.tsx` (landing), `app/dashboard/layout.tsx` (dashboard shell), `app/stamp/page.tsx` (scanner), `app/c/[token]/page.tsx` (customer card)
 
-**`app/dashboard/`:**
-- Purpose: Protected merchant management interface
-- Contains: `'use client'` pages; each fetches Supabase data on mount and redirects to `/login` if unauthenticated
-- Key files: `app/dashboard/page.tsx` (main dashboard with stats)
+**`app/api/` (API Route Handlers):**
+- Purpose: Server-side logic, external integrations, webhooks
+- Contains: `route.ts` files with exported HTTP method handlers
+- Key files: `app/api/wallet/route.ts`, `app/api/wallet-image/route.tsx` (Edge), `app/api/stripe-webhook/route.ts`, `app/api/whatsapp/incoming/route.ts`
+- Note: `wallet-image` uses `export const runtime = 'edge'` — all other routes are Node runtime
 
-**`app/c/[token]/`:**
-- Purpose: Public loyalty card display for customers
-- Contains: Single `page.tsx` that polls Supabase every 5 seconds; renders UI for all 5 program types
-- Key files: `app/c/[token]/page.tsx`
+**`app/dashboard/` (merchant dashboard):**
+- Purpose: All authenticated merchant UI
+- Contains: Client Components (`'use client'`) that load data via Supabase browser client
+- Key files: `app/dashboard/page.tsx`, `app/dashboard/programs/`, `app/dashboard/settings/`
 
-**`app/join/[programId]/`:**
-- Purpose: Public self-enrollment page — customers fill a form to get their own loyalty card
-- Contains: Single `page.tsx` with form that creates `card_holder` + `card` records
-- Key files: `app/join/[programId]/page.tsx`
+**`components/` (reusable UI):**
+- Purpose: Shared UI components used across pages
+- Contains: Dashboard layout, generic UI primitives
+- Key files: `components/dashboard/Sidebar.tsx`, `components/ui/EmptyState.tsx`, `components/ui/MetricCard.tsx`
 
-**`app/stamp/`:**
-- Purpose: Merchant QR scanner tool — used in-store to add stamps, points, cashback, or validate subscriptions
-- Contains: Single `page.tsx` with `Html5Qrcode` integration and inline transaction logic for all program types
-- Key files: `app/stamp/page.tsx`
+**`lib/` (shared utilities):**
+- Purpose: Service wrappers, type definitions, hooks
+- Contains: TypeScript modules — no React components
+- Key files: `lib/types.ts` (authoritative types), `lib/google-wallet.ts`, `lib/sendapp.ts`, `lib/supabase.ts`, `lib/hooks/usePlan.ts`
 
-**`lib/`:**
-- Purpose: Shared code used by both pages and API routes
-- Contains: Supabase client factory, Google Wallet JWT/PATCH logic, shared TypeScript types
-- Key files: `lib/google-wallet.ts`, `lib/supabase.ts`, `lib/types.ts`
+**`supabase/migrations/`:**
+- Purpose: SQL migration history
+- Generated: No — manually authored
+- Committed: Yes
 
 ## Key File Locations
 
 **Entry Points:**
-- `app/page.tsx`: Marketing landing page (unauthenticated root)
-- `app/layout.tsx`: Root HTML layout, font loading
-- `app/login/page.tsx`: Merchant authentication
-- `app/register/page.tsx`: New merchant registration (redirects to `/onboarding` on success)
-- `app/onboarding/page.tsx`: 4-step post-registration wizard
-
-**Core Business Logic:**
-- `app/stamp/page.tsx`: All transaction logic for all 5 program types (stamps, points, cashback, tiers, subscription)
-- `app/api/wallet/route.ts`: Google Wallet JWT generation — assembles `WalletCardData` from DB and calls `generateWalletLink()`
-- `app/api/wallet-image/route.tsx`: Edge Runtime hero image — renders JSX to PNG via `ImageResponse`
-- `lib/google-wallet.ts`: Google Wallet SDK wrapper — JWT signing (`generateWalletLink`) and PATCH update (`updateWalletCard`)
-
-**Data Layer:**
-- `lib/supabase.ts`: Supabase client factory (browser/anon key only)
-- API routes instantiate their own service-role client inline: `createClient(url, SUPABASE_SERVICE_ROLE_KEY)`
+- `app/page.tsx`: Public landing page
+- `app/login/page.tsx`: Merchant login
+- `app/register/page.tsx`: Merchant registration
+- `app/onboarding/page.tsx`: Post-registration wizard
+- `app/dashboard/page.tsx`: Dashboard home (requires auth)
+- `app/stamp/page.tsx`: QR scanner for stamp operations
+- `app/c/[token]/page.tsx`: Customer card view (public)
+- `app/join/[programId]/page.tsx`: Customer enrollment form (public)
 
 **Configuration:**
-- `next.config.ts`: Next.js config (currently empty/default)
-- `tsconfig.json`: TypeScript config — includes path alias `@/*` → `./*`
-- `.planning/codebase/`: Architecture documentation (this file)
+- `vercel.json`: Vercel Cron schedule (birthday automation at 09:00 daily)
+- `next.config.ts`: Next.js config (currently empty)
+- `tsconfig.json`: TypeScript config with `@/` alias for root
+- `CLAUDE.md`: Project-wide rules, DB schema, conventions (must read before writing code)
+- `MANUAL-ACTIONS.md`: SQL statements to run directly in Supabase dashboard
 
-**Billing:**
-- `app/api/stripe-checkout/route.ts`: Creates Stripe Checkout session; requires `STRIPE_SECRET_KEY` + price IDs in env
-- `app/api/stripe-webhook/route.ts`: Processes Stripe webhook events to update `merchants.plan`
-- `app/api/stripe-portal/route.ts`: Opens Stripe Customer Portal
-- `app/dashboard/billing/page.tsx`: UI for plan management
+**Core Logic:**
+- `lib/google-wallet.ts`: All Google Wallet JWT/PATCH logic
+- `lib/sendapp.ts`: All WhatsApp send operations
+- `lib/whatsapp-automations.ts`: Automated WhatsApp message dispatch
+- `lib/webhooks.ts`: HMAC webhook firing
+- `lib/types.ts`: All TypeScript types
+
+**External Webhook Receivers:**
+- `app/api/stripe-webhook/route.ts`: Receives Stripe billing events
+- `app/api/whatsapp/incoming/route.ts`: Receives inbound WhatsApp messages from SendApp
+
+**Plan/Feature Gating:**
+- `lib/hooks/usePlan.ts`: React hook for plan checks in UI
+- `components/dashboard/Sidebar.tsx`: Conditionally shows WhatsApp menu items
 
 ## Naming Conventions
 
 **Files:**
-- Page files: always `page.tsx` (Next.js App Router convention)
-- API route files: always `route.ts` or `route.tsx` (one per endpoint folder)
-- Library files: kebab-case (`google-wallet.ts`, `supabase.ts`, `types.ts`)
+- Page components: `page.tsx` (Next.js convention)
+- Layout components: `layout.tsx`
+- API routes: `route.ts` or `route.tsx` (only wallet-image uses .tsx)
+- Library modules: `kebab-case.ts` (e.g., `google-wallet.ts`, `whatsapp-automations.ts`)
+- React component files: `PascalCase.tsx` (e.g., `Sidebar.tsx`, `LeadForm.tsx`)
 
 **Directories:**
-- Route segments: kebab-case (`wallet-image`, `stripe-checkout`, `wallet-update`)
-- Dynamic segments: brackets (`[token]`, `[programId]`, `[id]`)
-- Dashboard sections: single word (`analytics`, `billing`, `customers`, `programs`, `settings`, `notifications`)
-
-**Components/Pages:**
-- React component functions: PascalCase (`DashboardPage`, `StampPage`, `CustomerCardPage`, `JoinPage`)
-- All page components are default exports
+- Route segments: `kebab-case` (e.g., `wallet-image/`, `whatsapp-automations/`)
+- Dynamic segments: `[param]` (e.g., `[id]/`, `[token]/`, `[programId]/`)
+- API groups: grouped by domain under `api/whatsapp/`, `api/webhooks/`
 
 **TypeScript:**
-- Types in `lib/types.ts`: PascalCase (`Merchant`, `Program`, `Card`, `CardHolder`, `StampTransaction`)
-- Local page-level types: defined inline, also PascalCase (`DashboardStats`, `ScanMode`, `ProgramInfo`)
-- DB column references: snake_case matching Supabase schema (`merchant_id`, `stamp_count`, `program_type`)
+- Types: PascalCase (`Merchant`, `CardHolder`, `Program`)
+- Functions/variables: camelCase (`generateWalletLink`, `sendAutomatedMessage`)
+- DB column references: snake_case (matching DB schema exactly)
+- Enum-like string literals: inline union types (`'stamps' | 'points' | 'cashback'`)
 
 ## Where to Add New Code
 
-**New Dashboard Page (merchant feature):**
-- Create: `app/dashboard/{feature-name}/page.tsx`
-- Start with `'use client'` directive
-- Auth pattern: `const { data: { user } } = await supabase.auth.getUser()` → redirect if null
-- Get `merchant_id` via: `supabase.from('profiles').select('merchant_id').eq('id', user.id).single()`
+**New Dashboard Page:**
+- Create directory: `app/dashboard/{feature-name}/`
+- Add `page.tsx` with `'use client'` directive
+- Follow pattern from `app/dashboard/analytics/page.tsx` — `useEffect` + Supabase browser client
+- Add nav entry to `components/dashboard/Sidebar.tsx` NAV_ITEMS array if needed
 
-**New API Endpoint:**
-- Create: `app/api/{endpoint-name}/route.ts`
-- For service-role DB access: `const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)`
-- For browser/anon access: import `createClient` from `@/lib/supabase`
-- Return: `NextResponse.json({ data })` or `NextResponse.json({ error }, { status: N })`
+**New API Route:**
+- Create directory: `app/api/{endpoint-name}/`
+- Add `route.ts` with exported HTTP method functions
+- Use service role Supabase client: `createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)`
+- Follow error pattern: try/catch → `NextResponse.json({ error: ... }, { status: N })`
 
-**New Shared Types:**
-- Add to: `lib/types.ts` in the appropriate section (base types, programs, cards, etc.)
-- Use PascalCase for type names
+**New External Service Integration:**
+- Add wrapper module: `lib/{service-name}.ts`
+- Keep credentials out of the module — read from `process.env` at call time
+- Expose typed functions; do not export raw HTTP clients
 
-**New Public Customer Page:**
-- Create: `app/{slug}/page.tsx` (no auth required)
-- Use anon Supabase client from `@/lib/supabase`
-- Do NOT use `SUPABASE_SERVICE_ROLE_KEY` in client components
+**New Customer-Facing Page:**
+- Create directory: `app/{feature}/`
+- Use Supabase browser client (anon key) — no auth required
+- Do NOT use nested Supabase queries (`.select('*, relation(*)') `in Supabase are fine for non-Edge, but test carefully)
 
-**New Google Wallet Feature:**
-- Extend: `lib/google-wallet.ts` (add to `WalletCardData` type and update `generateWalletLink` / `updateWalletCard`)
-- Update: `app/api/wallet-image/route.tsx` to render new data in hero image
-- Add new `switch` case in the image generator if a new program type is added
+**New React Component:**
+- Generic UI: `components/ui/{ComponentName}.tsx`
+- Dashboard-specific: `components/dashboard/{ComponentName}.tsx`
+- Always add `'use client'` if component uses hooks or browser APIs
 
-**New Program Type:**
-- Add type literal to `ProgramType` union in `lib/google-wallet.ts` and `lib/types.ts`
-- Add handling in `app/stamp/page.tsx` (transaction logic)
-- Add layout function in `app/api/wallet-image/route.tsx`
-- Add case in `app/c/[token]/page.tsx` (customer card display)
-- Add option in `app/dashboard/programs/new/page.tsx` (program creation wizard)
+**New Type:**
+- Add to `lib/types.ts` — this is the single source of truth
+- Match DB column names exactly (snake_case)
+- Use `type` keyword, not `interface`
+
+**New WhatsApp Automation Trigger:**
+- Add trigger type to `TriggerType` union in `lib/whatsapp-automations.ts`
+- Add default template to `DEFAULT_TEMPLATES` in same file
+- Update `whatsapp_automations.trigger_type` constraint in DB (MANUAL-ACTIONS.md)
+- Call `sendAutomatedMessage()` from the triggering code path
+
+**New Webhook Event:**
+- Add event name to `WebhookEvent` union in `lib/webhooks.ts`
+- Call `triggerWebhook(merchantId, event, data)` from the relevant API route or lib
 
 ## Special Directories
 
 **`.planning/`:**
-- Purpose: GSD (Get Shit Done) planning documents — architecture docs, phases, concerns
-- Generated: No — written by Claude agents and human
-- Committed: Yes
-
-**`.claude/`:**
-- Purpose: Claude agent configuration, custom commands (GSD workflow)
-- Generated: Partly (commands auto-installed)
-- Committed: Yes
-
-**`public/`:**
-- Purpose: Static files served at root path
+- Purpose: GSD planning system — phases, roadmap, codebase docs
 - Generated: No
 - Committed: Yes
 
+**`.claude/`:**
+- Purpose: Claude Code agent configuration and GSD tooling
+- Generated: Partially (by GSD tooling)
+- Committed: Yes
+
+**`supabase/migrations/`:**
+- Purpose: SQL migration history for Supabase schema
+- Generated: No — manually authored
+- Committed: Yes
+- Note: Some schema changes listed in `MANUAL-ACTIONS.md` may not have corresponding migration files
+
+**`trigger/`:**
+- Purpose: Trigger.dev background job definitions (work in progress)
+- Generated: No
+- Committed: Yes — but not yet active in production
+
 **`.next/`:**
-- Purpose: Next.js build output and cache
-- Generated: Yes (by `next build` / `next dev`)
-- Committed: No (in `.gitignore`)
+- Purpose: Next.js build output
+- Generated: Yes
+- Committed: No (gitignored)
 
 **`node_modules/`:**
 - Purpose: npm dependencies
-- Generated: Yes (by `npm install`)
-- Committed: No
-
----
-
-*Structure analysis: 2026-03-02*
+- Generated: Yes
+- Committed: No (gitignored)

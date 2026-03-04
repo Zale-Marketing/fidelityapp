@@ -1,117 +1,93 @@
 # Technology Stack
 
-**Analysis Date:** 2026-03-02
+**Analysis Date:** 2026-03-04
 
 ## Languages
 
 **Primary:**
-- TypeScript 5.x - All application code (`app/`, `lib/`)
-- TSX - React components and Edge image generation routes (e.g., `app/api/wallet-image/route.tsx`)
+- TypeScript 5.9.3 - All application code (frontend components, API routes, lib utilities)
 
 **Secondary:**
-- CSS (Tailwind utility classes) - Styling via `app/globals.css` and inline Tailwind classes
-- JavaScript - `test-wallet.js` (standalone test script only)
+- TSX - React component files throughout `app/` and `components/`
+- JavaScript (`.mjs`) - Config files only (`eslint.config.mjs`, `postcss.config.mjs`)
 
 ## Runtime
 
 **Environment:**
-- Node.js v24.13.0
+- Node.js - Primary runtime for Next.js server components, API routes, and background tasks
+- Edge Runtime - Used exclusively for `app/api/wallet-image/route.tsx` (hero image generation via `next/og`)
+
+**Note:** Edge runtime has constraints — no nested Supabase queries (`.select('*, table(*)')`). Use separate queries in edge routes.
 
 **Package Manager:**
-- npm 11.6.2
-- Lockfile: `package-lock.json` present
+- npm (inferred from `package-lock.json` presence)
+- Lockfile: present (`package-lock.json`)
 
 ## Frameworks
 
 **Core:**
-- Next.js 16.1.6 - Full-stack framework, App Router, API routes, Edge Runtime
-- React 19.2.3 - UI library (client components via `'use client'` directive)
-
-**CSS:**
-- Tailwind CSS 4.x - Utility-first styling via `@tailwindcss/postcss` plugin
-- PostCSS config: `postcss.config.mjs`
+- Next.js 16.1.6 - App Router, React Server Components, API Routes, Edge Runtime
+- React 19.2.3 - UI rendering
+- Tailwind CSS 4.1.18 - Utility-first CSS via `@tailwindcss/postcss` PostCSS plugin
 
 **Build/Dev:**
-- TypeScript compiler (tsc) - `tsconfig.json` with `target: ES2017`, strict mode enabled
-- ESLint 9.x - `eslint.config.mjs` using `eslint-config-next` with `core-web-vitals` and `typescript` presets
-- Next.js dev server: `next dev`
+- TypeScript compiler (strict mode, `noEmit: true`, target ES2017)
+- ESLint 9 with `eslint-config-next` (core-web-vitals + typescript presets)
+- PostCSS via `postcss.config.mjs` with `@tailwindcss/postcss`
+
+**Background Tasks:**
+- Trigger.dev SDK v4.4.1 - Scheduled/background task runner
+  - Config: `trigger.config.ts` (project `proj_zvyvldbkgijrsvkohrfs`, Node runtime, max 3600s)
+  - Tasks directory: `trigger/`
+  - Currently only a scaffold example task (`trigger/example.ts`)
 
 ## Key Dependencies
 
 **Critical:**
-- `@supabase/supabase-js` ^2.93.2 - Database client (browser + server)
-- `@supabase/ssr` ^0.8.0 - Supabase SSR utilities (`createBrowserClient` in `lib/supabase.ts`)
-- `stripe` ^20.4.0 - Stripe payments SDK, API version `2026-02-25.clover`
-- `google-auth-library` ^10.5.0 - Google OAuth2 client for Wallet PATCH API calls
-- `jsonwebtoken` ^9.0.3 - JWT signing for Google Wallet save links (RS256 algorithm)
-- `next/og` (ImageResponse) - Built-in Next.js Edge image generation for `app/api/wallet-image/`
+- `@supabase/supabase-js` 2.93.2 - Database client (PostgreSQL queries, auth)
+- `@supabase/ssr` 0.8.0 - SSR-compatible Supabase client via `createBrowserClient`
+- `stripe` 20.4.0 - Billing, subscriptions, webhooks (apiVersion: `2026-02-25.clover`)
+- `jsonwebtoken` 9.0.3 - Signs Google Wallet JWT tokens (RS256 algorithm)
+- `google-auth-library` 10.5.0 - OAuth2 client for Google Wallet API requests
+
+**UI & Visualization:**
+- `lucide-react` 0.576.0 - Icon library
+- `recharts` 3.7.0 - Charts in `app/dashboard/analytics/page.tsx`
 
 **QR Code:**
-- `html5-qrcode` ^2.3.8 - Browser-side QR scanner (used in `app/stamp/`)
-- `jsqr` ^1.4.0 - JS QR decoding library
-- `qrcode` ^1.5.4 - QR code generation
+- `qrcode` 1.5.4 - QR code generation (server-side, node)
+- `html5-qrcode` 2.3.8 - QR scanner (browser-side camera access)
+- `jsqr` 1.4.0 - QR decoding from image data
 
 **Image Generation:**
-- `canvas` ^3.2.1 - Node canvas for server-side image rendering (`app/api/stamps-image/route.ts`)
+- `next/og` (`ImageResponse`) - Hero image for Google Wallet (1032×336px, Edge Runtime)
+- `canvas` 3.2.1 - Canvas operations (server-side)
 
-**Type Definitions (devDependencies):**
-- `@types/jsonwebtoken` ^9.0.10
-- `@types/qrcode` ^1.5.6
-- `@types/node` ^20, `@types/react` ^19, `@types/react-dom` ^19
+**Path alias:** `@/*` maps to project root (defined in `tsconfig.json`)
 
 ## Configuration
 
-**TypeScript:**
-- Config: `tsconfig.json`
-- Target: ES2017
-- Path alias: `@/*` maps to project root `./`
-- Strict mode: enabled
-- Module resolution: `bundler`
-
-**ESLint:**
-- Config: `eslint.config.mjs`
-- Extends: `eslint-config-next/core-web-vitals`, `eslint-config-next/typescript`
-- Ignores: `.next/`, `out/`, `build/`
-
-**Next.js:**
-- Config: `next.config.ts` (currently empty — no custom options set)
-- App Router only (no Pages Router)
-
-**Tailwind:**
-- Config: via PostCSS plugin `@tailwindcss/postcss` in `postcss.config.mjs`
-- Global import: `@import "tailwindcss"` in `app/globals.css`
-- Fonts: Geist Sans and Geist Mono loaded via `next/font/google` in `app/layout.tsx`
-
 **Environment:**
-- File: `.env.local` (present — contents not read)
-- Key vars required (from code inspection):
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - `SUPABASE_SERVICE_ROLE_KEY` (server-side only, used in API routes)
-  - `NEXT_PUBLIC_APP_URL`
-  - `GOOGLE_WALLET_ISSUER_ID`
-  - `GOOGLE_WALLET_CLIENT_EMAIL`
-  - `GOOGLE_WALLET_PRIVATE_KEY` or `GOOGLE_WALLET_PRIVATE_KEY_BASE64`
-  - `STRIPE_SECRET_KEY`
-  - `STRIPE_WEBHOOK_SECRET`
-  - `STRIPE_PRICE_PRO_MONTHLY`
-  - `STRIPE_PRICE_PRO_YEARLY`
+- Configured via `.env.local` (development) and Vercel environment variables (production)
+- Key vars required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_INTERNAL_API_SECRET`, `GOOGLE_WALLET_ISSUER_ID`, `GOOGLE_WALLET_CLIENT_EMAIL`, `GOOGLE_WALLET_PRIVATE_KEY` (or `GOOGLE_WALLET_PRIVATE_KEY_BASE64`), `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_YEARLY`
+- Merchant-specific secrets (WhatsApp, AI API keys) stored in the `merchants` DB table, not env vars
+
+**Build:**
+- `next.config.ts` - Minimal configuration (no overrides currently set)
+- `tsconfig.json` - Strict TypeScript, bundler module resolution, incremental builds
+- `vercel.json` - Cron job definition: `GET /api/cron/birthday` runs daily at 09:00 UTC
 
 ## Platform Requirements
 
 **Development:**
-- Node.js v24.x
-- npm 11.x
-- Run: `npm run dev` → `next dev`
-- Lint: `npm run lint` → `eslint`
+- Node.js (version not pinned — no `.nvmrc` or `.node-version` file)
+- npm for package management
 
 **Production:**
-- Deployment target: Vercel (https://fidelityapp-six.vercel.app)
-- Edge Runtime used in `app/api/wallet-image/route.tsx` (declared via `export const runtime = 'edge'`)
-- Node Runtime used in all other API routes (default Next.js Node.js runtime)
-- Build: `npm run build` → `next build`
-- Start: `npm start` → `next start`
+- Vercel (serverless functions + Edge Runtime)
+- Production URL: `https://fidelityapp-six.vercel.app`
+- Cron jobs managed by Vercel via `vercel.json`
 
 ---
 
-*Stack analysis: 2026-03-02*
+*Stack analysis: 2026-03-04*
