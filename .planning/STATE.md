@@ -1,5 +1,20 @@
 ---
 gsd_state_version: 1.0
+milestone: v2.0
+milestone_name: — Redesign Completo
+status: ready_to_plan
+stopped_at: Phase 13 context gathered
+last_updated: "2026-03-04T10:17:17.843Z"
+last_activity: 2026-03-04 — Roadmap v3.0 OCIO creato (fasi 13-16, 18 requisiti mappati)
+progress:
+  total_phases: 16
+  completed_phases: 12
+  total_plans: 28
+  completed_plans: 28
+---
+
+---
+gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: OCIO
 status: ready_to_plan
@@ -68,6 +83,6 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 
 ## Session Continuity
 
-Last session: 2026-03-04
-Stopped at: Roadmap v3.0 OCIO creato — pronto per pianificare Phase 13
-Resume file: None
+Last session: 2026-03-04T10:17:17.837Z
+Stopped at: Phase 13 context gathered
+Resume file: .planning/phases/13-ocio-foundation/13-CONTEXT.md
