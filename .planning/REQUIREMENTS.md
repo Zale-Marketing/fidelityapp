@@ -64,34 +64,32 @@ Moduli futuri — in roadmap post-OCIO.
 
 ## Traceability
 
-Aggiornato durante la creazione del roadmap.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SET-01 | Phase ? | Pending |
-| SET-02 | Phase ? | Pending |
-| SET-03 | Phase ? | Pending |
-| OCIO-01 | Phase ? | Pending |
-| OCIO-02 | Phase ? | Pending |
-| OCIO-03 | Phase ? | Pending |
-| OCIO-04 | Phase ? | Pending |
-| OCIO-05 | Phase ? | Pending |
-| OCIO-06 | Phase ? | Pending |
-| OCIO-07 | Phase ? | Pending |
-| OCIO-08 | Phase ? | Pending |
-| ALERT-01 | Phase ? | Pending |
-| ALERT-02 | Phase ? | Pending |
-| ALERT-03 | Phase ? | Pending |
-| DASH-01 | Phase ? | Pending |
-| DASH-02 | Phase ? | Pending |
-| DASH-03 | Phase ? | Pending |
-| DASH-04 | Phase ? | Pending |
+| SET-01 | Phase 13 | Pending |
+| SET-02 | Phase 13 | Pending |
+| SET-03 | Phase 13 | Pending |
+| OCIO-01 | Phase 13 | Pending |
+| OCIO-02 | Phase 14 | Pending |
+| OCIO-08 | Phase 14 | Pending |
+| OCIO-03 | Phase 15 | Pending |
+| OCIO-04 | Phase 15 | Pending |
+| OCIO-05 | Phase 15 | Pending |
+| OCIO-06 | Phase 15 | Pending |
+| OCIO-07 | Phase 15 | Pending |
+| DASH-01 | Phase 16 | Pending |
+| DASH-02 | Phase 16 | Pending |
+| DASH-03 | Phase 16 | Pending |
+| DASH-04 | Phase 16 | Pending |
+| ALERT-01 | Phase 16 | Pending |
+| ALERT-02 | Phase 16 | Pending |
+| ALERT-03 | Phase 16 | Pending |
 
 **Coverage:**
-- v3.0 requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19 ⚠️
+- v3.0 requirements: 18 total
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-04*
-*Last updated: 2026-03-04 after initial definition*
+*Last updated: 2026-03-04 — traceability complete after roadmap creation*

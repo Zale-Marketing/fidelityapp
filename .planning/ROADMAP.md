@@ -30,6 +30,13 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: Webhook Integrations** - Let merchants connect external tools via signed webhooks (completed 2026-03-03)
 - [x] **Phase 12: Advanced Analytics + CSV Export** - Recharts dashboards with return rates, segment pie charts, and PRO-gated CSV export (completed 2026-03-03)
 
+### Milestone v3.0 — OCIO: Reputation Intelligence
+
+- [ ] **Phase 13: OCIO Foundation** - DB schema per le recensioni, pagina impostazioni OCIO con 6 moduli e feature gating BUSINESS
+- [ ] **Phase 14: Scraping Pipeline** - Job Trigger.dev ogni 6h che recupera nuove recensioni via Apify con idempotency
+- [ ] **Phase 15: AI Intelligence** - Claude AI analizza ogni nuova recensione (sentiment, urgenza, temi, fake detector, risposta personalizzata)
+- [ ] **Phase 16: Dashboard + Alert** - Dashboard /dashboard/ocio con lista recensioni + statistiche + alert WhatsApp per recensioni negative
+
 ## Phase Details
 
 ### Phase 1: Stability
@@ -96,7 +103,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — SQL migration: customer_tags, card_holder_tags, card_holders extended columns + human checkpoint to run in Supabase
+- [ ] 04-01-PLAN.md — SQL migration doc (MANUAL-ACTIONS.md) + customer_tags, card_holder_tags, card_holders extended columns + human checkpoint to run in Supabase
 - [ ] 04-02-PLAN.md — Notifiche segmentate: tag dropdown, recipient count preview, tag+program intersection send
 - [ ] 04-03-PLAN.md — Export CSV clienti da /dashboard/customers (browser-side, rispetta filtri attivi)
 
@@ -231,10 +238,60 @@ Plans:
 
 ---
 
+## Milestone v3.0 Phase Details
+
+### Phase 13: OCIO Foundation
+**Goal**: Il modulo OCIO esiste nel DB e nella UI con la pagina impostazioni funzionante e il feature gating BUSINESS attivo
+**Depends on**: Phase 12 (v2.0 complete)
+**Requirements**: SET-01, SET-02, SET-03, OCIO-01
+**Success Criteria** (what must be TRUE):
+  1. Merchant BUSINESS apre /dashboard/settings/ocio e vede la pagina con 6 moduli: "Monitoraggio Recensioni" e "Alert WhatsApp" attivi, moduli 3-6 disabilitati con badge "Prossimamente"
+  2. Merchant BUSINESS inserisce l'URL Google Maps della propria attività nel campo dedicato e lo salva — il valore persiste dopo ricarica della pagina
+  3. Merchant FREE o PRO che tenta di accedere a /dashboard/settings/ocio o /dashboard/ocio vede l'UpgradePrompt BUSINESS invece del contenuto
+  4. Tabella ocio_reviews e colonne google_maps_url + ocio_alert_enabled su merchants esistono nel DB Supabase
+**Plans**: TBD
+
+### Phase 14: Scraping Pipeline
+**Goal**: Il sistema recupera automaticamente nuove recensioni Google Maps ogni 6 ore e le salva nel DB senza duplicati
+**Depends on**: Phase 13
+**Requirements**: OCIO-02, OCIO-08
+**Success Criteria** (what must be TRUE):
+  1. Il job Trigger.dev si attiva ogni 6h, chiama l'Apify actor compass/google-maps-reviews-scraper con l'URL del merchant e salva le nuove recensioni nella tabella ocio_reviews
+  2. Se lo stesso job viene eseguito due volte di fila, le recensioni già presenti nel DB non vengono duplicate (idempotency su review ID esterno Apify)
+  3. Merchant con google_maps_url configurato vede le recensioni comparire in dashboard entro 6h dalla configurazione
+**Plans**: TBD
+
+### Phase 15: AI Intelligence
+**Goal**: Ogni nuova recensione viene analizzata automaticamente da Claude AI con sentiment, urgenza, temi, rilevamento fake e risposta personalizzata
+**Depends on**: Phase 14
+**Requirements**: OCIO-03, OCIO-04, OCIO-05, OCIO-06, OCIO-07
+**Success Criteria** (what must be TRUE):
+  1. Ogni nuova recensione salvata nel DB mostra automaticamente sentiment classificato (positivo/negativo/neutro) visibile in dashboard
+  2. Ogni recensione mostra il livello di urgenza (alta/media/bassa) calcolato da Claude AI
+  3. Ogni recensione mostra i temi principali identificati da Claude AI (es. "servizio", "qualita", "prezzo")
+  4. Recensioni segnalate come potenzialmente false mostrano il flag "Possibile fake" con il reasoning di Claude AI
+  5. Ogni recensione ha una risposta personalizzata generata da Claude AI pronta per essere copiata
+**Plans**: TBD
+
+### Phase 16: Dashboard + Alert
+**Goal**: Merchant visualizza tutte le recensioni analizzate in un'unica dashboard con filtri e riceve alert WhatsApp per le recensioni negative
+**Depends on**: Phase 15
+**Requirements**: DASH-01, DASH-02, DASH-03, DASH-04, ALERT-01, ALERT-02, ALERT-03
+**Success Criteria** (what must be TRUE):
+  1. Merchant apre /dashboard/ocio e vede tutte le recensioni in lista con filtri per sentiment, rating (1-5 stelle) e data
+  2. Merchant clicca su una recensione e vede autore, rating, testo completo, data, sentiment, urgenza, temi e flag fake (se presente)
+  3. Merchant clicca "Copia risposta" su una recensione e il testo della risposta AI va negli appunti in un solo click
+  4. Dashboard mostra in evidenza: rating medio, percentuale recensioni positive e negative, trend rispetto alle ultime 30gg
+  5. Merchant con WhatsApp connesso e alert abilitati riceve un messaggio WhatsApp per ogni nuova recensione negativa o ad alta urgenza, con rating, nome autore, estratto testo e link alla dashboard
+  6. Merchant può abilitare o disabilitare gli alert WhatsApp direttamente dalla pagina impostazioni OCIO
+**Plans**: TBD
+
+---
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16
 
 ### Milestone v1.0 (Complete)
 
@@ -250,10 +307,19 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Critical Fixes v2 | 2/2 | Complete   | 2026-03-02 |
+| 6. Critical Fixes v2 | 2/2 | Complete | 2026-03-02 |
 | 7. Design System v2 | 0/4 | Planned | - |
 | 8. Engagement Automation | 0/2 | Planned | - |
 | 9. Business Tools | 0/3 | Planned | - |
 | 10. WhatsApp Marketing | 2/2 | Complete | 2026-03-03 |
-| 11. Webhook Integrations | 0/2 | Complete    | 2026-03-03 |
+| 11. Webhook Integrations | 0/2 | Complete | 2026-03-03 |
 | 12. Advanced Analytics + CSV Export | 2/2 | Complete | 2026-03-03 |
+
+### Milestone v3.0 — OCIO: Reputation Intelligence
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 13. OCIO Foundation | 0/TBD | Not started | - |
+| 14. Scraping Pipeline | 0/TBD | Not started | - |
+| 15. AI Intelligence | 0/TBD | Not started | - |
+| 16. Dashboard + Alert | 0/TBD | Not started | - |
