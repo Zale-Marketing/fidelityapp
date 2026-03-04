@@ -9,7 +9,7 @@ Modulo OCIO — Reputation Intelligence (solo piano BUSINESS).
 
 ### OCIO — Monitoraggio & AI (Modulo 1)
 
-- [ ] **OCIO-01**: Merchant può salvare l'URL Google Maps della propria attività nelle impostazioni OCIO
+- [x] **OCIO-01**: Merchant può salvare l'URL Google Maps della propria attività nelle impostazioni OCIO
 - [ ] **OCIO-02**: Il sistema recupera automaticamente nuove recensioni ogni 6h tramite Apify actor (compass/google-maps-reviews-scraper) schedulato con Trigger.dev
 - [ ] **OCIO-03**: Claude AI classifica ogni nuova recensione con sentiment (positivo/negativo/neutro)
 - [ ] **OCIO-04**: Claude AI valuta il livello di urgenza di ogni recensione (alta/media/bassa)
@@ -33,7 +33,7 @@ Modulo OCIO — Reputation Intelligence (solo piano BUSINESS).
 
 ### SET — Impostazioni & Configurazione
 
-- [ ] **SET-01**: Merchant configura OCIO da /dashboard/settings/ocio (URL Google Maps + toggle alert)
+- [x] **SET-01**: Merchant configura OCIO da /dashboard/settings/ocio (URL Google Maps + toggle alert)
 - [ ] **SET-02**: Pagina impostazioni mostra 6 moduli con toggle (1+2 attivi, 3–6 disabled + badge "Prossimamente")
 - [ ] **SET-03**: Dashboard OCIO e impostazioni accessibili solo piano BUSINESS
 
@@ -66,10 +66,10 @@ Moduli futuri — in roadmap post-OCIO.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SET-01 | Phase 13 | Pending |
+| SET-01 | Phase 13 | Complete |
 | SET-02 | Phase 13 | Pending |
 | SET-03 | Phase 13 | Pending |
-| OCIO-01 | Phase 13 | Pending |
+| OCIO-01 | Phase 13 | Complete |
 | OCIO-02 | Phase 14 | Pending |
 | OCIO-08 | Phase 14 | Pending |
 | OCIO-03 | Phase 15 | Pending |
