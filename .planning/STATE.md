@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Redesign Completo
 status: ready_to_plan
-stopped_at: Completed 16-dashboard-alert-01-PLAN.md
-last_updated: "2026-03-04T15:46:09.122Z"
+stopped_at: Completed 16-dashboard-alert-02-PLAN.md
+last_updated: "2026-03-04T15:50:17.906Z"
 last_activity: 2026-03-04 — Roadmap v3.0 OCIO creato (fasi 13-16, 18 requisiti mappati)
 progress:
   total_phases: 16
-  completed_phases: 15
+  completed_phases: 16
   total_plans: 36
-  completed_plans: 35
+  completed_plans: 36
 ---
 
 ---
@@ -65,6 +65,7 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 | Phase 14-scraping-pipeline P02 | 2 | 1 tasks | 1 files |
 | Phase 15-ai-intelligence P01 | 1 | 2 tasks | 2 files |
 | Phase 16-dashboard-alert P01 | 2 | 2 tasks | 3 files |
+| Phase 16-dashboard-alert P02 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,8 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 - [Phase 15-ai-intelligence]: tasks.trigger() in separate try/catch after successCount++ — trigger failure never rolls back scraper success
 - [Phase 16-dashboard-alert]: alertConfig e merchantData fetchati prima del for loop (non per-recensione) per minimizzare query DB
 - [Phase 16-dashboard-alert]: Alert WhatsApp in try/catch separato in Trigger.dev — fallimento SendApp loggato ma non propaga eccezione
+- [Phase 16-dashboard-alert]: EmptyState component takes LucideIcon type (not ReactNode) — pass Eye directly, not JSX element
+- [Phase 16-dashboard-alert]: OCIO dashboard: filterPeriod defaults to 30d for most actionable initial view; chart only renders when count > 0
 
 ### Pending Todos
 
@@ -103,6 +106,6 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 
 ## Session Continuity
 
-Last session: 2026-03-04T15:46:09.118Z
-Stopped at: Completed 16-dashboard-alert-01-PLAN.md
+Last session: 2026-03-04T15:50:17.902Z
+Stopped at: Completed 16-dashboard-alert-02-PLAN.md
 Resume file: None

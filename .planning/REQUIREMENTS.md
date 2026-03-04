@@ -26,10 +26,10 @@ Modulo OCIO — Reputation Intelligence (solo piano BUSINESS).
 
 ### DASH — Dashboard
 
-- [ ] **DASH-01**: Merchant visualizza tutte le recensioni in /dashboard/ocio con filtri per sentiment, rating, data
-- [ ] **DASH-02**: Ogni recensione mostra: autore, rating, testo, data, sentiment, urgenza, temi, flag fake (se presente)
-- [ ] **DASH-03**: Merchant copia la risposta AI per una recensione con un solo click (clipboard)
-- [ ] **DASH-04**: Dashboard mostra stats riassuntive: rating medio, % positive/negative, trend ultime 30gg
+- [x] **DASH-01**: Merchant visualizza tutte le recensioni in /dashboard/ocio con filtri per sentiment, rating, data
+- [x] **DASH-02**: Ogni recensione mostra: autore, rating, testo, data, sentiment, urgenza, temi, flag fake (se presente)
+- [x] **DASH-03**: Merchant copia la risposta AI per una recensione con un solo click (clipboard)
+- [x] **DASH-04**: Dashboard mostra stats riassuntive: rating medio, % positive/negative, trend ultime 30gg
 
 ### SET — Impostazioni & Configurazione
 
@@ -77,10 +77,10 @@ Moduli futuri — in roadmap post-OCIO.
 | OCIO-05 | Phase 15 | Complete |
 | OCIO-06 | Phase 15 | Complete |
 | OCIO-07 | Phase 15 | Complete |
-| DASH-01 | Phase 16 | Pending |
-| DASH-02 | Phase 16 | Pending |
-| DASH-03 | Phase 16 | Pending |
-| DASH-04 | Phase 16 | Pending |
+| DASH-01 | Phase 16 | Complete |
+| DASH-02 | Phase 16 | Complete |
+| DASH-03 | Phase 16 | Complete |
+| DASH-04 | Phase 16 | Complete |
 | ALERT-01 | Phase 16 | Complete |
 | ALERT-02 | Phase 16 | Complete |
 | ALERT-03 | Phase 16 | Complete |
