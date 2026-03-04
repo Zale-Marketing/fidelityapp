@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Redesign Completo
 status: ready_to_plan
-stopped_at: Completed 14-scraping-pipeline-02-PLAN.md
-last_updated: "2026-03-04T11:35:00.175Z"
+stopped_at: Phase 15 context gathered
+last_updated: "2026-03-04T14:53:13.082Z"
 last_activity: 2026-03-04 — Roadmap v3.0 OCIO creato (fasi 13-16, 18 requisiti mappati)
 progress:
   total_phases: 16
@@ -97,6 +97,6 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 
 ## Session Continuity
 
-Last session: 2026-03-04T11:31:59.503Z
-Stopped at: Completed 14-scraping-pipeline-02-PLAN.md
-Resume file: None
+Last session: 2026-03-04T14:53:13.077Z
+Stopped at: Phase 15 context gathered
+Resume file: .planning/phases/15-ai-intelligence/15-CONTEXT.md
