@@ -4,7 +4,7 @@ milestone: v2.0
 milestone_name: — Redesign Completo
 status: ready_to_plan
 stopped_at: Completed 13-03-PLAN.md
-last_updated: "2026-03-04T10:58:34.926Z"
+last_updated: "2026-03-04T11:02:26.954Z"
 last_activity: 2026-03-04 — Roadmap v3.0 OCIO creato (fasi 13-16, 18 requisiti mappati)
 progress:
   total_phases: 16
