@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Milestone v3.0 — OCIO: Reputation Intelligence
 
-- [x] **Phase 13: OCIO Foundation** - DB schema per le recensioni, pagina impostazioni OCIO con 6 moduli e feature gating BUSINESS (completed 2026-03-04)
+- [x] **Phase 13: OCIO Foundation** - DB schema per le recensioni, pagina impostazioni OCIO con 6 moduli e feature gating BUSINESS (completed 2026-03-04)
 - [ ] **Phase 14: Scraping Pipeline** - Job Trigger.dev ogni 6h che recupera nuove recensioni via Apify con idempotency
 - [ ] **Phase 15: AI Intelligence** - Claude AI analizza ogni nuova recensione (sentiment, urgenza, temi, fake detector, risposta personalizzata)
 - [ ] **Phase 16: Dashboard + Alert** - Dashboard /dashboard/ocio con lista recensioni + statistiche + alert WhatsApp per recensioni negative
@@ -264,7 +264,11 @@ Plans:
   1. Il job Trigger.dev si attiva ogni 6h, chiama l'Apify actor compass/google-maps-reviews-scraper con l'URL del merchant e salva le nuove recensioni nella tabella ocio_reviews
   2. Se lo stesso job viene eseguito due volte di fila, le recensioni già presenti nel DB non vengono duplicate (idempotency su review ID esterno Apify)
   3. Merchant con google_maps_url configurato vede le recensioni comparire in dashboard entro 6h dalla configurazione
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 14-01-PLAN.md — Task Trigger.dev "ocio-review-scraper" (Apify multi-merchant + upsert idempotente) + API route POST /api/ocio/schedule (lifecycle create/cancel)
+- [ ] 14-02-PLAN.md — Settings page: wire POST /api/ocio/schedule in saveConfig (fire-and-forget post-PATCH) + checkpoint verifica UI
 
 ### Phase 15: AI Intelligence
 **Goal**: Ogni nuova recensione viene analizzata automaticamente da Claude AI con sentiment, urgenza, temi, rilevamento fake e risposta personalizzata
@@ -325,6 +329,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 13. OCIO Foundation | 3/3 | Complete    | 2026-03-04 |
-| 14. Scraping Pipeline | 0/TBD | Not started | - |
+| 14. Scraping Pipeline | 0/2 | Planned | - |
 | 15. AI Intelligence | 0/TBD | Not started | - |
 | 16. Dashboard + Alert | 0/TBD | Not started | - |
