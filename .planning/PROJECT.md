@@ -14,43 +14,52 @@ Un cassiere italiano inquadra il QR del cliente e in 3 secondi il Google Wallet 
 
 <!-- Funzionalità già costruite e in produzione su https://fidelityapp-six.vercel.app -->
 
-- ✓ Autenticazione merchant (Supabase Auth — login, register, session) — existing
-- ✓ 5 tipi di programma fedeltà (stamps, points, cashback, tiers, subscription) — CRUD completo — existing
-- ✓ Integrazione Google Wallet completa (generazione link JWT, PATCH aggiornamento, hero image 1032×336 dinamica via Edge Runtime) — existing
-- ✓ Dashboard merchant (programmi, clienti, statistiche di base) — existing
-- ✓ Scanner QR /stamp per il cassiere (html5-qrcode + fallback manuale) — existing
-- ✓ Pagina pubblica /join/[programId] — auto-iscrizione clienti — existing
-- ✓ Pagina pubblica /c/[token] — visualizzazione carta cliente con polling real-time — existing
-- ✓ Onboarding wizard 4 step post-registrazione — existing
-- ✓ Notifiche push /dashboard/notifications (messaggio via Wallet update) — existing
-- ✓ Analytics /dashboard/analytics (KPI + grafico timeline + stats per programma) — existing
-- ✓ Stripe billing (codice API routes completo, chiavi mancanti + SQL migration pendente) — existing
-- ✓ Enforcement piano FREE (blocco creazione >5 programmi) — existing
-- ✓ Gestione clienti /dashboard/customers (lista card_holders) — existing
+**Milestone v1.0 (fasi 1–5):**
+- ✓ Autenticazione merchant (Supabase Auth — login, register, session) — v1.0
+- ✓ 5 tipi di programma fedeltà (stamps, points, cashback, tiers, subscription) — CRUD completo — v1.0
+- ✓ Integrazione Google Wallet completa (generazione link JWT, PATCH aggiornamento, hero image 1032×336 dinamica via Edge Runtime) — v1.0
+- ✓ Dashboard merchant (programmi, clienti, statistiche di base) — v1.0
+- ✓ Scanner QR /stamp per il cassiere (html5-qrcode + fallback manuale) — v1.0
+- ✓ Pagina pubblica /join/[programId] — auto-iscrizione clienti — v1.0
+- ✓ Pagina pubblica /c/[token] — visualizzazione carta cliente con polling real-time — v1.0
+- ✓ Onboarding wizard 4 step post-registrazione — v1.0
+- ✓ Notifiche push /dashboard/notifications (messaggio via Wallet update) — v1.0
+- ✓ Analytics /dashboard/analytics (KPI + grafico recharts, stats per programma) — v1.0
+- ✓ Stripe billing (checkout, portal, webhook, plan enforcement FREE/PRO/BUSINESS) — v1.0
+- ✓ Gestione clienti /dashboard/customers (lista card_holders + tag management + CSV export) — v1.0
+
+**Milestone v2.0 (fasi 6–12):**
+- ✓ Soft delete + hard delete con cascade per programs/cards (modal conferma nome) — v2.0
+- ✓ Hero image colore merchant-branded (?color= param) — v2.0
+- ✓ Design system v2: sidebar #111111, cards con border #E8E8E8, zero emoji, Lucide icons — v2.0
+- ✓ Analytics avanzata: KPI cards, timeline recharts, stats per programma, recharts grafici — v2.0
+- ✓ CSV export carte segmentate /dashboard/cards (PRO/BUSINESS) — v2.0
+- ✓ SendApp Cloud WhatsApp: connect/QR/disconnect, bulk campagne con segmentazione, whatsapp_logs — v2.0
+- ✓ Webhook integrations HMAC-SHA256 (piano BUSINESS) — v2.0
+- ✓ Birthday cron automation (birth_date + messaggio WA) — v2.0
+- ✓ Automazioni WhatsApp: template per trigger (welcome/stamp_added/reward_redeemed/dormant/birthday) — v2.0
+- ✓ Chatbot AI WhatsApp: OpenAI/Anthropic, whatsapp_conversations, comandi rapidi + AI — v2.0
+- ✓ Sidebar dinamica: voci "Automazioni WA" e "Chatbot AI" visibili solo se PRO + WA connesso — v2.0
 
 ### Active
 
-<!-- Scope corrente v2.0: bug fixes critici + design system professionale + nuove funzionalità -->
+<!-- Scope corrente v3.0: OCIO — modulo reputation intelligence (solo piano BUSINESS) -->
 
-**Bug Fixes Critici:**
-- [ ] Form landing /app/page.tsx salva lead nel DB
-- [ ] Soft delete + hard delete con cascade per programs/cards (modal conferma nome)
-- [ ] Hero image color applicato correttamente da query param ?color=
+**OCIO — Monitoraggio Recensioni (Modulo 1):**
+- [ ] Merchant inserisce URL Google Maps business nelle impostazioni OCIO
+- [ ] Sistema scrapa recensioni ogni 6h via Apify (compass/google-maps-reviews-scraper) con Trigger.dev
+- [ ] Claude AI analizza ogni nuova recensione: sentiment, urgenza, temi, fake detector
+- [ ] AI genera risposta personalizzata per ogni recensione da copiare su Google Maps
+- [ ] Dashboard /dashboard/ocio con lista recensioni + AI analysis + copy response
 
-**Design System v2.0:**
-- [ ] Zero emoji in tutta la dashboard → tutte sostituite con icone Lucide React
-- [ ] Sidebar sinistra fissa 240px #111111 + area contenuto #F5F5F5
-- [ ] Cards, tabelle, bottoni, form, badge, empty states redesignati — stile professionale unificato
+**OCIO — Alert WhatsApp (Modulo 2):**
+- [ ] Alert WhatsApp automatico via SendApp per ogni recensione negativa/urgente
+- [ ] Alert contiene: autore, rating, estratto testo, link alla dashboard
+- [ ] Merchant può abilitare/disabilitare gli alert dall'interfaccia OCIO
 
-**Nuove Funzionalità:**
-- [ ] Segmentazione clienti dormienti (Tutti/Attivi/Dormienti/Persi) + bulk actions
-- [ ] Automazione compleanno (birth_date + cron job giornaliero + notifica push)
-- [ ] Raccolta recensioni Google post-riscatto
-- [ ] Sistema piani Free/Pro/Business con feature gating + pagina upgrade
-- [ ] WhatsApp marketing via Maytapi (connect + send + rate limit)
-- [ ] Webhook per integrazioni (tabella + UI + lib/webhooks.ts)
-- [ ] Analytics avanzata con recharts (trend, tasso ritorno, torta segmenti)
-- [ ] Export CSV in /dashboard/cards (PRO/BUSINESS only)
+**OCIO — Struttura Moduli:**
+- [ ] Pagina impostazioni OCIO con 6 moduli toggle (1+2 attivi, 3–6 "Prossimamente")
+- [ ] Feature gating: modulo OCIO visibile solo piano BUSINESS
 
 ### Out of Scope
 
@@ -91,21 +100,20 @@ Un cassiere italiano inquadra il QR del cliente e in 3 secondi il Google Wallet 
 | Stripe dopo primo merchant reale | Non monetizzare su prodotto non ancora validato con utenti reali | — Pending |
 | Mantenere tipo "Missioni" nascosto | Selezionabile ma non implementato — causa crash wallet API | ⚠️ Disabilitare subito dalla UI |
 | Tailwind v4 + Next.js 16 + React 19 | Stack moderno, già in uso, non cambiare | — Pending stabilità |
+| Google OAuth differito (OCIO v3.0) | Google Maps Reviews Reply API ha quota 0 — reply automatici non possibili, OAuth non necessario ora | — Pending quota apertura |
+| Apify per scraping recensioni | Unico approccio pratico per Google Maps reviews (no API pubblica) | — Pending |
+| Trigger.dev v3 per scheduling OCIO | Background jobs senza timeout + retry automatici — ideale per scraping ogni 6h | — Pending |
 
-## Current Milestone: v2.0 Redesign Completo
+## Current Milestone: v3.0 OCIO
 
-**Goal:** Bug fixes critici + design system professionale + nuove funzionalità di engagement e monetizzazione
+**Goal:** Reputation intelligence module — monitoraggio automatico recensioni Google Maps, analisi AI, alert WhatsApp per negativi, risposte AI copyable (solo piano BUSINESS)
 
 **Target features:**
-- Bug fixes: landing lead capture, delete cascata, hero image color
-- Design system: sidebar nera, zero emoji, tokens coerenti in tutta la dashboard
-- Segmentazione clienti dormienti + bulk actions
-- Birthday automation con cron job
-- Google Reviews post-riscatto
-- Piani Free/Pro/Business con feature gating
-- WhatsApp via Maytapi
-- Webhook per integrazioni
-- Analytics avanzata + CSV export PRO
+- Modulo 1: Monitoraggio recensioni (Apify + Trigger.dev, scraping ogni 6h)
+- Modulo 2: Alert WhatsApp per recensioni negative/urgenti (SendApp)
+- Dashboard OCIO con lista recensioni, AI analysis (sentiment, urgenza, temi, fake detector), risposta AI copiabile
+- Impostazioni OCIO con 6 moduli toggle (3–6 = "Prossimamente")
+- Feature gating BUSINESS plan
 
 ---
-*Last updated: 2026-03-02 after v2.0 milestone started*
+*Last updated: 2026-03-04 after v3.0 OCIO milestone started*
