@@ -20,9 +20,9 @@ Modulo OCIO — Reputation Intelligence (solo piano BUSINESS).
 
 ### ALERT — Alert WhatsApp (Modulo 2)
 
-- [ ] **ALERT-01**: Merchant riceve messaggio WhatsApp per ogni nuova recensione negativa o ad alta urgenza
-- [ ] **ALERT-02**: Il messaggio alert include: rating, nome autore, estratto testo, link alla dashboard OCIO
-- [ ] **ALERT-03**: Merchant può abilitare/disabilitare gli alert WhatsApp dalle impostazioni OCIO
+- [x] **ALERT-01**: Merchant riceve messaggio WhatsApp per ogni nuova recensione negativa o ad alta urgenza
+- [x] **ALERT-02**: Il messaggio alert include: rating, nome autore, estratto testo, link alla dashboard OCIO
+- [x] **ALERT-03**: Merchant può abilitare/disabilitare gli alert WhatsApp dalle impostazioni OCIO
 
 ### DASH — Dashboard
 
@@ -81,9 +81,9 @@ Moduli futuri — in roadmap post-OCIO.
 | DASH-02 | Phase 16 | Pending |
 | DASH-03 | Phase 16 | Pending |
 | DASH-04 | Phase 16 | Pending |
-| ALERT-01 | Phase 16 | Pending |
-| ALERT-02 | Phase 16 | Pending |
-| ALERT-03 | Phase 16 | Pending |
+| ALERT-01 | Phase 16 | Complete |
+| ALERT-02 | Phase 16 | Complete |
+| ALERT-03 | Phase 16 | Complete |
 
 **Coverage:**
 - v3.0 requirements: 18 total
