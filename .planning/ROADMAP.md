@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 13: OCIO Foundation** - DB schema per le recensioni, pagina impostazioni OCIO con 6 moduli e feature gating BUSINESS (completed 2026-03-04)
 - [x] **Phase 14: Scraping Pipeline** - Job Trigger.dev ogni 6h che recupera nuove recensioni via Apify con idempotency (completed 2026-03-04)
-- [ ] **Phase 15: AI Intelligence** - Claude AI analizza ogni nuova recensione (sentiment, urgenza, temi, fake detector, risposta personalizzata)
+- [x] **Phase 15: AI Intelligence** - Claude AI analizza ogni nuova recensione (sentiment, urgenza, temi, fake detector, risposta personalizzata) (completed 2026-03-04)
 - [ ] **Phase 16: Dashboard + Alert** - Dashboard /dashboard/ocio con lista recensioni + statistiche + alert WhatsApp per recensioni negative
 
 ## Phase Details
@@ -333,5 +333,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 13. OCIO Foundation | 3/3 | Complete    | 2026-03-04 |
 | 14. Scraping Pipeline | 2/2 | Complete    | 2026-03-04 |
-| 15. AI Intelligence | 0/1 | Not started | - |
+| 15. AI Intelligence | 1/1 | Complete   | 2026-03-04 |
 | 16. Dashboard + Alert | 0/TBD | Not started | - |

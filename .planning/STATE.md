@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Redesign Completo
 status: ready_to_plan
-stopped_at: Phase 15 context gathered
-last_updated: "2026-03-04T14:53:13.082Z"
+stopped_at: Completed 15-ai-intelligence-01-PLAN.md
+last_updated: "2026-03-04T15:06:21.693Z"
 last_activity: 2026-03-04 — Roadmap v3.0 OCIO creato (fasi 13-16, 18 requisiti mappati)
 progress:
   total_phases: 16
-  completed_phases: 14
-  total_plans: 33
-  completed_plans: 33
+  completed_phases: 15
+  total_plans: 34
+  completed_plans: 34
 ---
 
 ---
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 | Phase 13-ocio-foundation P03 | 2 | 2 tasks | 3 files |
 | Phase 14-scraping-pipeline P01 | 4 | 2 tasks | 2 files |
 | Phase 14-scraping-pipeline P02 | 2 | 1 tasks | 1 files |
+| Phase 15-ai-intelligence P01 | 1 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 - [Phase 14-scraping-pipeline]: Apify waitSecs:120 (not waitForFinishSecs) — apify-client v2 ActorCallOptions naming
 - [Phase 14-scraping-pipeline]: Trigger.dev schedules.create requires deduplicationKey — using ocio-{merchantId} for idempotent per-merchant schedules
 - [Phase 14-scraping-pipeline]: Schedule call placed after setSaved(true) — user sees success feedback regardless of Trigger.dev availability
+- [Phase 15-ai-intelligence]: JSON parse errors (SyntaxError) caught per-review and skipped; system errors thrown for Trigger.dev retry
+- [Phase 15-ai-intelligence]: tasks.trigger() in separate try/catch after successCount++ — trigger failure never rolls back scraper success
 
 ### Pending Todos
 
@@ -97,6 +100,6 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 
 ## Session Continuity
 
-Last session: 2026-03-04T14:53:13.077Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-ai-intelligence/15-CONTEXT.md
+Last session: 2026-03-04T15:06:21.687Z
+Stopped at: Completed 15-ai-intelligence-01-PLAN.md
+Resume file: None
