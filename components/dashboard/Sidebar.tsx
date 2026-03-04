@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Home, Target, Users, Layers, Bell, BarChart2, CreditCard, Settings, ScanLine, MessageCircle, Bot } from 'lucide-react'
+import { Home, Target, Users, Layers, Bell, BarChart2, CreditCard, Settings, ScanLine, MessageCircle, Bot, Eye } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: Home, label: 'Dashboard' },
@@ -23,6 +23,7 @@ export default function Sidebar() {
 
   const [waConnected, setWaConnected] = useState(false)
   const [isPro, setIsPro] = useState(false)
+  const [isBusiness, setIsBusiness] = useState(false)
 
   useEffect(() => {
     async function loadMerchantStatus() {
@@ -46,6 +47,7 @@ export default function Sidebar() {
         const plan = (merchant.plan as string)?.toLowerCase() ?? 'free'
         setIsPro(plan === 'pro' || plan === 'business')
         setWaConnected(merchant.sendapp_status === 'connected')
+        setIsBusiness(plan === 'business')
       }
     }
     loadMerchantStatus()
@@ -87,6 +89,33 @@ export default function Sidebar() {
             {[
               { href: '/dashboard/settings/whatsapp-automations', icon: MessageCircle, label: 'Automazioni WA' },
               { href: '/dashboard/settings/whatsapp-ai', icon: Bot, label: 'Chatbot AI' },
+            ].map(({ href, icon: Icon, label }) => {
+              const isActive = pathname.startsWith(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-[#2A2A2A] text-white'
+                      : 'text-white/70 hover:bg-[#1E1E1E] hover:text-white'
+                  }`}
+                >
+                  <Icon size={18} />
+                  {label}
+                </Link>
+              )
+            })}
+          </>
+        )}
+
+        {isBusiness && (
+          <>
+            <div className="pt-2 pb-1 px-3">
+              <p className="text-white/30 text-xs font-medium uppercase tracking-wide">OCIO</p>
+            </div>
+            {[
+              { href: '/dashboard/ocio', icon: Eye, label: 'OCIO' },
             ].map(({ href, icon: Icon, label }) => {
               const isActive = pathname.startsWith(href)
               return (
