@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { MessageCircle, Zap } from 'lucide-react'
+import { MessageCircle, Zap, Eye } from 'lucide-react'
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<any>(null)
@@ -227,6 +227,22 @@ export default function SettingsPage() {
               <div>
                 <p className="text-sm font-medium text-gray-900">Webhook</p>
                 <p className="text-xs text-gray-500">Ricevi eventi in tempo reale nel tuo sistema</p>
+              </div>
+            </div>
+            <span className="text-gray-400 text-sm">›</span>
+          </Link>
+
+          <Link
+            href="/dashboard/ocio/settings"
+            className="flex items-center justify-between p-4 border border-[#E8E8E8] rounded-[8px] hover:bg-[#F9F9F9] transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-[8px] bg-purple-50 flex items-center justify-center">
+                <Eye size={18} className="text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">OCIO — Reputation Intelligence</p>
+                <p className="text-xs text-gray-500">Monitora recensioni Google Maps con AI (piano BUSINESS)</p>
               </div>
             </div>
             <span className="text-gray-400 text-sm">›</span>
