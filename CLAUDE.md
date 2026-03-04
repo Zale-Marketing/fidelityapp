@@ -55,6 +55,10 @@ Merchant (bar, ristoranti, negozi) creano carte fedeltà; i clienti le salvano s
 | google_reviews_url | text | |
 | subscription_tier | text | `'free'`\|`'starter'`\|`'pro'`\|`'enterprise'` |
 | subscription_status | text | `'active'`\|`'canceled'`\|`'past_due'` |
+| ai_provider | text | `'openai'`\|`'anthropic'` (default `'openai'`) |
+| ai_api_key | text | Chiave API provider AI del merchant |
+| ai_system_prompt | text | Prompt personalità chatbot |
+| ai_chatbot_enabled | boolean | Chatbot AI abilitato (default false) |
 | created_at | timestamptz | |
 
 ### `profiles`
@@ -233,7 +237,31 @@ Storico notifiche inviate. SQL di creazione in MANUAL-ACTIONS.md.
 | message | text | |
 | status | text | `'sent'`\|`'failed'`\|`'received'` |
 | error | text | nullable |
-| event_type | text | `'bulk'`\|`'manual'`\|`'test'`\|`'incoming'`\|`'bollino_aggiunto'`\|`'benvenuto'`\|`'premio'` |
+| event_type | text | `'bulk'`\|`'manual'`\|`'test'`\|`'incoming'`\|`'bollino_aggiunto'`\|`'benvenuto'`\|`'premio'`\|`'chatbot_response'`\|trigger types automazioni |
+| created_at | timestamptz | |
+
+### `whatsapp_automations`
+| Colonna | Tipo | Note |
+|---------|------|------|
+| id | uuid PK | |
+| merchant_id | uuid FK | → merchants |
+| trigger_type | text | `'welcome'`\|`'stamp_added'`\|`'reward_redeemed'`\|`'dormant'`\|`'birthday'` |
+| message_template | text | Testo con variabili {nome}{bollini}{programma}{mancanti}{premio}{link_carta}{azienda} |
+| is_active | boolean | Default true |
+| dormant_days | int | Solo per trigger_type='dormant' (default 30) |
+| created_at | timestamptz | |
+| updated_at | timestamptz | |
+UNIQUE(merchant_id, trigger_type)
+
+### `whatsapp_conversations`
+| Colonna | Tipo | Note |
+|---------|------|------|
+| id | uuid PK | |
+| merchant_id | uuid FK | → merchants |
+| card_holder_id | uuid FK | → card_holders (nullable) |
+| phone | text | Numero normalizzato |
+| messages | jsonb | Array di `{role, content, timestamp}` — role: 'incoming'\|'outgoing' |
+| last_message_at | timestamptz | |
 | created_at | timestamptz | |
 
 ### `leads`
@@ -274,9 +302,12 @@ app/
 │   ├── webhooks/[id]/route.ts        # PATCH/DELETE — endpoint singolo
 │   ├── webhooks/dispatch/route.ts    # POST — dispatcha evento firmato HMAC-SHA256
 │   ├── whatsapp/connect/route.ts     # POST/PATCH — connetti/disconnetti WhatsApp
-│   ├── whatsapp/status/route.ts      # GET  — stato sessione Maytapi + QR
-│   ├── whatsapp/send/route.ts        # POST — invia messaggio WhatsApp
-│   └── cron/birthday/route.ts        # GET  — cron birthday bonus stamps
+│   ├── whatsapp/status/route.ts      # GET  — stato sessione SendApp + QR
+│   ├── whatsapp/send/route.ts        # POST — invia messaggio WhatsApp (autenticato)
+│   ├── whatsapp/automated/route.ts   # POST — messaggio automatico da trigger (client-side)
+│   ├── whatsapp/incoming/route.ts    # POST — webhook: comandi rapidi + chatbot AI
+│   ├── whatsapp/ai-test/route.ts     # POST — simula risposta chatbot AI (autenticato)
+│   └── cron/birthday/route.ts        # GET  — cron birthday + WA message
 │
 ├── dashboard/
 │   ├── page.tsx                      # Stats overview (programmi, carte, transazioni)
@@ -297,7 +328,9 @@ app/
 │   ├── upgrade/page.tsx
 │   └── settings/
 │       ├── page.tsx                  # Account + piano + link integrazioni
-│       ├── whatsapp/page.tsx         # WhatsApp QR + credenziali Maytapi per-merchant
+│       ├── whatsapp/page.tsx         # WhatsApp QR + credenziali SendApp per-merchant
+│       ├── whatsapp-automations/page.tsx # Editor template automazioni per trigger (PRO + connected)
+│       ├── whatsapp-ai/page.tsx      # Configurazione chatbot AI + test chat (PRO + connected)
 │       └── webhooks/page.tsx         # Webhook endpoints (solo piano BUSINESS)
 
 components/
@@ -311,6 +344,7 @@ components/
 
 lib/
 ├── sendapp.ts                        # SendApp Cloud API (formatPhoneIT, sendTextMessage, sendWhatsAppToCustomer, ...)
+├── whatsapp-automations.ts           # sendAutomatedMessage(merchantId, triggerType, phone, variables) + DEFAULT_TEMPLATES
 ├── supabase.ts                       # createClient()
 ├── types.ts                          # Tutti i tipi (fonte di verità per colonne)
 ├── google-wallet.ts                  # generateWalletLink, updateWalletCard, getHeroImageUrl
@@ -393,7 +427,9 @@ PATCH  /api/whatsapp/connect    {} → disconnetti (svuota credenziali)
 GET    /api/whatsapp/status     ?action=qr → { qr: base64 } | ?action=status → { status, phone? }
 POST   /api/whatsapp/send       { to, message } → { success }
 POST   /api/whatsapp/test       { phone, message } → { success }
-POST   /api/whatsapp/incoming   webhook SendApp in entrata → logga in whatsapp_logs
+POST   /api/whatsapp/incoming   webhook SendApp: comandi rapidi + chatbot AI + logga in whatsapp_logs
+POST   /api/whatsapp/automated  { merchantId, triggerType, phone, variables } → invia msg da template (client-side, no auth)
+POST   /api/whatsapp/ai-test    { message, card_holder_id? } → simula risposta chatbot AI (autenticato)
 POST   /api/whatsapp/bulk       { message, segment, programId? } → { sent, failed, total }
 GET    /api/cron/birthday       cron job birthday bonus
 ```
@@ -533,6 +569,9 @@ const { data: rewards } = await supabase.from('rewards').select('*').eq('program
 - [x] SendApp Cloud WhatsApp (replace Maytapi): connect/QR/disconnect/reconnect/reboot, bulk campagne con segmentazione, messaggi automatici (bollino/benvenuto/premio), whatsapp_logs, preview bolla, variabili {nome}{bollini}{premio}{link_carta}
 - [x] Soft delete carte individuali (deleted_at su cards)
 - [x] Settings → link a WhatsApp e Webhook sub-pages
+- [x] Automazioni WhatsApp: template per trigger (welcome/stamp_added/reward_redeemed/dormant/birthday), DB whatsapp_automations, lib/whatsapp-automations.ts, editor dashboard con variabili cliccabili e preview
+- [x] Chatbot AI WhatsApp: OpenAI/Anthropic, DB whatsapp_conversations, incoming webhook con comandi rapidi + AI, dashboard configurazione con test chat
+- [x] Sidebar dinamica: voci "Automazioni WA" e "Chatbot AI" visibili solo se PRO e WhatsApp connesso
 
 ---
 
