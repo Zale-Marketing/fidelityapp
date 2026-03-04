@@ -267,3 +267,60 @@ export type CreateNotificationInput = {
   target_tag_id?: string
   scheduled_at?: string
 }
+
+// =============================================
+// OCIO — REPUTATION INTELLIGENCE
+// =============================================
+
+export type OcioConfig = {
+  id: string
+  merchant_id: string
+  google_maps_url: string | null
+  google_place_id: string | null
+  place_name: string | null
+  google_account_connected: boolean
+  business_description: string | null
+  reply_tone: 'professional' | 'warm' | 'formal'
+  module_reviews: boolean
+  module_alerts: boolean
+  module_social: boolean
+  module_competitor: boolean
+  module_price: boolean
+  module_reports: boolean
+  alert_whatsapp_number: string | null
+  alert_min_rating: number
+  last_scrape_at: string | null
+  trigger_schedule_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type OcioReview = {
+  id: string
+  merchant_id: string
+  review_id: string
+  author_name: string | null
+  author_url: string | null
+  rating: number | null
+  text: string | null
+  published_at: string | null
+  owner_reply: string | null
+  owner_reply_at: string | null
+  review_url: string | null
+  place_id: string | null
+  ai_sentiment: 'positive' | 'neutral' | 'negative' | null
+  ai_score: number | null
+  ai_themes: string[] | null
+  ai_urgency: 'low' | 'medium' | 'high' | 'critical' | null
+  ai_category: string | null
+  ai_summary: string | null
+  ai_is_fake: boolean
+  ai_fake_reason: string | null
+  ai_suggested_reply: string | null
+  ai_analyzed_at: string | null
+  reply_status: 'pending' | 'replied' | 'ignored'
+  replied_at: string | null
+  alert_sent: boolean
+  alert_sent_at: string | null
+  created_at: string
+}
