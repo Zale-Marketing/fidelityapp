@@ -10,13 +10,13 @@ Modulo OCIO — Reputation Intelligence (solo piano BUSINESS).
 ### OCIO — Monitoraggio & AI (Modulo 1)
 
 - [x] **OCIO-01**: Merchant può salvare l'URL Google Maps della propria attività nelle impostazioni OCIO
-- [ ] **OCIO-02**: Il sistema recupera automaticamente nuove recensioni ogni 6h tramite Apify actor (compass/google-maps-reviews-scraper) schedulato con Trigger.dev
+- [x] **OCIO-02**: Il sistema recupera automaticamente nuove recensioni ogni 6h tramite Apify actor (compass/google-maps-reviews-scraper) schedulato con Trigger.dev
 - [ ] **OCIO-03**: Claude AI classifica ogni nuova recensione con sentiment (positivo/negativo/neutro)
 - [ ] **OCIO-04**: Claude AI valuta il livello di urgenza di ogni recensione (alta/media/bassa)
 - [ ] **OCIO-05**: Claude AI identifica i temi principali di ogni recensione
 - [ ] **OCIO-06**: Claude AI segnala le recensioni potenzialmente false con reasoning esplicito
 - [ ] **OCIO-07**: Claude AI genera una risposta personalizzata per ogni recensione
-- [ ] **OCIO-08**: Il sistema non ri-processa recensioni già analizzate (idempotency su review ID esterno)
+- [x] **OCIO-08**: Il sistema non ri-processa recensioni già analizzate (idempotency su review ID esterno)
 
 ### ALERT — Alert WhatsApp (Modulo 2)
 
@@ -70,8 +70,8 @@ Moduli futuri — in roadmap post-OCIO.
 | SET-02 | Phase 13 | Complete |
 | SET-03 | Phase 13 | Complete |
 | OCIO-01 | Phase 13 | Complete |
-| OCIO-02 | Phase 14 | Pending |
-| OCIO-08 | Phase 14 | Pending |
+| OCIO-02 | Phase 14 | Complete |
+| OCIO-08 | Phase 14 | Complete |
 | OCIO-03 | Phase 15 | Pending |
 | OCIO-04 | Phase 15 | Pending |
 | OCIO-05 | Phase 15 | Pending |
