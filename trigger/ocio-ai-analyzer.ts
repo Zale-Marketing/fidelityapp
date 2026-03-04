@@ -1,5 +1,6 @@
 import { logger, task } from "@trigger.dev/sdk/v3"
 import { createClient } from "@supabase/supabase-js"
+import { sendTextMessage, formatPhoneIT } from "../lib/sendapp"
 
 interface OcioConfig {
   place_name: string | null
@@ -11,6 +12,9 @@ interface OcioReviewRow {
   id: string
   text: string | null
   rating: number | null
+  author_name: string | null
+  review_url: string | null
+  alert_sent: boolean
 }
 
 interface AnalysisResult {
@@ -123,7 +127,7 @@ export const ocioAiAnalyzer = task({
     // Fetch unanalyzed reviews
     const { data: reviews, error: reviewsError } = await supabase
       .from("ocio_reviews")
-      .select("id, text, rating")
+      .select("id, text, rating, author_name, review_url, alert_sent")
       .eq("merchant_id", merchantId)
       .is("ai_analyzed_at", null)
 
@@ -137,6 +141,20 @@ export const ocioAiAnalyzer = task({
     }
 
     const typedReviews = reviews as OcioReviewRow[]
+
+    // Fetch alert config once before the loop (reduces per-review DB queries)
+    const { data: alertConfig } = await supabase
+      .from("ocio_config")
+      .select("module_alerts, alert_whatsapp_number")
+      .eq("merchant_id", merchantId)
+      .single()
+
+    // Fetch merchant SendApp credentials once before the loop
+    const { data: merchantData } = await supabase
+      .from("merchants")
+      .select("sendapp_instance_id, sendapp_access_token, sendapp_status")
+      .eq("id", merchantId)
+      .single()
 
     let processed = 0
     let skipped = 0
@@ -168,6 +186,54 @@ export const ocioAiAnalyzer = task({
           errors++
         } else {
           processed++
+
+          // Alert WhatsApp — separato, non fa fallire il task
+          try {
+            const shouldAlert =
+              result.sentiment === "negative" ||
+              result.urgency === "high" ||
+              result.urgency === "critical"
+
+            if (
+              shouldAlert &&
+              !review.alert_sent &&
+              alertConfig?.module_alerts &&
+              alertConfig?.alert_whatsapp_number &&
+              merchantData?.sendapp_status === "connected" &&
+              merchantData?.sendapp_instance_id &&
+              merchantData?.sendapp_access_token
+            ) {
+              const reviewText = review.text ?? ""
+              const excerpt =
+                reviewText.length > 100 ? reviewText.slice(0, 100) + "..." : reviewText
+              const authorName = review.author_name ?? "Anonimo"
+              const rating = review.rating ?? "?"
+              const appUrl =
+                process.env.NEXT_PUBLIC_APP_URL ?? "https://fidelityapp-six.vercel.app"
+
+              const message = `⭐ Nuova recensione ${rating}/5 da ${authorName}\n"${excerpt}"\n\nVisualizza su OCIO: ${appUrl}/dashboard/ocio`
+
+              const normalizedPhone = formatPhoneIT(alertConfig.alert_whatsapp_number)
+              if (normalizedPhone) {
+                await sendTextMessage(
+                  normalizedPhone,
+                  message,
+                  merchantData.sendapp_instance_id,
+                  merchantData.sendapp_access_token
+                )
+
+                await supabase
+                  .from("ocio_reviews")
+                  .update({ alert_sent: true, alert_sent_at: new Date().toISOString() })
+                  .eq("id", review.id)
+              }
+            }
+          } catch (alertErr) {
+            logger.error("WhatsApp alert failed (non-critical)", {
+              reviewId: review.id,
+              error: alertErr instanceof Error ? alertErr.message : String(alertErr),
+            })
+          }
         }
       } catch (err) {
         if (err instanceof SyntaxError) {

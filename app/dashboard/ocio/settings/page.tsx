@@ -105,6 +105,7 @@ export default function OcioSettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [accessToken, setAccessToken] = useState<string>('')
   const [mapsUrl, setMapsUrl] = useState<string>('')
+  const [alertPhone, setAlertPhone] = useState<string>('')
   const [config, setConfig] = useState<ConfigState>(DEFAULT_CONFIG)
 
   useEffect(() => {
@@ -136,6 +137,7 @@ export default function OcioSettingsPage() {
         const { data } = await res.json()
         if (data) {
           setMapsUrl(data.google_maps_url ?? '')
+          setAlertPhone(data.alert_whatsapp_number ?? '')
           setConfig({
             module_reviews: data.module_reviews ?? true,
             module_alerts: data.module_alerts ?? true,
@@ -171,6 +173,7 @@ export default function OcioSettingsPage() {
         google_maps_url: mapsUrl.trim() || null,
         module_reviews: config.module_reviews,
         module_alerts: config.module_alerts,
+        alert_whatsapp_number: alertPhone.trim() || null,
       }),
     })
 
@@ -310,6 +313,25 @@ export default function OcioSettingsPage() {
             </div>
           ))}
         </div>
+
+        {/* Alert WhatsApp number — shown only when module_alerts is enabled */}
+        {config.module_alerts && (
+          <div className="mt-3">
+            <label className="text-xs text-gray-500 block mb-1">
+              Numero WhatsApp per alert (es. +39333...):
+            </label>
+            <input
+              type="tel"
+              value={alertPhone}
+              onChange={e => setAlertPhone(e.target.value)}
+              placeholder="+393331234567"
+              className="w-full border border-[#E0E0E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Riceverai un WhatsApp per ogni recensione negativa o urgente.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Error message */}
