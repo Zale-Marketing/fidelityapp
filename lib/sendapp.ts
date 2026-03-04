@@ -18,22 +18,14 @@ export function formatPhoneIT(phone: string): string | null {
 
 // ─── HTTP helpers ─────────────────────────────────────────────────────────────
 
-async function assertJson(res: Response, label: string): Promise<any> {
-  const contentType = res.headers.get('content-type') || ''
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`SendApp ${label} → ${res.status}: ${text.substring(0, 200)}`)
-  }
-  if (!contentType.includes('application/json')) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`SendApp ${label} returned non-JSON (${res.status}): ${text.substring(0, 200)}`)
-  }
-  return res.json()
-}
-
 async function sendappGet(path: string): Promise<any> {
   const res = await fetch(`${SENDAPP_BASE}${path}`)
-  return assertJson(res, path)
+  const text = await res.text()
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new Error(`SendApp ${path} returned non-JSON (${res.status}): ${text.substring(0, 200)}`)
+  }
 }
 
 async function sendappPost(path: string, body: Record<string, unknown>): Promise<any> {
@@ -42,7 +34,12 @@ async function sendappPost(path: string, body: Record<string, unknown>): Promise
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  return assertJson(res, path)
+  const text = await res.text()
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new Error(`SendApp ${path} returned non-JSON (${res.status}): ${text.substring(0, 200)}`)
+  }
 }
 
 // ─── API Calls ────────────────────────────────────────────────────────────────
