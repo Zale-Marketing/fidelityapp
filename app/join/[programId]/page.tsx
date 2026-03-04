@@ -258,11 +258,15 @@ export default function JoinPage() {
 
       // Messaggio WhatsApp benvenuto (fire-and-forget, solo se phone fornito)
       if (phone.trim()) {
-        const welcomeMsg = `Benvenuto/a ${fullName.trim()}! La tua carta fedeltà per ${program.name} è attiva. Visualizzala qui: ${link}`
-        fetch('/api/whatsapp/send', {
+        fetch('/api/whatsapp/automated', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: phone.trim(), message: welcomeMsg }),
+          body: JSON.stringify({
+            merchantId,
+            triggerType: 'welcome',
+            phone: phone.trim(),
+            variables: { nome: fullName.trim(), link_carta: link },
+          }),
         }).catch(console.error)
       }
 

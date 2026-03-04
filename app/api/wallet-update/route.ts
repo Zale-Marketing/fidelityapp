@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { updateWalletCard } from '@/lib/google-wallet'
 import { createClient } from '@supabase/supabase-js'
 import { triggerWebhook } from '@/lib/webhooks'
-import { sendWhatsAppToCustomer } from '@/lib/sendapp'
+import { sendAutomatedMessage } from '@/lib/whatsapp-automations'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -202,8 +202,12 @@ export async function POST(request: NextRequest) {
       const stampCount = card.current_stamps ?? card.stamp_count ?? 0
       const stampsRequired = program.stamps_required ?? 10
       const stampsRemaining = Math.max(0, stampsRequired - stampCount)
-      const msg = `Ciao ${customer.full_name || ''}! Hai ${stampCount} bollini su ${program.name}. Ti mancano ${stampsRemaining} per il tuo premio 🎉`
-      sendWhatsAppToCustomer(card.merchant_id, customer.phone, msg, 'bollino_aggiunto').catch(console.error)
+      sendAutomatedMessage(card.merchant_id, 'stamp_added', customer.phone, {
+        nome: customer.full_name || '',
+        bollini: stampCount,
+        programma: program.name,
+        mancanti: stampsRemaining,
+      }).catch(console.error)
     }
 
     return NextResponse.json({ success: true })

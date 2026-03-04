@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getAuthClient } from '@/lib/google-wallet'
+import { sendAutomatedMessage } from '@/lib/whatsapp-automations'
 
 const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID || ''
 
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
 
   const { data: allHolders, error: holdersError } = await supabase
     .from('card_holders')
-    .select('id, full_name, birth_date')
+    .select('id, full_name, birth_date, contact_phone, phone')
     .not('birth_date', 'is', null)
 
   if (holdersError) {
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
   const holderIds = birthdayHolders.map(h => h.id)
   const { data: cards, error: cardsError } = await supabase
     .from('cards')
-    .select('id, card_holder_id')
+    .select('id, card_holder_id, merchant_id')
     .in('card_holder_id', holderIds)
     .eq('status', 'active')
 
@@ -57,8 +58,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ sent: 0, total: 0 })
   }
 
-  // 4. Map holder id to first name for personalization
-  const holderMap = new Map(birthdayHolders.map(h => [h.id, h.full_name as string]))
+  // 4. Map holder id to name and phone for personalization
+  const holderMap = new Map(birthdayHolders.map(h => [h.id, h as { full_name: string; contact_phone?: string; phone?: string }]))
 
   // 5. Send birthday notification to each card
   const client = await getAuthClient()
@@ -68,7 +69,8 @@ export async function GET(request: NextRequest) {
   for (const card of cards) {
     const sanitizedId = card.id.replace(/-/g, '').substring(0, 32)
     const objectId = `${ISSUER_ID}.${sanitizedId}`
-    const fullName = holderMap.get(card.card_holder_id) || 'Caro cliente'
+    const holder = holderMap.get(card.card_holder_id)
+    const fullName = holder?.full_name || 'Caro cliente'
     const firstName = fullName.split(' ')[0]
 
     try {
@@ -90,6 +92,14 @@ export async function GET(request: NextRequest) {
         console.warn(`Birthday cron: notif failed for card ${card.id}:`, err.message)
       }
       // 404 = card not in wallet — skip silently
+    }
+
+    // WhatsApp messaggio compleanno (fire-and-forget)
+    const phone = holder?.contact_phone || holder?.phone
+    if (phone && card.merchant_id) {
+      sendAutomatedMessage(card.merchant_id, 'birthday', phone, {
+        nome: firstName,
+      }).catch(() => { /* ignore WA errors */ })
     }
   }
 

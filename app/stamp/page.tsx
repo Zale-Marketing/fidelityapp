@@ -686,11 +686,15 @@ export default function StampPage() {
     // WhatsApp automatico dopo riscatto premio (fire-and-forget)
     if (customer?.phone) {
       const prizeName = program.reward_description || program.reward_text || 'Premio'
-      const msg = `Complimenti ${customer.full_name || ''}! Hai riscattato il premio: ${prizeName}. Buon utilizzo! 🏆`
-      fetch('/api/whatsapp/send', {
+      fetch('/api/whatsapp/automated', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: customer.phone, message: msg }),
+        body: JSON.stringify({
+          merchantId: card.merchant_id,
+          triggerType: 'reward_redeemed',
+          phone: customer.phone,
+          variables: { nome: customer.full_name || '', premio: prizeName },
+        }),
       }).catch(console.error)
     }
   }
