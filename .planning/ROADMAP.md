@@ -249,7 +249,12 @@ Plans:
   2. Merchant BUSINESS inserisce l'URL Google Maps della propria attività nel campo dedicato e lo salva — il valore persiste dopo ricarica della pagina
   3. Merchant FREE o PRO che tenta di accedere a /dashboard/settings/ocio o /dashboard/ocio vede l'UpgradePrompt BUSINESS invece del contenuto
   4. Tabella ocio_reviews e colonne google_maps_url + ocio_alert_enabled su merchants esistono nel DB Supabase
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 13-01-PLAN.md — SQL OCIO in MANUAL-ACTIONS.md + tipi OcioConfig/OcioReview in lib/types.ts + installa apify-client
+- [ ] 13-02-PLAN.md — Pagina /dashboard/ocio/settings (6 moduli griglia + URL input) + API GET/PATCH /api/ocio/config
+- [ ] 13-03-PLAN.md — Sidebar voce OCIO (isBusiness) + link OCIO in settings/page.tsx + stub /dashboard/ocio/page.tsx
 
 ### Phase 14: Scraping Pipeline
 **Goal**: Il sistema recupera automaticamente nuove recensioni Google Maps ogni 6 ore e le salva nel DB senza duplicati
@@ -319,7 +324,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 13. OCIO Foundation | 0/TBD | Not started | - |
+| 13. OCIO Foundation | 0/3 | Planned | - |
 | 14. Scraping Pipeline | 0/TBD | Not started | - |
 | 15. AI Intelligence | 0/TBD | Not started | - |
 | 16. Dashboard + Alert | 0/TBD | Not started | - |
