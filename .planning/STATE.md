@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — Redesign Completo
 status: ready_to_plan
-stopped_at: Completed 14-scraping-pipeline-01-PLAN.md
-last_updated: "2026-03-04T11:28:54.687Z"
+stopped_at: Completed 14-scraping-pipeline-02-PLAN.md
+last_updated: "2026-03-04T11:31:59.508Z"
 last_activity: 2026-03-04 — Roadmap v3.0 OCIO creato (fasi 13-16, 18 requisiti mappati)
 progress:
   total_phases: 16
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 33
-  completed_plans: 32
+  completed_plans: 33
 ---
 
 ---
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 | Phase 13-ocio-foundation P02 | 2 | 2 tasks | 2 files |
 | Phase 13-ocio-foundation P03 | 2 | 2 tasks | 3 files |
 | Phase 14-scraping-pipeline P01 | 4 | 2 tasks | 2 files |
+| Phase 14-scraping-pipeline P02 | 2 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,7 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 - [Phase 13-ocio-foundation]: stub ocio/page.tsx deliberatamente minimale — Phase 16 sostituira con dashboard recensioni completa
 - [Phase 14-scraping-pipeline]: Apify waitSecs:120 (not waitForFinishSecs) — apify-client v2 ActorCallOptions naming
 - [Phase 14-scraping-pipeline]: Trigger.dev schedules.create requires deduplicationKey — using ocio-{merchantId} for idempotent per-merchant schedules
+- [Phase 14-scraping-pipeline]: Schedule call placed after setSaved(true) — user sees success feedback regardless of Trigger.dev availability
 
 ### Pending Todos
 
@@ -95,6 +97,6 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 
 ## Session Continuity
 
-Last session: 2026-03-04T11:28:54.683Z
-Stopped at: Completed 14-scraping-pipeline-01-PLAN.md
+Last session: 2026-03-04T11:31:59.503Z
+Stopped at: Completed 14-scraping-pipeline-02-PLAN.md
 Resume file: None
