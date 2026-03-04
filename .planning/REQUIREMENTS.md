@@ -34,8 +34,8 @@ Modulo OCIO — Reputation Intelligence (solo piano BUSINESS).
 ### SET — Impostazioni & Configurazione
 
 - [x] **SET-01**: Merchant configura OCIO da /dashboard/settings/ocio (URL Google Maps + toggle alert)
-- [ ] **SET-02**: Pagina impostazioni mostra 6 moduli con toggle (1+2 attivi, 3–6 disabled + badge "Prossimamente")
-- [ ] **SET-03**: Dashboard OCIO e impostazioni accessibili solo piano BUSINESS
+- [x] **SET-02**: Pagina impostazioni mostra 6 moduli con toggle (1+2 attivi, 3–6 disabled + badge "Prossimamente")
+- [x] **SET-03**: Dashboard OCIO e impostazioni accessibili solo piano BUSINESS
 
 ## v4 Requirements
 
@@ -67,8 +67,8 @@ Moduli futuri — in roadmap post-OCIO.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SET-01 | Phase 13 | Complete |
-| SET-02 | Phase 13 | Pending |
-| SET-03 | Phase 13 | Pending |
+| SET-02 | Phase 13 | Complete |
+| SET-03 | Phase 13 | Complete |
 | OCIO-01 | Phase 13 | Complete |
 | OCIO-02 | Phase 14 | Pending |
 | OCIO-08 | Phase 14 | Pending |
