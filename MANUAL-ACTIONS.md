@@ -64,4 +64,113 @@ Vedi BLOCCO.md.
 
 ---
 
+---
+
+## 6. Modulo OCIO — tabelle ocio_config e ocio_reviews
+
+Richiesto da: Phase 13 — OCIO Foundation
+
+Eseguire nel SQL Editor di Supabase (Dashboard > SQL Editor > New query). Tutto il SQL usa IF NOT EXISTS per idempotency — se le tabelle esistono gia, vengono saltate senza errore.
+
+### Tabella ocio_config
+
+```sql
+CREATE TABLE IF NOT EXISTS ocio_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE UNIQUE,
+  google_maps_url TEXT,
+  google_place_id TEXT,
+  place_name TEXT,
+  google_access_token TEXT,
+  google_refresh_token TEXT,
+  google_token_expires_at TIMESTAMPTZ,
+  google_account_connected BOOLEAN DEFAULT false,
+  business_description TEXT,
+  reply_tone TEXT DEFAULT 'professional',
+  module_reviews BOOLEAN DEFAULT true,
+  module_alerts BOOLEAN DEFAULT true,
+  module_social BOOLEAN DEFAULT false,
+  module_competitor BOOLEAN DEFAULT false,
+  module_price BOOLEAN DEFAULT false,
+  module_reports BOOLEAN DEFAULT false,
+  alert_whatsapp_number TEXT,
+  alert_min_rating INT DEFAULT 3,
+  last_scrape_at TIMESTAMPTZ,
+  trigger_schedule_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### Tabella ocio_reviews + indici
+
+```sql
+CREATE TABLE IF NOT EXISTS ocio_reviews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE,
+  review_id TEXT NOT NULL,
+  author_name TEXT,
+  author_url TEXT,
+  rating INT,
+  text TEXT,
+  published_at TIMESTAMPTZ,
+  owner_reply TEXT,
+  owner_reply_at TIMESTAMPTZ,
+  review_url TEXT,
+  place_id TEXT,
+  ai_sentiment TEXT,
+  ai_score INT,
+  ai_themes TEXT[],
+  ai_urgency TEXT,
+  ai_category TEXT,
+  ai_summary TEXT,
+  ai_is_fake BOOLEAN DEFAULT false,
+  ai_fake_reason TEXT,
+  ai_suggested_reply TEXT,
+  ai_analyzed_at TIMESTAMPTZ,
+  reply_status TEXT DEFAULT 'pending',
+  replied_at TIMESTAMPTZ,
+  alert_sent BOOLEAN DEFAULT false,
+  alert_sent_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(merchant_id, review_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ocio_reviews_merchant ON ocio_reviews(merchant_id);
+CREATE INDEX IF NOT EXISTS idx_ocio_reviews_rating ON ocio_reviews(rating);
+CREATE INDEX IF NOT EXISTS idx_ocio_reviews_published ON ocio_reviews(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ocio_reviews_pending ON ocio_reviews(merchant_id) WHERE reply_status = 'pending';
+```
+
+### Tabelle stub per fasi future
+
+Queste tabelle vengono popolate nelle fasi 14-16. Crearle ora per evitare errori FK in futuro.
+
+```sql
+CREATE TABLE IF NOT EXISTS ocio_competitor_data (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ocio_social_data (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ocio_monthly_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ocio_alerts_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  merchant_id UUID REFERENCES merchants(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+---
+
 *Ultimo aggiornamento: 2026-03*
