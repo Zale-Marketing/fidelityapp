@@ -183,6 +183,23 @@ export default function OcioSettingsPage() {
 
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+
+    // Gestione schedule Trigger.dev — non-blocking
+    const scheduleAction = config.module_reviews ? 'create' : 'cancel'
+    try {
+      await fetch('/api/ocio/schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ action: scheduleAction }),
+      })
+      // Ignora errori schedule — non blocca il salvataggio config
+    } catch {
+      // Silenzioso — Trigger.dev potrebbe non essere configurato in dev
+    }
+
     setSaving(false)
   }
 
