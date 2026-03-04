@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Target, Users, Layers, Bell, BarChart2, CreditCard, Settings, ScanLine } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase'
+import { Home, Target, Users, Layers, Bell, BarChart2, CreditCard, Settings, ScanLine, MessageCircle, Bot } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: Home, label: 'Dashboard' },
@@ -17,6 +19,39 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const supabase = createClient()
+
+  const [waConnected, setWaConnected] = useState(false)
+  const [isPro, setIsPro] = useState(false)
+
+  useEffect(() => {
+    async function loadMerchantStatus() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('merchant_id')
+        .eq('id', user.id)
+        .single()
+      if (!profile?.merchant_id) return
+
+      const { data: merchant } = await supabase
+        .from('merchants')
+        .select('plan, sendapp_status')
+        .eq('id', profile.merchant_id)
+        .single()
+
+      if (merchant) {
+        const plan = (merchant.plan as string)?.toLowerCase() ?? 'free'
+        setIsPro(plan === 'pro' || plan === 'business')
+        setWaConnected(merchant.sendapp_status === 'connected')
+      }
+    }
+    loadMerchantStatus()
+  }, [])
+
+  const showWaExtras = isPro && waConnected
 
   return (
     <aside className="fixed left-0 top-0 h-full w-[240px] bg-[#111111] flex flex-col z-40">
@@ -43,6 +78,34 @@ export default function Sidebar() {
             </Link>
           )
         })}
+
+        {showWaExtras && (
+          <>
+            <div className="pt-2 pb-1 px-3">
+              <p className="text-white/30 text-xs font-medium uppercase tracking-wide">WhatsApp</p>
+            </div>
+            {[
+              { href: '/dashboard/settings/whatsapp-automations', icon: MessageCircle, label: 'Automazioni WA' },
+              { href: '/dashboard/settings/whatsapp-ai', icon: Bot, label: 'Chatbot AI' },
+            ].map(({ href, icon: Icon, label }) => {
+              const isActive = pathname.startsWith(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-[#2A2A2A] text-white'
+                      : 'text-white/70 hover:bg-[#1E1E1E] hover:text-white'
+                  }`}
+                >
+                  <Icon size={18} />
+                  {label}
+                </Link>
+              )
+            })}
+          </>
+        )}
       </nav>
       <div className="px-3 pb-4 border-t border-white/10 pt-3">
         <Link
