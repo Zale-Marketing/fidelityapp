@@ -414,11 +414,16 @@ export default function OcioDashboardPage() {
           !(r.author_name?.toLowerCase().includes(q))
         ) return false
       }
+      // themeFilter
+      if (themeFilter) {
+        if (!r.ai_themes?.includes(themeFilter.theme)) return false
+        if (r.ai_sentiment !== themeFilter.sentiment) return false
+      }
       if (filterSentiment !== 'all' && r.ai_sentiment !== filterSentiment) return false
       if (filterRating !== 'all' && r.rating !== filterRating) return false
       return true
     })
-  }, [reviews, globalPeriod, searchQuery, filterSentiment, filterRating])
+  }, [reviews, globalPeriod, searchQuery, themeFilter, filterSentiment, filterRating])
 
   // ---- Comparison data ----
   const comparisonData = useMemo(() => {
@@ -855,6 +860,24 @@ export default function OcioDashboardPage() {
           ))}
         </div>
       </div>
+
+      {/* Theme drill-down banner */}
+      {themeFilter && (
+        <div className="flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3">
+          <p className="text-sm text-indigo-700">
+            Stai vedendo: recensioni{' '}
+            <span className="font-semibold">{themeFilter.sentiment === 'negative' ? 'negative' : 'positive'}</span>
+            {' '}su{' '}
+            <span className="font-semibold">&ldquo;{themeFilter.theme}&rdquo;</span>
+          </p>
+          <button
+            onClick={() => setThemeFilter(null)}
+            className="flex items-center gap-1 text-sm text-indigo-500 hover:text-indigo-700 font-medium ml-4 flex-shrink-0"
+          >
+            Mostra tutte ✕
+          </button>
+        </div>
+      )}
 
       {/* Reviews list */}
       <div className="space-y-3">
