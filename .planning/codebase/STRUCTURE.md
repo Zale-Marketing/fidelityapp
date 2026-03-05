@@ -1,6 +1,6 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-03-04
+**Analysis Date:** 2026-03-05
 
 ## Directory Layout
 
@@ -16,7 +16,7 @@ fidelityapp/
 │   ├── join/[programId]/       # Customer self-enrollment form
 │   ├── dashboard/              # Authenticated merchant dashboard
 │   │   ├── layout.tsx          # Sidebar + main layout wrapper
-│   │   ├── page.tsx            # Overview stats
+│   │   ├── page.tsx            # Overview stats + recent activity
 │   │   ├── analytics/          # KPI charts (recharts)
 │   │   ├── billing/            # Stripe plan management
 │   │   ├── cards/              # Card segmentation + CSV export
@@ -24,6 +24,8 @@ fidelityapp/
 │   │   ├── customers/          # CRM — card holders + tags + CSV
 │   │   │   └── [id]/           # Individual customer detail
 │   │   ├── notifications/      # Google Wallet push notifications
+│   │   ├── ocio/               # OCIO Reputation Intelligence (BUSINESS plan)
+│   │   │   └── settings/       # OCIO configuration
 │   │   ├── programs/           # Loyalty program CRUD
 │   │   │   ├── new/            # Program creation wizard
 │   │   │   └── [id]/           # Program detail + delete
@@ -36,6 +38,11 @@ fidelityapp/
 │   │   └── upgrade/            # Upgrade CTA page
 │   └── api/                    # API Route Handlers
 │       ├── cron/birthday/      # Vercel Cron birthday automation
+│       ├── ocio/               # OCIO reputation module routes
+│       │   ├── config/         # GET/POST ocio_config for merchant
+│       │   ├── reviews/        # GET reviews list
+│       │   │   └── [id]/       # PATCH single review (reply_status, etc.)
+│       │   └── schedule/       # POST trigger scrape / schedule
 │       ├── programs/[id]/      # PATCH/DELETE programs
 │       ├── promo-code/         # Promo code endpoint
 │       ├── send-notification/  # Google Wallet push bulk send
@@ -62,7 +69,7 @@ fidelityapp/
 ├── components/                 # Reusable React components
 │   ├── LeadForm.tsx            # Landing page contact form
 │   ├── dashboard/
-│   │   └── Sidebar.tsx         # Fixed left nav (dynamic WA items)
+│   │   └── Sidebar.tsx         # Fixed left nav (dynamic WA + OCIO items)
 │   └── ui/
 │       ├── EmptyState.tsx      # Empty state placeholder
 │       ├── MetricCard.tsx      # KPI number card
@@ -81,12 +88,11 @@ fidelityapp/
 ├── public/                     # Static assets
 ├── supabase/
 │   └── migrations/             # SQL migration files
-├── trigger/                    # Trigger.dev job definitions (WIP)
+├── trigger/                    # Trigger.dev background job definitions
 ├── trigger.config.ts           # Trigger.dev config
 ├── vercel.json                 # Vercel Cron config (birthday at 09:00 daily)
-├── next.config.ts              # Next.js config (minimal)
-├── tsconfig.json               # TypeScript config
-├── tailwind.config (inline)    # Tailwind CSS 4 — config in CSS
+├── next.config.ts              # Next.js config (currently minimal)
+├── tsconfig.json               # TypeScript config with @/ path alias
 ├── CLAUDE.md                   # Project source-of-truth (read this first)
 ├── MANUAL-ACTIONS.md           # SQL to run manually in Supabase
 ├── PROGRESSO.md                # Session progress log
@@ -109,7 +115,13 @@ fidelityapp/
 **`app/dashboard/` (merchant dashboard):**
 - Purpose: All authenticated merchant UI
 - Contains: Client Components (`'use client'`) that load data via Supabase browser client
-- Key files: `app/dashboard/page.tsx`, `app/dashboard/programs/`, `app/dashboard/settings/`
+- Key files: `app/dashboard/page.tsx`, `app/dashboard/programs/`, `app/dashboard/settings/`, `app/dashboard/ocio/`
+
+**`app/dashboard/ocio/` (OCIO module):**
+- Purpose: Reputation Intelligence — Google review monitoring, AI analysis, alert system
+- Contains: Reviews list page, settings page for OCIO config
+- Visible only to: BUSINESS plan merchants (`isBusiness` check in `Sidebar.tsx`)
+- API backed by: `app/api/ocio/`
 
 **`components/` (reusable UI):**
 - Purpose: Shared UI components used across pages
@@ -124,6 +136,12 @@ fidelityapp/
 **`supabase/migrations/`:**
 - Purpose: SQL migration history
 - Generated: No — manually authored
+- Committed: Yes
+- Note: Some schema changes listed in `MANUAL-ACTIONS.md` may not have corresponding migration files
+
+**`trigger/`:**
+- Purpose: Trigger.dev background job definitions (in progress — not yet active in production)
+- Generated: No
 - Committed: Yes
 
 ## Key File Locations
@@ -140,7 +158,7 @@ fidelityapp/
 
 **Configuration:**
 - `vercel.json`: Vercel Cron schedule (birthday automation at 09:00 daily)
-- `next.config.ts`: Next.js config (currently empty)
+- `next.config.ts`: Next.js config (currently empty/minimal)
 - `tsconfig.json`: TypeScript config with `@/` alias for root
 - `CLAUDE.md`: Project-wide rules, DB schema, conventions (must read before writing code)
 - `MANUAL-ACTIONS.md`: SQL statements to run directly in Supabase dashboard
@@ -158,26 +176,26 @@ fidelityapp/
 
 **Plan/Feature Gating:**
 - `lib/hooks/usePlan.ts`: React hook for plan checks in UI
-- `components/dashboard/Sidebar.tsx`: Conditionally shows WhatsApp menu items
+- `components/dashboard/Sidebar.tsx`: Conditionally shows WhatsApp menu items (PRO + connected) and OCIO item (BUSINESS)
 
 ## Naming Conventions
 
 **Files:**
 - Page components: `page.tsx` (Next.js convention)
 - Layout components: `layout.tsx`
-- API routes: `route.ts` or `route.tsx` (only wallet-image uses .tsx)
+- API routes: `route.ts` or `route.tsx` (only `wallet-image` uses `.tsx` for JSX in ImageResponse)
 - Library modules: `kebab-case.ts` (e.g., `google-wallet.ts`, `whatsapp-automations.ts`)
 - React component files: `PascalCase.tsx` (e.g., `Sidebar.tsx`, `LeadForm.tsx`)
 
 **Directories:**
 - Route segments: `kebab-case` (e.g., `wallet-image/`, `whatsapp-automations/`)
 - Dynamic segments: `[param]` (e.g., `[id]/`, `[token]/`, `[programId]/`)
-- API groups: grouped by domain under `api/whatsapp/`, `api/webhooks/`
+- API groups: grouped by domain under `api/whatsapp/`, `api/webhooks/`, `api/ocio/`
 
 **TypeScript:**
-- Types: PascalCase (`Merchant`, `CardHolder`, `Program`)
+- Types: PascalCase (`Merchant`, `CardHolder`, `Program`, `OcioConfig`, `OcioReview`)
 - Functions/variables: camelCase (`generateWalletLink`, `sendAutomatedMessage`)
-- DB column references: snake_case (matching DB schema exactly)
+- DB column references: snake_case (matching DB schema exactly — e.g., `contact_email` not `email`)
 - Enum-like string literals: inline union types (`'stamps' | 'points' | 'cashback'`)
 
 ## Where to Add New Code
@@ -187,6 +205,7 @@ fidelityapp/
 - Add `page.tsx` with `'use client'` directive
 - Follow pattern from `app/dashboard/analytics/page.tsx` — `useEffect` + Supabase browser client
 - Add nav entry to `components/dashboard/Sidebar.tsx` NAV_ITEMS array if needed
+- Gate with `usePlan()` and `UpgradePrompt` if feature is plan-restricted
 
 **New API Route:**
 - Create directory: `app/api/{endpoint-name}/`
@@ -202,7 +221,7 @@ fidelityapp/
 **New Customer-Facing Page:**
 - Create directory: `app/{feature}/`
 - Use Supabase browser client (anon key) — no auth required
-- Do NOT use nested Supabase queries (`.select('*, relation(*)') `in Supabase are fine for non-Edge, but test carefully)
+- Use separate queries, not nested joins, if the page will be used in Edge context
 
 **New React Component:**
 - Generic UI: `components/ui/{ComponentName}.tsx`
@@ -217,12 +236,12 @@ fidelityapp/
 **New WhatsApp Automation Trigger:**
 - Add trigger type to `TriggerType` union in `lib/whatsapp-automations.ts`
 - Add default template to `DEFAULT_TEMPLATES` in same file
-- Update `whatsapp_automations.trigger_type` constraint in DB (MANUAL-ACTIONS.md)
+- Update `whatsapp_automations.trigger_type` DB constraint (via `MANUAL-ACTIONS.md`)
 - Call `sendAutomatedMessage()` from the triggering code path
 
 **New Webhook Event:**
 - Add event name to `WebhookEvent` union in `lib/webhooks.ts`
-- Call `triggerWebhook(merchantId, event, data)` from the relevant API route or lib
+- Call `triggerWebhook(merchantId, event, data)` fire-and-forget from the relevant API route
 
 ## Special Directories
 
@@ -243,9 +262,9 @@ fidelityapp/
 - Note: Some schema changes listed in `MANUAL-ACTIONS.md` may not have corresponding migration files
 
 **`trigger/`:**
-- Purpose: Trigger.dev background job definitions (work in progress)
+- Purpose: Trigger.dev background job definitions (work in progress — not active in production)
 - Generated: No
-- Committed: Yes — but not yet active in production
+- Committed: Yes
 
 **`.next/`:**
 - Purpose: Next.js build output
@@ -256,3 +275,7 @@ fidelityapp/
 - Purpose: npm dependencies
 - Generated: Yes
 - Committed: No (gitignored)
+
+---
+
+*Structure analysis: 2026-03-05*
