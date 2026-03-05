@@ -33,7 +33,7 @@ async function scrapeForMerchant(
     .select("id", { count: "exact", head: true })
     .eq("merchant_id", merchantId)
 
-  const maxReviews = (count ?? 0) === 0 ? 50 : 20
+  const maxReviews = (count ?? 0) === 0 ? 1500 : 20
 
   // Call Apify actor
   const client = new ApifyClient({ token: process.env.APIFY_TOKEN })
