@@ -190,6 +190,17 @@ export default function OcioDashboardPage() {
   const [selectedReview, setSelectedReview] = useState<OcioReview | null>(null)
   const [globalPeriod, setGlobalPeriod] = useState<'30' | '90' | '180' | '365' | 'all'>('all')
   const [themeFilter, setThemeFilter] = useState<{ theme: string; sentiment: 'positive' | 'negative' } | null>(null)
+  const [comparisonOpen, setComparisonOpen] = useState(false)
+  const [periodAFrom, setPeriodAFrom] = useState<string>(() => {
+    const d = new Date(); d.setDate(1); return d.toISOString().split('T')[0]
+  })
+  const [periodATo, setPeriodATo] = useState<string>(() => new Date().toISOString().split('T')[0])
+  const [periodBFrom, setPeriodBFrom] = useState<string>(() => {
+    const d = new Date(); d.setMonth(d.getMonth() - 1); d.setDate(1); return d.toISOString().split('T')[0]
+  })
+  const [periodBTo, setPeriodBTo] = useState<string>(() => {
+    const d = new Date(); d.setDate(0); return d.toISOString().split('T')[0]
+  })
   const [filterSentiment, setFilterSentiment] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all')
   const [filterRating, setFilterRating] = useState<number | 'all'>('all')
   const [copying, setCopying] = useState(false)
@@ -399,6 +410,40 @@ export default function OcioDashboardPage() {
       return true
     })
   }, [reviews, globalPeriod, filterSentiment, filterRating])
+
+  // ---- Comparison data ----
+  const comparisonData = useMemo(() => {
+    if (!comparisonOpen) return null
+    const filterPeriodRange = (from: string, to: string) =>
+      reviews.filter(r => {
+        if (!r.published_at) return false
+        const d = r.published_at.split('T')[0]
+        return d >= from && d <= to
+      })
+    const a = filterPeriodRange(periodAFrom, periodATo)
+    const b = filterPeriodRange(periodBFrom, periodBTo)
+    if (a.length === 0 && b.length === 0) return null
+
+    const pct = (arr: OcioReview[], sentiment: string) =>
+      arr.length > 0 ? Math.round(arr.filter(r => r.ai_sentiment === sentiment).length / arr.length * 100) : null
+    const avgField = (arr: OcioReview[], field: 'rating' | 'ai_score') => {
+      const valid = arr.filter(r => r[field] !== null)
+      return valid.length > 0 ? parseFloat((valid.reduce((s, r) => s + (r[field] as number), 0) / valid.length).toFixed(1)) : null
+    }
+    const topNeg = (arr: OcioReview[]) => {
+      const cnt: Record<string, number> = {}
+      for (const r of arr) if (r.ai_sentiment === 'negative' && r.ai_themes) for (const t of r.ai_themes) cnt[t] = (cnt[t] ?? 0) + 1
+      return Object.entries(cnt).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([t]) => t)
+    }
+    return {
+      posA: pct(a, 'positive'), posB: pct(b, 'positive'),
+      negA: pct(a, 'negative'), negB: pct(b, 'negative'),
+      ratingA: avgField(a, 'rating'), ratingB: avgField(b, 'rating'),
+      scoreA: avgField(a, 'ai_score'), scoreB: avgField(b, 'ai_score'),
+      topNegA: topNeg(a), topNegB: topNeg(b),
+      countA: a.length, countB: b.length,
+    }
+  }, [reviews, comparisonOpen, periodAFrom, periodATo, periodBFrom, periodBTo])
 
   // ---- Modal actions ----
   async function updateReplyStatus(reviewId: string, status: 'replied' | 'ignored') {
@@ -628,6 +673,86 @@ export default function OcioDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Period comparison */}
+      <div className="bg-white border border-[#E8E8E8] rounded-xl overflow-hidden">
+        <button
+          onClick={() => setComparisonOpen(o => !o)}
+          className="w-full flex items-center justify-between px-5 py-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <span>Confronta due periodi</span>
+          <span className={`transition-transform ${comparisonOpen ? 'rotate-180' : ''}`}>▼</span>
+        </button>
+        {comparisonOpen && (
+          <div className="px-5 pb-5 space-y-4 border-t border-[#E8E8E8]">
+            {/* Date pickers side by side */}
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Periodo A</p>
+                <div className="flex gap-2 items-center">
+                  <input type="date" value={periodAFrom} onChange={e => setPeriodAFrom(e.target.value)}
+                    className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5" />
+                  <span className="text-xs text-gray-400">→</span>
+                  <input type="date" value={periodATo} onChange={e => setPeriodATo(e.target.value)}
+                    className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5" />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Periodo B</p>
+                <div className="flex gap-2 items-center">
+                  <input type="date" value={periodBFrom} onChange={e => setPeriodBFrom(e.target.value)}
+                    className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5" />
+                  <span className="text-xs text-gray-400">→</span>
+                  <input type="date" value={periodBTo} onChange={e => setPeriodBTo(e.target.value)}
+                    className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5" />
+                </div>
+              </div>
+            </div>
+            {/* Comparison table */}
+            {comparisonData ? (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-500 border-b border-gray-100">
+                    <th className="text-left py-2 font-medium">Metrica</th>
+                    <th className="text-center py-2 font-medium">Periodo A ({comparisonData.countA} rec.)</th>
+                    <th className="text-center py-2 font-medium">Periodo B ({comparisonData.countB} rec.)</th>
+                    <th className="text-center py-2 font-medium">Variazione</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {[
+                    { label: '% Positive', a: comparisonData.posA, b: comparisonData.posB, unit: '%', higherIsBetter: true },
+                    { label: '% Negative', a: comparisonData.negA, b: comparisonData.negB, unit: '%', higherIsBetter: false },
+                    { label: 'Rating medio', a: comparisonData.ratingA, b: comparisonData.ratingB, unit: '', higherIsBetter: true },
+                    { label: 'Score AI medio', a: comparisonData.scoreA, b: comparisonData.scoreB, unit: '', higherIsBetter: true },
+                  ].map(({ label, a, b, unit, higherIsBetter }) => {
+                    const diff = a !== null && b !== null ? parseFloat((a - b).toFixed(1)) : null
+                    const isPositive = diff !== null && (higherIsBetter ? diff > 0 : diff < 0)
+                    return (
+                      <tr key={label}>
+                        <td className="py-2 text-gray-600">{label}</td>
+                        <td className="py-2 text-center font-medium">{a !== null ? `${a}${unit}` : '—'}</td>
+                        <td className="py-2 text-center font-medium">{b !== null ? `${b}${unit}` : '—'}</td>
+                        <td className={`py-2 text-center font-semibold ${diff !== null ? (isPositive ? 'text-green-600' : diff === 0 ? 'text-gray-400' : 'text-red-600') : 'text-gray-300'}`}>
+                          {diff !== null ? `${diff > 0 ? '+' : ''}${diff}${unit}` : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  <tr>
+                    <td className="py-2 text-gray-600">Top temi negativi</td>
+                    <td className="py-2 text-center text-xs text-gray-500">{comparisonData.topNegA.join(', ') || '—'}</td>
+                    <td className="py-2 text-center text-xs text-gray-500">{comparisonData.topNegB.join(', ') || '—'}</td>
+                    <td className="py-2" />
+                  </tr>
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-sm text-gray-400 italic text-center py-4">Nessuna recensione nei periodi selezionati</p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Chart trend */}
       {chartData.some(d => d.count > 0) && (
