@@ -156,6 +156,27 @@ function Pill({
   )
 }
 
+// ---- Paginated reviews fetch ----
+
+async function fetchAllReviews(supabase: ReturnType<typeof createClient>, merchantId: string): Promise<OcioReview[]> {
+  const pageSize = 1000
+  let from = 0
+  let allReviews: OcioReview[] = []
+  while (true) {
+    const { data, error } = await supabase
+      .from('ocio_reviews')
+      .select('*')
+      .eq('merchant_id', merchantId)
+      .order('published_at', { ascending: false })
+      .range(from, from + pageSize - 1)
+    if (error || !data || data.length === 0) break
+    allReviews = [...allReviews, ...data]
+    if (data.length < pageSize) break
+    from += pageSize
+  }
+  return allReviews
+}
+
 // ---- Main page ----
 
 export default function OcioDashboardPage() {
@@ -195,12 +216,8 @@ export default function OcioDashboardPage() {
 
     const merchantId = profile.merchant_id
 
-    const [{ data: reviewsData }, { data: configData }] = await Promise.all([
-      supabase
-        .from('ocio_reviews')
-        .select('*')
-        .eq('merchant_id', merchantId)
-        .order('published_at', { ascending: false }),
+    const [reviewsData, { data: configData }] = await Promise.all([
+      fetchAllReviews(supabase, merchantId),
       supabase
         .from('ocio_config')
         .select('google_maps_url')
@@ -208,7 +225,7 @@ export default function OcioDashboardPage() {
         .single(),
     ])
 
-    setReviews(reviewsData ?? [])
+    setReviews(reviewsData)
     setGoogleMapsUrl(configData?.google_maps_url ?? null)
     setLoading(false)
   }
