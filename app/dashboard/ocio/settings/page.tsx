@@ -94,6 +94,18 @@ const DEFAULT_CONFIG: ConfigState = {
   module_reports: false,
 }
 
+const REVIEW_TIERS: ReadonlyArray<{
+  id: string
+  name: string
+  desc: string
+  price: string
+}> = [
+  { id: 'starter',      name: 'Starter',      desc: 'ultime 200 recensioni',   price: 'Incluso' },
+  { id: 'growth',       name: 'Growth',       desc: 'ultime 500 recensioni',   price: '+€4.99/mese' },
+  { id: 'professional', name: 'Professional', desc: 'ultime 1.500 recensioni', price: '+€9.99/mese' },
+  { id: 'complete',     name: 'Complete',     desc: 'tutta la tua storia',     price: '+€19.99/mese' },
+] as const
+
 export default function OcioSettingsPage() {
   const supabase = createClient()
   const router = useRouter()
@@ -107,6 +119,7 @@ export default function OcioSettingsPage() {
   const [mapsUrl, setMapsUrl] = useState<string>('')
   const [alertPhone, setAlertPhone] = useState<string>('')
   const [config, setConfig] = useState<ConfigState>(DEFAULT_CONFIG)
+  const [reviewTier, setReviewTier] = useState<string>('professional')
   // Traccia se il DB aveva già un link al momento del caricamento
   const [hadMapsUrlOnLoad, setHadMapsUrlOnLoad] = useState<boolean>(false)
 
@@ -150,6 +163,7 @@ export default function OcioSettingsPage() {
             module_price: data.module_price ?? false,
             module_reports: data.module_reports ?? false,
           })
+          setReviewTier(data.review_tier ?? 'professional')
         }
       }
     } catch {
@@ -178,6 +192,7 @@ export default function OcioSettingsPage() {
         module_reviews: config.module_reviews,
         module_alerts: config.module_alerts,
         alert_whatsapp_number: alertPhone.trim() || null,
+        review_tier: reviewTier,
       }),
     })
 
@@ -261,6 +276,51 @@ export default function OcioSettingsPage() {
             Incolla il link Google Maps della tua attivita. Viene usato per il monitoraggio automatico delle recensioni.
           </p>
         </div>
+      </div>
+
+      {/* Profondita di analisi storica */}
+      <div className="bg-white border border-[#E8E8E8] rounded-xl p-6 space-y-4">
+        <div>
+          <h2 className="font-semibold text-gray-900">Profondita di analisi storica</h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Quante recensioni passate vuoi che analizziamo? Piu recensioni analizziamo, piu precisi sono gli insight sulle tue aree di miglioramento.
+          </p>
+        </div>
+        <div className="border border-[#E8E8E8] rounded-xl overflow-hidden divide-y divide-[#E8E8E8]">
+          {REVIEW_TIERS.map(tier => {
+            const isSelected = reviewTier === tier.id
+            return (
+              <button
+                key={tier.id}
+                onClick={() => setReviewTier(tier.id)}
+                className={`w-full flex items-center gap-4 px-4 py-3.5 text-left transition-colors ${
+                  isSelected ? 'bg-gray-50 border-l-2 border-l-black' : 'hover:bg-gray-50/50'
+                }`}
+              >
+                {/* Radio circle */}
+                <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                  isSelected ? 'border-black bg-black' : 'border-gray-300'
+                }`}>
+                  {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </div>
+                {/* Name + desc */}
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-gray-900">{tier.name}</span>
+                  <span className="text-sm text-gray-500 ml-2">{tier.desc}</span>
+                </div>
+                {/* Price */}
+                <span className={`text-sm font-semibold flex-shrink-0 ${
+                  tier.price === 'Incluso' ? 'text-green-600' : 'text-gray-700'
+                }`}>
+                  {tier.price}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-xs text-gray-400">
+          Le nuove recensioni vengono sempre analizzate automaticamente, indipendentemente dal piano scelto.
+        </p>
       </div>
 
       <div className="bg-white border border-[#E8E8E8] rounded-xl p-6 space-y-4">
