@@ -31,7 +31,6 @@ async function getAuthenticatedMerchant(req: NextRequest): Promise<
     return { error: NextResponse.json({ error: 'Profilo non trovato' }, { status: 401 }) }
   }
 
-  // Plan check: must be BUSINESS
   const { data: merchant } = await supabase
     .from('merchants')
     .select('plan')
@@ -85,7 +84,17 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  // Build upsert payload — only allow safe fields
+  // Controlla se esiste già un google_maps_url nel DB per questo merchant
+  const { data: existingConfig } = await supabase
+    .from('ocio_config')
+    .select('google_maps_url')
+    .eq('merchant_id', merchantId)
+    .maybeSingle()
+
+  const hasExistingUrl = existingConfig?.google_maps_url != null &&
+    existingConfig.google_maps_url.trim() !== ''
+
+  // Build upsert payload — solo campi sicuri
   const allowedFields = [
     'google_maps_url',
     'module_reviews',
@@ -101,6 +110,11 @@ export async function PATCH(req: NextRequest) {
 
   for (const field of allowedFields) {
     if (field in body) {
+      // google_maps_url si scrive SOLO se il DB è ancora vuoto
+      // Se esiste già un link, solo l'admin può cambiarlo da Supabase
+      if (field === 'google_maps_url' && hasExistingUrl) {
+        continue // ignora, non sovrascrivere
+      }
       payload[field] = body[field]
     }
   }
