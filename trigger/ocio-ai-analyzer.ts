@@ -118,7 +118,7 @@ Rispondi SOLO con questo JSON (nessun testo extra):
 
 export const ocioAiAnalyzer = task({
   id: "ocio-ai-analyzer",
-  maxDuration: 600,
+  maxDuration: 3600,
   run: async (payload: { merchantId: string }) => {
     const { merchantId } = payload
 
