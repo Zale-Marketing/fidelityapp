@@ -190,7 +190,7 @@ export default function OcioDashboardPage() {
   const [selectedReview, setSelectedReview] = useState<OcioReview | null>(null)
   const [filterSentiment, setFilterSentiment] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all')
   const [filterRating, setFilterRating] = useState<number | 'all'>('all')
-  const [filterPeriod, setFilterPeriod] = useState<'30' | '90' | 'all'>('30')
+  const [filterPeriod, setFilterPeriod] = useState<'30' | '90' | '365' | 'all'>('30')
   const [copying, setCopying] = useState(false)
   const [accessToken, setAccessToken] = useState<string>('')
 
@@ -270,25 +270,105 @@ export default function OcioDashboardPage() {
     return { avgRating, total: reviews.length, newLast30, pending, ratingTrend }
   }, [reviews])
 
-  // ---- Chart data (last 6 months) ----
-  const chartData = useMemo(() => {
-    const months: { month: string; avgRating: number | null; count: number }[] = []
-    const now = new Date()
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const label = d.toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
-      const monthReviews = reviews.filter(r => {
-        if (!r.published_at) return false
-        const rd = new Date(r.published_at)
-        return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth()
-      })
-      const withR = monthReviews.filter(r => r.rating !== null)
-      const avg = withR.length > 0
-        ? parseFloat((withR.reduce((s, r) => s + (r.rating ?? 0), 0) / withR.length).toFixed(1))
-        : null
-      months.push({ month: label, avgRating: avg, count: monthReviews.length })
+  // ---- Intelligence data ----
+  const intelligenceData = useMemo(() => {
+    // Widget 1: Aree da migliorare — top 5 negative themes
+    const themeCount: Record<string, number> = {}
+    for (const r of reviews) {
+      if (r.ai_sentiment === 'negative' && r.ai_themes) {
+        for (const t of r.ai_themes) {
+          themeCount[t] = (themeCount[t] ?? 0) + 1
+        }
+      }
     }
-    return months
+    const topNegativeThemes = Object.entries(themeCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+    const hasAnalyzedThemes = reviews.some(r => r.ai_themes && r.ai_themes.length > 0)
+
+    // Widget 2: Trend ultimo mese
+    const now = new Date()
+    const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const d60 = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
+    const periodA = reviews.filter(r => r.published_at && new Date(r.published_at) >= d30)
+    const periodB = reviews.filter(r => {
+      if (!r.published_at) return false
+      const d = new Date(r.published_at)
+      return d >= d60 && d < d30
+    })
+    let trendData: { posA: number; negA: number; posB: number; negB: number } | null = null
+    if (periodA.length >= 5 && periodB.length >= 5) {
+      const posA = Math.round(periodA.filter(r => r.ai_sentiment === 'positive').length / periodA.length * 100)
+      const negA = Math.round(periodA.filter(r => r.ai_sentiment === 'negative').length / periodA.length * 100)
+      const posB = Math.round(periodB.filter(r => r.ai_sentiment === 'positive').length / periodB.length * 100)
+      const negB = Math.round(periodB.filter(r => r.ai_sentiment === 'negative').length / periodB.length * 100)
+      trendData = { posA, negA, posB, negB }
+    }
+
+    // Widget 3: Urgenti senza risposta
+    const urgentPending = reviews.filter(
+      r => r.reply_status === 'pending' && (r.ai_urgency === 'high' || r.ai_urgency === 'critical')
+    )
+
+    return { topNegativeThemes, hasAnalyzedThemes, trendData, urgentPending }
+  }, [reviews])
+
+  // ---- Chart data (dynamic: monthly or quarterly) ----
+  const chartData = useMemo(() => {
+    if (reviews.length === 0) return []
+
+    const dates = reviews
+      .filter(r => r.published_at)
+      .map(r => new Date(r.published_at!).getTime())
+    if (dates.length === 0) return []
+
+    const minDate = new Date(Math.min(...dates))
+    const now = new Date()
+    const spanMonths =
+      (now.getFullYear() - minDate.getFullYear()) * 12 + (now.getMonth() - minDate.getMonth())
+
+    if (spanMonths > 36) {
+      // Group by quarter — last 12 quarters
+      const quarters: { label: string; avgRating: number | null; count: number; sentimentScore: number | null }[] = []
+      for (let i = 11; i >= 0; i--) {
+        const now2 = new Date()
+        const totalMonthsBack = i * 3
+        const qYear = new Date(now2.getFullYear(), now2.getMonth() - totalMonthsBack, 1)
+        const qStart = new Date(qYear.getFullYear(), Math.floor(qYear.getMonth() / 3) * 3, 1)
+        const qEnd = new Date(qStart.getFullYear(), qStart.getMonth() + 3, 1)
+        const label = `Q${Math.floor(qStart.getMonth() / 3) + 1} ${qStart.getFullYear().toString().slice(2)}`
+        const qReviews = reviews.filter(r => {
+          if (!r.published_at) return false
+          const d = new Date(r.published_at)
+          return d >= qStart && d < qEnd
+        })
+        const withR = qReviews.filter(r => r.rating !== null)
+        const avg = withR.length > 0 ? parseFloat((withR.reduce((s, r) => s + (r.rating ?? 0), 0) / withR.length).toFixed(1)) : null
+        const withScore = qReviews.filter(r => r.ai_score !== null)
+        const sentimentScore = withScore.length > 0 ? parseFloat((withScore.reduce((s, r) => s + (r.ai_score ?? 0), 0) / withScore.length).toFixed(1)) : null
+        quarters.push({ label, avgRating: avg, count: qReviews.length, sentimentScore })
+      }
+      return quarters
+    } else {
+      // Group by month — last 12 months
+      const months: { label: string; avgRating: number | null; count: number; sentimentScore: number | null }[] = []
+      const numMonths = Math.min(Math.max(spanMonths + 1, 6), 12)
+      for (let i = numMonths - 1; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const label = d.toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
+        const monthReviews = reviews.filter(r => {
+          if (!r.published_at) return false
+          const rd = new Date(r.published_at)
+          return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth()
+        })
+        const withR = monthReviews.filter(r => r.rating !== null)
+        const avg = withR.length > 0 ? parseFloat((withR.reduce((s, r) => s + (r.rating ?? 0), 0) / withR.length).toFixed(1)) : null
+        const withScore = monthReviews.filter(r => r.ai_score !== null)
+        const sentimentScore = withScore.length > 0 ? parseFloat((withScore.reduce((s, r) => s + (r.ai_score ?? 0), 0) / withScore.length).toFixed(1)) : null
+        months.push({ label, avgRating: avg, count: monthReviews.length, sentimentScore })
+      }
+      return months
+    }
   }, [reviews])
 
   // ---- Filtered reviews ----
@@ -432,14 +512,99 @@ export default function OcioDashboardPage() {
         />
       </div>
 
+      {/* Intelligence Panel */}
+      {reviews.some(r => r.ai_sentiment || r.ai_themes) && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Widget 1: Aree da migliorare */}
+          <div className="bg-white border border-[#E8E8E8] rounded-xl p-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Aree da migliorare</p>
+            {!intelligenceData.hasAnalyzedThemes ? (
+              <div className="space-y-2">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: `${70 + i * 5}%` }} />
+                ))}
+              </div>
+            ) : intelligenceData.topNegativeThemes.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">Nessuna area critica rilevata</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {intelligenceData.topNegativeThemes.map(([theme, count]) => (
+                  <li key={theme} className="flex items-center gap-2 text-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                    <span className="text-gray-700 flex-1 truncate">{theme}</span>
+                    <span className="text-xs text-red-500 font-medium flex-shrink-0">{count} neg.</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Widget 2: Trend ultimo mese */}
+          <div className="bg-white border border-[#E8E8E8] rounded-xl p-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Trend ultimo mese</p>
+            {!intelligenceData.trendData ? (
+              <p className="text-sm text-gray-400 italic">Dati insufficienti</p>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Positivita</span>
+                  <span className={`text-sm font-semibold ${intelligenceData.trendData.posA >= intelligenceData.trendData.posB ? 'text-green-600' : 'text-red-600'}`}>
+                    {intelligenceData.trendData.posA}%{' '}
+                    {intelligenceData.trendData.posA >= intelligenceData.trendData.posB
+                      ? `+${intelligenceData.trendData.posA - intelligenceData.trendData.posB}% ↑`
+                      : `${intelligenceData.trendData.posA - intelligenceData.trendData.posB}% ↓`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Negativita</span>
+                  <span className={`text-sm font-semibold ${intelligenceData.trendData.negA <= intelligenceData.trendData.negB ? 'text-green-600' : 'text-red-600'}`}>
+                    {intelligenceData.trendData.negA}%{' '}
+                    {intelligenceData.trendData.negA <= intelligenceData.trendData.negB
+                      ? `${intelligenceData.trendData.negA - intelligenceData.trendData.negB}% ↓`
+                      : `+${intelligenceData.trendData.negA - intelligenceData.trendData.negB}% ↑`}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">vs. mese precedente</p>
+              </div>
+            )}
+          </div>
+
+          {/* Widget 3: Urgenti senza risposta */}
+          <div className="bg-white border border-[#E8E8E8] rounded-xl p-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Urgenti senza risposta</p>
+            <div className="flex flex-col items-center mb-3">
+              <span className={`text-4xl font-bold ${intelligenceData.urgentPending.length > 0 ? 'text-red-600' : 'text-gray-300'}`}>
+                {intelligenceData.urgentPending.length}
+              </span>
+              <span className="text-xs text-gray-500 text-center mt-1">recensioni urgenti senza risposta</span>
+            </div>
+            <div className="space-y-2">
+              {intelligenceData.urgentPending.slice(0, 2).map(r => (
+                <button
+                  key={r.id}
+                  onClick={() => setSelectedReview(r)}
+                  className="w-full text-left p-2 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <StarRow rating={r.rating} size={11} />
+                    <span className="text-xs font-medium text-gray-700 truncate">{r.author_name ?? 'Anonimo'}</span>
+                  </div>
+                  <p className="text-xs text-gray-600 truncate">{r.text?.slice(0, 60) ?? '—'}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chart trend */}
       {chartData.some(d => d.count > 0) && (
         <div className="bg-white border border-[#E8E8E8] rounded-xl p-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Trend ultimi 6 mesi</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Trend recensioni</h2>
           <ResponsiveContainer width="100%" height={220}>
             <ComposedChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
               <YAxis
                 yAxisId="left"
                 domain={[1, 5]}
@@ -463,6 +628,17 @@ export default function OcioDashboardPage() {
                 stroke="#111111"
                 strokeWidth={2}
                 dot={{ r: 3 }}
+                connectNulls
+              />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="sentimentScore"
+                name="Score AI"
+                stroke="#6366F1"
+                strokeWidth={1.5}
+                strokeDasharray="4 2"
+                dot={false}
                 connectNulls
               />
             </ComposedChart>
@@ -492,6 +668,7 @@ export default function OcioDashboardPage() {
           <span className="text-xs text-gray-500 font-medium w-16">Periodo</span>
           <Pill active={filterPeriod === '30'} onClick={() => setFilterPeriod('30')}>Ultimi 30gg</Pill>
           <Pill active={filterPeriod === '90'} onClick={() => setFilterPeriod('90')}>Ultimi 90gg</Pill>
+          <Pill active={filterPeriod === '365'} onClick={() => setFilterPeriod('365')}>Ultimi 12 mesi</Pill>
           <Pill active={filterPeriod === 'all'} onClick={() => setFilterPeriod('all')}>Tutto</Pill>
         </div>
       </div>
