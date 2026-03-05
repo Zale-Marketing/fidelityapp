@@ -1,4 +1,4 @@
-import { logger, task } from "@trigger.dev/sdk/v3"
+import { logger, task, tasks } from "@trigger.dev/sdk/v3"
 import { createClient } from "@supabase/supabase-js"
 import { sendTextMessage, formatPhoneIT } from "../lib/sendapp"
 
@@ -148,6 +148,7 @@ export const ocioAiAnalyzer = task({
       .select("id, text, rating, author_name, review_url, alert_sent")
       .eq("merchant_id", merchantId)
       .is("ai_analyzed_at", null)
+      .limit(200)
 
     if (reviewsError) {
       throw new Error(`Failed to fetch reviews: ${reviewsError.message}`)
@@ -272,6 +273,18 @@ export const ocioAiAnalyzer = task({
           // Errore di sistema (rete, DB, env vars) — propaga per il retry di Trigger.dev
           throw err
         }
+      }
+    }
+
+    if (processed > 0) {
+      const { count: remaining } = await supabase
+        .from("ocio_reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("merchant_id", merchantId)
+        .is("ai_analyzed_at", null)
+      if ((remaining ?? 0) > 0) {
+        await tasks.trigger("ocio-ai-analyzer", { merchantId })
+        logger.log("ocio-ai-analyzer: more reviews pending, retriggering", { remaining })
       }
     }
 
