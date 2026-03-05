@@ -189,6 +189,7 @@ export default function OcioDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [selectedReview, setSelectedReview] = useState<OcioReview | null>(null)
   const [globalPeriod, setGlobalPeriod] = useState<'30' | '90' | '180' | '365' | 'all'>('all')
+  const [themeFilter, setThemeFilter] = useState<{ theme: string; sentiment: 'positive' | 'negative' } | null>(null)
   const [filterSentiment, setFilterSentiment] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all')
   const [filterRating, setFilterRating] = useState<number | 'all'>('all')
   const [copying, setCopying] = useState(false)
@@ -272,46 +273,58 @@ export default function OcioDashboardPage() {
 
   // ---- Intelligence data ----
   const intelligenceData = useMemo(() => {
-    // Widget 1: Aree da migliorare — top 5 negative themes
-    const themeCount: Record<string, number> = {}
-    for (const r of reviews) {
-      if (r.ai_sentiment === 'negative' && r.ai_themes) {
-        for (const t of r.ai_themes) {
-          themeCount[t] = (themeCount[t] ?? 0) + 1
-        }
+    // Apply globalPeriod
+    const now = new Date()
+    const periodReviews = globalPeriod === 'all' ? reviews : reviews.filter(r => {
+      if (!r.published_at) return false
+      const days = parseInt(globalPeriod)
+      const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+      return new Date(r.published_at) >= cutoff
+    })
+    const totalInPeriod = periodReviews.length
+
+    // Adaptive thresholds
+    const isLowData = totalInPeriod < 20
+    const negRatioThreshold = isLowData ? 0.2 : 0.3
+    const negMinCount = isLowData ? 2 : 3
+    const posRatioThreshold = isLowData ? 0.3 : 0.2
+    const posMinCount = isLowData ? 3 : 5
+
+    // Calculate stats per theme
+    const themeStats: Record<string, { total: number; positive: number; negative: number }> = {}
+    for (const r of periodReviews) {
+      if (!r.ai_themes) continue
+      for (const t of r.ai_themes) {
+        if (!themeStats[t]) themeStats[t] = { total: 0, positive: 0, negative: 0 }
+        themeStats[t].total++
+        if (r.ai_sentiment === 'positive') themeStats[t].positive++
+        if (r.ai_sentiment === 'negative') themeStats[t].negative++
       }
     }
-    const topNegativeThemes = Object.entries(themeCount)
-      .sort((a, b) => b[1] - a[1])
+
+    // Widget 1: Areas to improve (high negative ratio)
+    const improvementAreas = Object.entries(themeStats)
+      .filter(([, s]) => s.total >= negMinCount && (s.negative / s.total) > negRatioThreshold)
+      .sort((a, b) => (b[1].negative / b[1].total) - (a[1].negative / a[1].total))
       .slice(0, 5)
-    const hasAnalyzedThemes = reviews.some(r => r.ai_themes && r.ai_themes.length > 0)
+      .map(([theme, s]) => ({ theme, ...s, ratio: s.negative / s.total }))
 
-    // Widget 2: Trend ultimo mese
-    const now = new Date()
-    const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-    const d60 = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
-    const periodA = reviews.filter(r => r.published_at && new Date(r.published_at) >= d30)
-    const periodB = reviews.filter(r => {
-      if (!r.published_at) return false
-      const d = new Date(r.published_at)
-      return d >= d60 && d < d30
-    })
-    let trendData: { posA: number; negA: number; posB: number; negB: number } | null = null
-    if (periodA.length >= 5 && periodB.length >= 5) {
-      const posA = Math.round(periodA.filter(r => r.ai_sentiment === 'positive').length / periodA.length * 100)
-      const negA = Math.round(periodA.filter(r => r.ai_sentiment === 'negative').length / periodA.length * 100)
-      const posB = Math.round(periodB.filter(r => r.ai_sentiment === 'positive').length / periodB.length * 100)
-      const negB = Math.round(periodB.filter(r => r.ai_sentiment === 'negative').length / periodB.length * 100)
-      trendData = { posA, negA, posB, negB }
-    }
+    // Widget 2: Strengths (high positive ratio)
+    const strengths = Object.entries(themeStats)
+      .filter(([, s]) => s.total >= posMinCount && (s.negative / s.total) < posRatioThreshold)
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 5)
+      .map(([theme, s]) => ({ theme, ...s, ratio: s.negative / s.total }))
 
-    // Widget 3: Urgenti senza risposta
-    const urgentPending = reviews.filter(
+    // Widget 3: Urgent without reply (filtered by globalPeriod)
+    const urgentPending = periodReviews.filter(
       r => r.reply_status === 'pending' && (r.ai_urgency === 'high' || r.ai_urgency === 'critical')
     )
 
-    return { topNegativeThemes, hasAnalyzedThemes, trendData, urgentPending }
-  }, [reviews])
+    const hasAnalyzedThemes = periodReviews.some(r => r.ai_themes && r.ai_themes.length > 0)
+
+    return { improvementAreas, strengths, urgentPending, hasAnalyzedThemes, totalInPeriod }
+  }, [reviews, globalPeriod])
 
   // ---- Chart data (dynamic: monthly or quarterly) ----
   const chartData = useMemo(() => {
@@ -535,47 +548,55 @@ export default function OcioDashboardPage() {
                   <div key={i} className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: `${70 + i * 5}%` }} />
                 ))}
               </div>
-            ) : intelligenceData.topNegativeThemes.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">Nessuna area critica rilevata</p>
+            ) : intelligenceData.improvementAreas.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">Nessuna area critica nel periodo</p>
             ) : (
-              <ul className="space-y-1.5">
-                {intelligenceData.topNegativeThemes.map(([theme, count]) => (
-                  <li key={theme} className="flex items-center gap-2 text-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
-                    <span className="text-gray-700 flex-1 truncate">{theme}</span>
-                    <span className="text-xs text-red-500 font-medium flex-shrink-0">{count} neg.</span>
-                  </li>
+              <div className="space-y-3">
+                {intelligenceData.improvementAreas.map(({ theme, total, negative, positive, ratio }) => (
+                  <button key={theme} onClick={() => setThemeFilter({ theme, sentiment: 'negative' })}
+                    className="w-full text-left group">
+                    <div className="flex justify-between text-xs mb-0.5">
+                      <span className="text-gray-700 truncate group-hover:text-gray-900">{theme}</span>
+                      <span className="text-red-500 font-medium ml-2 flex-shrink-0">{Math.round(ratio * 100)}% neg</span>
+                    </div>
+                    <div className="flex h-1.5 rounded-full overflow-hidden bg-gray-100">
+                      <div className="bg-green-400" style={{ width: `${Math.round(positive / total * 100)}%` }} />
+                      <div className="bg-red-400" style={{ width: `${Math.round(negative / total * 100)}%` }} />
+                    </div>
+                    <span className="text-xs text-gray-400">{total} recensioni</span>
+                  </button>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
 
-          {/* Widget 2: Trend ultimo mese */}
+          {/* Widget 2: Punti di forza */}
           <div className="bg-white border border-[#E8E8E8] rounded-xl p-5">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Trend ultimo mese</p>
-            {!intelligenceData.trendData ? (
-              <p className="text-sm text-gray-400 italic">Dati insufficienti</p>
-            ) : (
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Punti di forza</p>
+            {!intelligenceData.hasAnalyzedThemes ? (
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Positivita</span>
-                  <span className={`text-sm font-semibold ${intelligenceData.trendData.posA >= intelligenceData.trendData.posB ? 'text-green-600' : 'text-red-600'}`}>
-                    {intelligenceData.trendData.posA}%{' '}
-                    {intelligenceData.trendData.posA >= intelligenceData.trendData.posB
-                      ? `+${intelligenceData.trendData.posA - intelligenceData.trendData.posB}% ↑`
-                      : `${intelligenceData.trendData.posA - intelligenceData.trendData.posB}% ↓`}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Negativita</span>
-                  <span className={`text-sm font-semibold ${intelligenceData.trendData.negA <= intelligenceData.trendData.negB ? 'text-green-600' : 'text-red-600'}`}>
-                    {intelligenceData.trendData.negA}%{' '}
-                    {intelligenceData.trendData.negA <= intelligenceData.trendData.negB
-                      ? `${intelligenceData.trendData.negA - intelligenceData.trendData.negB}% ↓`
-                      : `+${intelligenceData.trendData.negA - intelligenceData.trendData.negB}% ↑`}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">vs. mese precedente</p>
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: `${70 + i * 5}%` }} />
+                ))}
+              </div>
+            ) : intelligenceData.strengths.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">Nessun punto di forza nel periodo</p>
+            ) : (
+              <div className="space-y-3">
+                {intelligenceData.strengths.map(({ theme, total, negative, positive, ratio }) => (
+                  <button key={theme} onClick={() => setThemeFilter({ theme, sentiment: 'positive' })}
+                    className="w-full text-left group">
+                    <div className="flex justify-between text-xs mb-0.5">
+                      <span className="text-green-700 truncate group-hover:text-green-900">{theme}</span>
+                      <span className="text-green-500 font-medium ml-2 flex-shrink-0">{Math.round((1 - ratio) * 100)}% pos</span>
+                    </div>
+                    <div className="flex h-1.5 rounded-full overflow-hidden bg-gray-100">
+                      <div className="bg-green-400" style={{ width: `${Math.round(positive / total * 100)}%` }} />
+                      <div className="bg-red-400" style={{ width: `${Math.round(negative / total * 100)}%` }} />
+                    </div>
+                    <span className="text-xs text-gray-400">{total} recensioni</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
