@@ -40,7 +40,7 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 Phase: 13 of 16 (OCIO Foundation)
 Plan: — (not yet planned)
 Status: Ready to plan
-Last activity: 2026-03-05 - Completed quick task 2: OCIO dashboard intelligence panel, chart redesign, review tier selector
+Last activity: 2026-03-05 - Completed quick task 3: OCIO dashboard intelligence reale (global period, ratio widgets, comparison, search, drill-down)
 
 Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 
@@ -110,6 +110,7 @@ Progress: [░░░░░░░░░░] 0% (milestone v3.0)
 |---|-------------|------|--------|-----------|
 | 1 | Fix ocio dashboard pagination, AI analyzer batching, and analyzing screen | 2026-03-05 | 016bb45 | [1-fix-ocio-dashboard-pagination-ai-analyze](./quick/1-fix-ocio-dashboard-pagination-ai-analyze/) |
 | 2 | OCIO dashboard intelligence panel, chart redesign, review tier selector in settings | 2026-03-05 | cdecde3 | [2-ocio-dashboard-redesign-with-intelligenc](./quick/2-ocio-dashboard-redesign-with-intelligenc/) |
+| 3 | OCIO dashboard intelligence reale: global period filter, ratio widgets, comparison, search, drill-down | 2026-03-05 | 6aa8da0 | [3-ocio-dashboard-intelligence-reale-con-co](./quick/3-ocio-dashboard-intelligence-reale-con-co/) |
 
 ## Session Continuity
 
