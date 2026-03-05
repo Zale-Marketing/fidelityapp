@@ -188,9 +188,9 @@ export default function OcioDashboardPage() {
   const [googleMapsUrl, setGoogleMapsUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedReview, setSelectedReview] = useState<OcioReview | null>(null)
+  const [globalPeriod, setGlobalPeriod] = useState<'30' | '90' | '180' | '365' | 'all'>('all')
   const [filterSentiment, setFilterSentiment] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all')
   const [filterRating, setFilterRating] = useState<number | 'all'>('all')
-  const [filterPeriod, setFilterPeriod] = useState<'30' | '90' | '365' | 'all'>('30')
   const [copying, setCopying] = useState(false)
   const [accessToken, setAccessToken] = useState<string>('')
 
@@ -375,16 +375,17 @@ export default function OcioDashboardPage() {
   const filteredReviews = useMemo(() => {
     const now = new Date()
     return reviews.filter(r => {
-      if (filterSentiment !== 'all' && r.ai_sentiment !== filterSentiment) return false
-      if (filterRating !== 'all' && r.rating !== filterRating) return false
-      if (filterPeriod !== 'all' && r.published_at) {
-        const days = parseInt(filterPeriod)
+      // globalPeriod first
+      if (globalPeriod !== 'all' && r.published_at) {
+        const days = parseInt(globalPeriod)
         const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
         if (new Date(r.published_at) < cutoff) return false
       }
+      if (filterSentiment !== 'all' && r.ai_sentiment !== filterSentiment) return false
+      if (filterRating !== 'all' && r.rating !== filterRating) return false
       return true
     })
-  }, [reviews, filterSentiment, filterRating, filterPeriod])
+  }, [reviews, globalPeriod, filterSentiment, filterRating])
 
   // ---- Modal actions ----
   async function updateReplyStatus(reviewId: string, status: 'replied' | 'ignored') {
@@ -510,6 +511,16 @@ export default function OcioDashboardPage() {
           value={kpis.pending}
           icon={<AlertTriangle size={20} />}
         />
+      </div>
+
+      {/* Global period filter */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <span className="text-xs text-gray-500 font-medium">Periodo:</span>
+        <Pill active={globalPeriod === '30'} onClick={() => setGlobalPeriod('30')}>Ultimi 30gg</Pill>
+        <Pill active={globalPeriod === '90'} onClick={() => setGlobalPeriod('90')}>Ultimi 3 mesi</Pill>
+        <Pill active={globalPeriod === '180'} onClick={() => setGlobalPeriod('180')}>Ultimi 6 mesi</Pill>
+        <Pill active={globalPeriod === '365'} onClick={() => setGlobalPeriod('365')}>Ultimi 12 mesi</Pill>
+        <Pill active={globalPeriod === 'all'} onClick={() => setGlobalPeriod('all')}>Tutto</Pill>
       </div>
 
       {/* Intelligence Panel */}
@@ -663,13 +674,6 @@ export default function OcioDashboardPage() {
               {'★'.repeat(n)} {n}
             </Pill>
           ))}
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-gray-500 font-medium w-16">Periodo</span>
-          <Pill active={filterPeriod === '30'} onClick={() => setFilterPeriod('30')}>Ultimi 30gg</Pill>
-          <Pill active={filterPeriod === '90'} onClick={() => setFilterPeriod('90')}>Ultimi 90gg</Pill>
-          <Pill active={filterPeriod === '365'} onClick={() => setFilterPeriod('365')}>Ultimi 12 mesi</Pill>
-          <Pill active={filterPeriod === 'all'} onClick={() => setFilterPeriod('all')}>Tutto</Pill>
         </div>
       </div>
 
