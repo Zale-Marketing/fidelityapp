@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
   const action = body.action as string | undefined
 
   if (action === "create") {
+    // Leggi configurazione attuale (link vecchio + google_maps_url nuovo)
     const { data: config, error: configError } = await supabase
       .from("ocio_config")
       .select("google_maps_url")
@@ -81,7 +82,20 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Crea o aggiorna lo schedule ogni 6 ore
+    // Leggi il link PRECEDENTE salvato prima di questo salvataggio
+    const { data: oldConfig } = await supabase
+      .from("ocio_config")
+      .select("google_maps_url")
+      .eq("merchant_id", merchantId)
+      .maybeSingle()
+
+    const oldUrl = oldConfig?.google_maps_url ?? null
+    const newUrl = config.google_maps_url
+
+    // Triggera immediato SOLO se il link è nuovo o cambiato
+    const shouldTriggerNow = !oldUrl || oldUrl !== newUrl
+
+    // Crea o aggiorna lo schedule ogni 6 ore (idempotente su externalId)
     let schedule
     try {
       schedule = await schedules.create({
@@ -104,12 +118,13 @@ export async function POST(req: NextRequest) {
       .update({ trigger_schedule_id: schedule.id })
       .eq("merchant_id", merchantId)
 
-    // Triggera immediatamente il primo scraping senza aspettare 6 ore
-    try {
-      await tasks.trigger("ocio-review-scraper", { merchantId })
-    } catch (err) {
-      // Non bloccare la risposta se il trigger immediato fallisce
-      console.error("Immediate scrape trigger failed:", err)
+    // Triggera immediatamente SOLO se link nuovo o cambiato
+    if (shouldTriggerNow) {
+      try {
+        await tasks.trigger("ocio-review-scraper", { merchantId })
+      } catch (err) {
+        console.error("Immediate scrape trigger failed:", err)
+      }
     }
 
     return NextResponse.json({ success: true, scheduleId: schedule.id })
