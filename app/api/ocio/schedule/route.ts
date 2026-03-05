@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
   const action = body.action as string | undefined
 
   if (action === "create") {
-    // Leggi configurazione attuale (link vecchio + google_maps_url nuovo)
-    const { data: config, error: configError } = await supabase
+    // Leggi il link ATTUALE nel DB (prima che venga modificato)
+    const { data: existingConfig, error: configError } = await supabase
       .from("ocio_config")
       .select("google_maps_url")
       .eq("merchant_id", merchantId)
@@ -75,27 +75,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Errore lettura configurazione" }, { status: 500 })
     }
 
-    if (!config?.google_maps_url) {
+    if (!existingConfig?.google_maps_url) {
       return NextResponse.json(
         { error: "URL Google Maps non configurato" },
         { status: 400 }
       )
     }
 
-    // Leggi il link PRECEDENTE salvato prima di questo salvataggio
-    const { data: oldConfig } = await supabase
-      .from("ocio_config")
-      .select("google_maps_url")
-      .eq("merchant_id", merchantId)
-      .maybeSingle()
+    // Il link era NULL nel DB prima del salvataggio?
+    // Lo sappiamo perché la settings page ci passa isFirstTime nel body
+    const isFirstTime = body.isFirstTime === true
 
-    const oldUrl = oldConfig?.google_maps_url ?? null
-    const newUrl = config.google_maps_url
-
-    // Triggera immediato SOLO se il link è nuovo o cambiato
-    const shouldTriggerNow = !oldUrl || oldUrl !== newUrl
-
-    // Crea o aggiorna lo schedule ogni 6 ore (idempotente su externalId)
+    // Crea o aggiorna lo schedule ogni 6 ore
     let schedule
     try {
       schedule = await schedules.create({
@@ -118,8 +109,8 @@ export async function POST(req: NextRequest) {
       .update({ trigger_schedule_id: schedule.id })
       .eq("merchant_id", merchantId)
 
-    // Triggera immediatamente SOLO se link nuovo o cambiato
-    if (shouldTriggerNow) {
+    // Triggera immediatamente SOLO se è la prima volta
+    if (isFirstTime) {
       try {
         await tasks.trigger("ocio-review-scraper", { merchantId })
       } catch (err) {

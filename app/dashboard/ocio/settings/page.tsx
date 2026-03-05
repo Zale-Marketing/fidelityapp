@@ -107,6 +107,8 @@ export default function OcioSettingsPage() {
   const [mapsUrl, setMapsUrl] = useState<string>('')
   const [alertPhone, setAlertPhone] = useState<string>('')
   const [config, setConfig] = useState<ConfigState>(DEFAULT_CONFIG)
+  // Traccia se il DB aveva già un link al momento del caricamento
+  const [hadMapsUrlOnLoad, setHadMapsUrlOnLoad] = useState<boolean>(false)
 
   useEffect(() => {
     loadData()
@@ -128,7 +130,6 @@ export default function OcioSettingsPage() {
       })
 
       if (res.status === 403) {
-        // Not a business plan — handled by isBusiness gate
         setLoading(false)
         return
       }
@@ -136,7 +137,10 @@ export default function OcioSettingsPage() {
       if (res.ok) {
         const { data } = await res.json()
         if (data) {
-          setMapsUrl(data.google_maps_url ?? '')
+          const existingUrl = data.google_maps_url ?? ''
+          setMapsUrl(existingUrl)
+          // Se il DB aveva già un link, lo segniamo
+          setHadMapsUrlOnLoad(existingUrl.trim() !== '')
           setAlertPhone(data.alert_whatsapp_number ?? '')
           setConfig({
             module_reviews: data.module_reviews ?? true,
@@ -149,7 +153,7 @@ export default function OcioSettingsPage() {
         }
       }
     } catch {
-      // If API fails (e.g. not business), defaults will be used
+      // Se API fallisce, i default vengono usati
     }
 
     setLoading(false)
@@ -187,6 +191,9 @@ export default function OcioSettingsPage() {
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
 
+    // isFirstTime = true se al caricamento il DB non aveva ancora un link
+    const isFirstTime = !hadMapsUrlOnLoad && mapsUrl.trim() !== ''
+
     // Gestione schedule Trigger.dev — non-blocking
     const scheduleAction = config.module_reviews ? 'create' : 'cancel'
     try {
@@ -196,11 +203,10 @@ export default function OcioSettingsPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ action: scheduleAction }),
+        body: JSON.stringify({ action: scheduleAction, isFirstTime }),
       })
-      // Ignora errori schedule — non blocca il salvataggio config
     } catch {
-      // Silenzioso — Trigger.dev potrebbe non essere configurato in dev
+      // Silenzioso
     }
 
     setSaving(false)
@@ -224,7 +230,6 @@ export default function OcioSettingsPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* Breadcrumb */}
       <div className="flex items-center gap-3 mb-2">
         <Link
           href="/dashboard/settings"
@@ -235,7 +240,6 @@ export default function OcioSettingsPage() {
         </Link>
       </div>
 
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">OCIO — Impostazioni</h1>
         <p className="text-gray-500 text-sm mt-1">
@@ -243,7 +247,6 @@ export default function OcioSettingsPage() {
         </p>
       </div>
 
-      {/* Card: URL Google Maps */}
       <div className="bg-white border border-[#E8E8E8] rounded-xl p-6 space-y-4">
         <h2 className="font-semibold text-gray-900">URL Google Maps</h2>
         <div className="space-y-2">
@@ -260,7 +263,6 @@ export default function OcioSettingsPage() {
         </div>
       </div>
 
-      {/* Card: Moduli */}
       <div className="bg-white border border-[#E8E8E8] rounded-xl p-6 space-y-4">
         <div>
           <h2 className="font-semibold text-gray-900">Moduli</h2>
@@ -276,18 +278,13 @@ export default function OcioSettingsPage() {
               className="relative bg-white border border-[#E8E8E8] rounded-xl p-4"
             >
               <div className="flex items-start gap-3">
-                {/* Icon */}
                 <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
                   <module.icon size={18} className="text-gray-600" />
                 </div>
-
-                {/* Title + description */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">{module.title}</p>
                   <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{module.desc}</p>
                 </div>
-
-                {/* Toggle */}
                 <button
                   onClick={() => module.available ? toggleModule(module.key) : undefined}
                   disabled={!module.available}
@@ -303,8 +300,6 @@ export default function OcioSettingsPage() {
                   />
                 </button>
               </div>
-
-              {/* Lock overlay for unavailable modules */}
               {!module.available && (
                 <div className="absolute inset-0 bg-white/60 rounded-xl flex items-start justify-end p-3 pointer-events-none">
                   <Lock size={15} className="text-gray-400" />
@@ -314,7 +309,6 @@ export default function OcioSettingsPage() {
           ))}
         </div>
 
-        {/* Alert WhatsApp number — shown only when module_alerts is enabled */}
         {config.module_alerts && (
           <div className="mt-3">
             <label className="text-xs text-gray-500 block mb-1">
@@ -334,12 +328,10 @@ export default function OcioSettingsPage() {
         )}
       </div>
 
-      {/* Error message */}
       {error && (
         <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">{error}</p>
       )}
 
-      {/* Save button */}
       <div className="flex justify-end">
         <button
           onClick={saveConfig}
