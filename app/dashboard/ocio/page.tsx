@@ -198,6 +198,15 @@ export default function OcioDashboardPage() {
     loadData()
   }, [])
 
+  useEffect(() => {
+    if (reviews.length === 0 && googleMapsUrl !== null && !loading) {
+      const interval = setInterval(() => {
+        loadData()
+      }, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [reviews.length, googleMapsUrl, loading])
+
   async function loadData() {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
@@ -343,6 +352,36 @@ export default function OcioDashboardPage() {
     return (
       <div className="max-w-2xl mx-auto py-8">
         <UpgradePrompt feature="Dashboard OCIO — Reputation Intelligence" requiredPlan="BUSINESS" />
+      </div>
+    )
+  }
+
+  if (reviews.length === 0 && googleMapsUrl !== null) {
+    return (
+      <div className="px-6 py-6 max-w-5xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Eye size={24} />
+              OCIO — Reputation Intelligence
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">Gestisci le tue recensioni Google con l&apos;aiuto dell&apos;AI</p>
+          </div>
+          <Link
+            href="/dashboard/ocio/settings"
+            className="flex items-center gap-2 px-4 py-2 border border-[#E0E0E0] rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <Settings size={16} />
+            Impostazioni
+          </Link>
+        </div>
+        <div className="bg-white border border-[#E8E8E8] rounded-xl p-12 flex flex-col items-center justify-center text-center space-y-4">
+          <div className="w-10 h-10 border-2 border-black border-t-transparent rounded-full animate-spin" />
+          <h2 className="text-lg font-semibold text-gray-900">Stiamo analizzando la tua attività…</h2>
+          <p className="text-sm text-gray-500 max-w-sm">
+            Le tue recensioni sono in fase di raccolta e analisi AI. Questa pagina si aggiornerà automaticamente ogni 30 secondi.
+          </p>
+        </div>
       </div>
     )
   }
