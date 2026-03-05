@@ -91,12 +91,28 @@ Rispondi SOLO con questo JSON (nessun testo extra):
     }),
   })
 
-  const data = (await res.json()) as { content: Array<{ text: string }> }
+  const data = (await res.json()) as {
+    content?: Array<{ text: string }>
+    error?: { type: string; message: string }
+  }
+
+  // Se Anthropic restituisce un errore HTTP (rate limit, quota, risposta vuota, ecc.)
+  if (!res.ok || !data.content || data.content.length === 0) {
+    throw new Error(
+      `Anthropic API error: ${res.status} — ${data.error?.message ?? JSON.stringify(data)}`
+    )
+  }
+
   const responseText = data.content[0].text
 
-  const cleaned = responseText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
-const parsed = JSON.parse(cleaned) as AnalysisResult
+  const cleaned = responseText
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim()
 
+  const parsed = JSON.parse(cleaned) as AnalysisResult
   return parsed
 }
 
@@ -144,7 +160,7 @@ export const ocioAiAnalyzer = task({
 
     const typedReviews = reviews as OcioReviewRow[]
 
-    // Fetch alert config once before the loop (reduces per-review DB queries)
+    // Fetch alert config once before the loop
     const { data: alertConfig } = await supabase
       .from("ocio_config")
       .select("module_alerts, alert_whatsapp_number")
@@ -239,14 +255,21 @@ export const ocioAiAnalyzer = task({
         }
       } catch (err) {
         if (err instanceof SyntaxError) {
-          // JSON parse error — skip this review, do not throw
+          // JSON parse error — skip questa review, non rilanciare
           logger.error("failed to parse AI response for review", {
             reviewId: review.id,
             error: err.message,
           })
           errors++
+        } else if (err instanceof Error && err.message.startsWith("Anthropic API error")) {
+          // Errore API Anthropic — logga e continua con la prossima review
+          logger.error("Anthropic API error for review", {
+            reviewId: review.id,
+            error: err.message,
+          })
+          errors++
         } else {
-          // System error (network, API key, DB) — propagate for Trigger.dev retry
+          // Errore di sistema (rete, DB, env vars) — propaga per il retry di Trigger.dev
           throw err
         }
       }
