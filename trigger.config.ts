@@ -1,4 +1,5 @@
 import { defineConfig } from "@trigger.dev/sdk/v3";
+import { additionalPackages } from "@trigger.dev/build/extensions/core";
 
 export default defineConfig({
   project: "proj_zvyvldbkgijrsvkohrfs",
@@ -17,6 +18,8 @@ export default defineConfig({
   },
   dirs: ["trigger"],
   build: {
-    external: ["proxy-agent"],
+    extensions: [
+      additionalPackages({ packages: ["proxy-agent"] }),
+    ],
   },
 });
