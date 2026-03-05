@@ -201,6 +201,7 @@ export default function OcioDashboardPage() {
   const [periodBTo, setPeriodBTo] = useState<string>(() => {
     const d = new Date(); d.setDate(0); return d.toISOString().split('T')[0]
   })
+  const [searchQuery, setSearchQuery] = useState('')
   const [filterSentiment, setFilterSentiment] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all')
   const [filterRating, setFilterRating] = useState<number | 'all'>('all')
   const [copying, setCopying] = useState(false)
@@ -405,11 +406,19 @@ export default function OcioDashboardPage() {
         const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
         if (new Date(r.published_at) < cutoff) return false
       }
+      // searchQuery
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        if (
+          !(r.text?.toLowerCase().includes(q)) &&
+          !(r.author_name?.toLowerCase().includes(q))
+        ) return false
+      }
       if (filterSentiment !== 'all' && r.ai_sentiment !== filterSentiment) return false
       if (filterRating !== 'all' && r.rating !== filterRating) return false
       return true
     })
-  }, [reviews, globalPeriod, filterSentiment, filterRating])
+  }, [reviews, globalPeriod, searchQuery, filterSentiment, filterRating])
 
   // ---- Comparison data ----
   const comparisonData = useMemo(() => {
@@ -801,6 +810,30 @@ export default function OcioDashboardPage() {
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+      )}
+
+      {/* Search bar */}
+      <div className="relative">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Cerca per testo o autore…"
+          className="w-full text-sm border border-[#E8E8E8] rounded-xl px-4 py-3 pr-10 focus:outline-none focus:border-gray-300"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+      {searchQuery.trim() && (
+        <p className="text-xs text-gray-500 -mt-2">
+          {filteredReviews.length} risultat{filteredReviews.length === 1 ? 'o' : 'i'} trovat{filteredReviews.length === 1 ? 'o' : 'i'} per &ldquo;{searchQuery}&rdquo;
+        </p>
       )}
 
       {/* Filters */}
