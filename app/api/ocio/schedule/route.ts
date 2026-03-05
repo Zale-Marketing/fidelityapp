@@ -1,4 +1,4 @@
-import { schedules } from "@trigger.dev/sdk/v3"
+import { schedules, tasks } from "@trigger.dev/sdk/v3"
 import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
 
@@ -35,7 +35,6 @@ async function getAuthenticatedMerchant(req: NextRequest): Promise<
     return { error: NextResponse.json({ error: "Profilo non trovato" }, { status: 401 }) }
   }
 
-  // Plan check: must be BUSINESS
   const { data: merchant } = await supabase
     .from("merchants")
     .select("plan")
@@ -65,7 +64,6 @@ export async function POST(req: NextRequest) {
   const action = body.action as string | undefined
 
   if (action === "create") {
-    // Read google_maps_url from ocio_config
     const { data: config, error: configError } = await supabase
       .from("ocio_config")
       .select("google_maps_url")
@@ -83,7 +81,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Create or upsert the schedule (idempotent on externalId)
+    // Crea o aggiorna lo schedule ogni 6 ore
     let schedule
     try {
       schedule = await schedules.create({
@@ -100,17 +98,24 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Persist schedule ID in ocio_config
+    // Salva schedule ID nel DB
     await supabase
       .from("ocio_config")
       .update({ trigger_schedule_id: schedule.id })
       .eq("merchant_id", merchantId)
 
+    // Triggera immediatamente il primo scraping senza aspettare 6 ore
+    try {
+      await tasks.trigger("ocio-review-scraper", { merchantId })
+    } catch (err) {
+      // Non bloccare la risposta se il trigger immediato fallisce
+      console.error("Immediate scrape trigger failed:", err)
+    }
+
     return NextResponse.json({ success: true, scheduleId: schedule.id })
   }
 
   if (action === "cancel") {
-    // Read existing schedule ID
     const { data: config, error: configError } = await supabase
       .from("ocio_config")
       .select("trigger_schedule_id")
@@ -124,18 +129,15 @@ export async function POST(req: NextRequest) {
     const scheduleId = config?.trigger_schedule_id as string | null | undefined
 
     if (!scheduleId) {
-      // Nothing to cancel
       return NextResponse.json({ success: true })
     }
 
-    // Delete the schedule — may already be gone in Trigger.dev
     try {
       await schedules.del(scheduleId)
     } catch {
-      // Ignore — schedule may no longer exist on Trigger.dev side
+      // Schedule potrebbe non esistere più su Trigger.dev
     }
 
-    // Clear schedule ID from ocio_config
     await supabase
       .from("ocio_config")
       .update({ trigger_schedule_id: null })
