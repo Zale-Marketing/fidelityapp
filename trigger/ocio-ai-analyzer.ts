@@ -94,7 +94,9 @@ Rispondi SOLO con questo JSON (nessun testo extra):
   const data = (await res.json()) as { content: Array<{ text: string }> }
   const responseText = data.content[0].text
 
-  const parsed = JSON.parse(responseText.trim()) as AnalysisResult
+  const cleaned = responseText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+const parsed = JSON.parse(cleaned) as AnalysisResult
+
   return parsed
 }
 
