@@ -1,4 +1,4 @@
-import { logger, schedules, tasks } from "@trigger.dev/sdk/v3"
+import { logger, task, tasks } from "@trigger.dev/sdk/v3"
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { ApifyClient } from "apify-client"
 
@@ -116,12 +116,11 @@ async function scrapeForMerchant(
   })
 }
 
-export const ocioReviewScraper = schedules.task({
+export const ocioReviewScraper = task({
   id: "ocio-review-scraper",
   // Every 6 hours — placeholder cron; actual schedules are created dynamically via API
-  cron: "0 */6 * * *",
   maxDuration: 300,
-  run: async (_payload) => {
+  run: async (_payload: Record<string, unknown>) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createClient<any, "public", any>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
